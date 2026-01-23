@@ -1,6 +1,6 @@
 # EMF Model Generator
 
-[![Build Status](https://github.com/LorenzoBettini/emf-model-generator/actions/workflows/build.yml/badge.svg)](https://github.com/LorenzoBettini/emf-model-generator/actions)
+[![Build Status](https://github.com/LorenzoBettini/emf-model-generator/actions/workflows/build.yml/badge.svg)](https://github.com/LorenzoBettini/emf-model-generator/actions) [![codecov](https://codecov.io/gh/LorenzoBettini/emf-model-generator/graph/badge.svg?token=TNphE6zefq)](https://codecov.io/gh/LorenzoBettini/emf-model-generator)
 
 A Java library for programmatically generating instances of EMF (Eclipse Modeling Framework) models. Given an Ecore metamodel and an EClass or EPackage, the tool generates model instances with populated attributes and references, and serializes them as XMI files.
 
