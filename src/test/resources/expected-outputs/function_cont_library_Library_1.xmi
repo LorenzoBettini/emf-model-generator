@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="ASCII"?>
+<lib:Library
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:lib="http://www.example.org/library"
+    name="Library_name_1">
+  <shelves name="Shelf_name_1">
+    <books title="Book_title_1"
+        author="//@director"/>
+    <books title="Book_title_2"
+        author="//@director"/>
+    <books title="Book_title_3"
+        author="//@director"/>
+  </shelves>
+  <director
+      name="Person_name_1"/>
+</lib:Library>

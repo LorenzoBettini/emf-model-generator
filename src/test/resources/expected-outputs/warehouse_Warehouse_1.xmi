@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="ASCII"?>
+<wh:Warehouse
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:wh="http://www.example.org/warehouse"
+    name="Warehouse_name_1"
+    mainProduct="//@products.0">
+  <products
+      sku="Product_sku_1"
+      name="Product_name_1"/>
+  <products
+      sku="Product_sku_2"
+      name="Product_name_2"/>
+</wh:Warehouse>

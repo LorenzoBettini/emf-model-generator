@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="ASCII"?>
+<dept:Person
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:dept="http://www.example.org/dept"
+    name="Person_name_1"/>

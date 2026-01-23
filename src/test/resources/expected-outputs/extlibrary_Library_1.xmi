@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="ASCII"?>
+<extlib:Library
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:extlib="http:///org/eclipse/emf/examples/library/extlibrary.ecore/1.0.0"
+    xsi:schemaLocation="http:///org/eclipse/emf/examples/library/extlibrary.ecore/1.0.0 ../inputs/extlibrary.ecore"
+    address="Library_address_1"
+    name="Library_name_1">
+  <stock xsi:type="extlib:Book"
+      publicationDate="2025-01-01T00:00:00.000+0100"
+      copies="20"
+      borrowers="//@borrowers.0 //@branches.0/@borrowers.0"
+      title="Book_title_1"
+      pages="20"
+      category="Mystery"
+      author="//@writers.0"/>
+  <stock xsi:type="extlib:BookOnTape"
+      publicationDate="2025-01-01T00:00:00.000+0100"
+      copies="20"
+      borrowers="//@borrowers.0 //@branches.0/@borrowers.0"
+      title="BookOnTape_title_1"
+      minutesLength="20"
+      damaged="true"
+      reader="//@branches.0/@employees.0"
+      author="//@branches.0/@writers.0"/>
+  <stock xsi:type="extlib:VideoCassette"
+      publicationDate="2025-01-01T00:00:00.000+0100"
+      copies="20"
+      borrowers="//@borrowers.0 //@branches.0/@borrowers.0"
+      title="VideoCassette_title_1"
+      minutesLength="20"
+      damaged="true"
+      cast="//@branches.0/@borrowers.0 //@branches.0/@writers.0"/>
+  <stock xsi:type="extlib:Book"
+      publicationDate="2025-01-02T00:00:00.000+0100"
+      copies="21"
+      borrowers="//@borrowers.0 //@branches.0/@borrowers.0"
+      title="Book_title_2"
+      pages="21"
+      category="ScienceFiction"
+      author="//@writers.0"/>
+  <stock xsi:type="extlib:BookOnTape"
+      publicationDate="2025-01-02T00:00:00.000+0100"
+      copies="21"
+      borrowers="//@borrowers.0 //@branches.0/@borrowers.0"
+      title="BookOnTape_title_2"
+      minutesLength="21"
+      reader="//@branches.0/@employees.1"
+      author="//@writers.0"/>
+  <branches
+      address="Library_address_2"
+      name="Library_name_2">
+    <stock xsi:type="extlib:VideoCassette"
+        publicationDate="2025-01-02T00:00:00.000+0100"
+        copies="21"
+        borrowers="//@borrowers.0 //@branches.0/@borrowers.0"
+        title="VideoCassette_title_2"
+        minutesLength="21"
+        cast="//@writers.0 //@employees.0"/>
+    <stock xsi:type="extlib:Book"
+        publicationDate="2025-01-03T00:00:00.000+0100"
+        copies="22"
+        borrowers="//@borrowers.0 //@branches.0/@borrowers.0"
+        title="Book_title_3"
+        pages="22"
+        category="Biography"
+        author="//@writers.1"/>
+    <stock xsi:type="extlib:BookOnTape"
+        publicationDate="2025-01-03T00:00:00.000+0100"
+        copies="22"
+        borrowers="//@borrowers.0 //@branches.0/@borrowers.0"
+        title="BookOnTape_title_3"
+        minutesLength="22"
+        damaged="true"
+        reader="//@borrowers.0"
+        author="//@writers.1"/>
+    <stock xsi:type="extlib:VideoCassette"
+        publicationDate="2025-01-03T00:00:00.000+0100"
+        copies="22"
+        borrowers="//@borrowers.0 //@branches.0/@borrowers.0"
+        title="VideoCassette_title_3"
+        minutesLength="22"
+        damaged="true"
+        cast="//@writers.1 //@branches.0/@employees.0"/>
+    <stock xsi:type="extlib:Book"
+        publicationDate="2025-01-04T00:00:00.000+0100"
+        copies="23"
+        borrowers="//@borrowers.0 //@branches.0/@borrowers.0"
+        title="Book_title_4"
+        pages="23"
+        category="Mystery"
+        author="//@writers.1"/>
+    <branches
+        address="Library_address_3"
+        name="Library_name_3"/>
+    <employees
+        address="Employee_address_2"
+        firstName="Employee_firstName_2"
+        lastName="Employee_lastName_2"
+        manager="//@branches.0/@employees.1"/>
+    <borrowers
+        address="Borrower_address_2"
+        firstName="Borrower_firstName_2"
+        lastName="Borrower_lastName_2"
+        borrowed="//@stock.0 //@stock.1 //@stock.2 //@stock.3 //@stock.4 //@branches.0/@stock.0 //@branches.0/@stock.1 //@branches.0/@stock.2 //@branches.0/@stock.3 //@branches.0/@stock.4"/>
+    <writers
+        address="Writer_address_3"
+        firstName="Writer_firstName_3"
+        lastName="Writer_lastName_3"/>
+    <employees
+        address="Employee_address_3"
+        firstName="Employee_firstName_3"
+        lastName="Employee_lastName_3"
+        manager="//@employees.0"/>
+  </branches>
+  <writers address="Writer_address_1"
+      firstName="Writer_firstName_1"
+      lastName="Writer_lastName_1"
+      books="//@stock.0 //@stock.3"/>
+  <employees
+      address="Employee_address_1"
+      firstName="Employee_firstName_1"
+      lastName="Employee_lastName_1"
+      manager="//@branches.0/@employees.0"/>
+  <borrowers
+      address="Borrower_address_1"
+      firstName="Borrower_firstName_1"
+      lastName="Borrower_lastName_1"
+      borrowed="//@stock.0 //@stock.1 //@stock.2 //@stock.3 //@stock.4 //@branches.0/@stock.0 //@branches.0/@stock.1 //@branches.0/@stock.2 //@branches.0/@stock.3 //@branches.0/@stock.4"/>
+  <writers address="Writer_address_2"
+      firstName="Writer_firstName_2"
+      lastName="Writer_lastName_2"
+      books="//@branches.0/@stock.1 //@branches.0/@stock.4"/>
+</extlib:Library>

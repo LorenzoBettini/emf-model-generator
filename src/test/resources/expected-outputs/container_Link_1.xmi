@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="ASCII"?>
+<cnt:Link xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:cnt="http://www.example.org/container"
+    url="Link_url_1">
+  <target href="container_Registry_1.xmi#//@entries.0"/>
+  <targets href="container_Registry_1.xmi#//@entries.1"/>
+  <targets href="container_Registry_1.xmi#//@entry"/>
+</cnt:Link>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="ASCII"?>
+<sa:Document
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:sa="http://www.example.org/standalone"
+    title="Document_title_1">
+  <relatedDoc
+      href="standalone_RelatedDocument_1.xmi#/"/>
+</sa:Document>

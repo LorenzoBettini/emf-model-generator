@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="ASCII"?>
+<co:Company
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:co="http://www.example.org/company"
+    xsi:schemaLocation="http://www.example.org/company ../inputs/company-dept.ecore"
+    name="Company_name_1">
+  <departments
+      href="mutualmulti_employees_Department_1.xmi#/"/>
+  <departments
+      href="mutualmulti_employees_Department_2.xmi#/"/>
+  <ceo href="mutualmulti_employees_Department_1.xmi#//@employees.0"/>
+</co:Company>

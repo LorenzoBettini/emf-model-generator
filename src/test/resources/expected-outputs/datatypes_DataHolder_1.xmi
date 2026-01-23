@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="ASCII"?>
+<dt:DataHolder
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:dt="http://www.example.org/datatypes"
+    stringValue="DataHolder_stringValue_1"
+    intValue="20"
+    boolValue="true"
+    doubleValue="20.5"
+    dateValue="2025-01-01T00:00:00.000+0100">
+  <tags>DataHolder_tags_1</tags>
+  <tags>DataHolder_tags_2</tags>
+</dt:DataHolder>

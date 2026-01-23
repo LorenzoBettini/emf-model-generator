@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="ASCII"?>
+<cnt:Registry
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:cnt="http://www.example.org/container"
+    name="Registry_name_1">
+  <entries key="Entry_key_1"/>
+  <entries key="Entry_key_2"/>
+  <entry key="Entry_key_3"/>
+</cnt:Registry>

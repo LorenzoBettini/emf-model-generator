@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="ASCII"?>
+<emp:Department
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:emp="http://www.example.org/employees"
+    xsi:schemaLocation="http://www.example.org/employees ../inputs/employee-dept.ecore"
+    name="Department_name_1">
+  <employees
+      name="Employee_name_1"
+      employeeId="20">
+    <company
+        href="mutual_company_Company_1.xmi#/"/>
+  </employees>
+  <employees
+      name="Employee_name_2"
+      employeeId="21">
+    <company
+        href="mutual_company_Company_1.xmi#/"/>
+  </employees>
+  <company href="mutual_company_Company_1.xmi#/"/>
+</emp:Department>

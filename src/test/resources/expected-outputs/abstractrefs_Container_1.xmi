@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="ASCII"?>
+<abstractrefs:Container
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:abstractrefs="http://www.example.org/abstractrefs"
+    name="Container_name_1">
+  <concreteItem
+      value="ConcreteItem_value_1"/>
+</abstractrefs:Container>

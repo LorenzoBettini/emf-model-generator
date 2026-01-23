@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="ASCII"?>
+<graphimproved:Graph
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:graphimproved="http://www.example.org/graphimproved"
+    xsi:schemaLocation="http://www.example.org/graphimproved ../inputs/graphimproved.ecore"
+    name="Graph_name_1">
+  <nodes label="Node_label_1"
+      outgoing="//@edges.0 //@edges.1 //@edges.2"
+      incoming="//@edges.3 //@edges.4 //@edges.5"/>
+  <nodes label="Node_label_2"
+      outgoing="//@edges.6 //@edges.7 //@edges.8"
+      incoming="//@edges.0 //@edges.1 //@edges.2"/>
+  <nodes label="Node_label_3"
+      outgoing="//@edges.3 //@edges.4 //@edges.5"
+      incoming="//@edges.6 //@edges.7 //@edges.8"/>
+  <edges label="Edge_label_1"
+      source="//@nodes.0"
+      target="//@nodes.1"/>
+  <edges label="Edge_label_2"
+      source="//@nodes.0"
+      target="//@nodes.1"/>
+  <edges label="Edge_label_3"
+      source="//@nodes.0"
+      target="//@nodes.1"/>
+  <edges label="Edge_label_4"
+      source="//@nodes.2"
+      target="//@nodes.0"/>
+  <edges label="Edge_label_5"
+      source="//@nodes.2"
+      target="//@nodes.0"/>
+  <edges label="Edge_label_6"
+      source="//@nodes.2"
+      target="//@nodes.0"/>
+  <edges label="Edge_label_7"
+      source="//@nodes.1"
+      target="//@nodes.2"/>
+  <edges label="Edge_label_8"
+      source="//@nodes.1"
+      target="//@nodes.2"/>
+  <edges label="Edge_label_9"
+      source="//@nodes.1"
+      target="//@nodes.2"/>
+</graphimproved:Graph>

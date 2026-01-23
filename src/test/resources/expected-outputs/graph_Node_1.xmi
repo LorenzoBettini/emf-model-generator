@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="ASCII"?>
+<graph:Node
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:graph="http://www.example.org/graph"
+    label="Node_label_1"/>

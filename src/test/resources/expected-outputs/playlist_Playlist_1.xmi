@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="ASCII"?>
+<playlist:Playlist
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:playlist="http://www.example.org/playlist"
+    name="Playlist_name_1"
+    queue="//@songs.0 //@songs.1 //@songs.0 //@songs.1 //@songs.0">
+  <songs title="Song_title_1"
+      artist="Song_artist_1"/>
+  <songs title="Song_title_2"
+      artist="Song_artist_2"/>
+</playlist:Playlist>

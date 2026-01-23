@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>io.github.lorenzobettini</groupId>
+	<artifactId>emf-model-generator</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>EMF Model Generator</name>
+	<description>A project for generating EMF models</description>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>21</maven.compiler.source>
+		<maven.compiler.target>21</maven.compiler.target>
+		<junit-jupiter.version>6.0.0</junit-jupiter.version>
+		<pit-timeout-const>4000</pit-timeout-const>
+
+		<!--
+		Disable m2e-apt automatic configuration to avoid generated .classpath entries in Visual Studio Code Maven extension
+		See https://github.com/eclipse-m2e/m2e-core/tree/main/org.eclipse.m2e.apt.ui
+		-->
+		<m2e.apt.activation>disabled</m2e.apt.activation>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.junit</groupId>
+				<artifactId>junit-bom</artifactId>
+				<version>${junit-jupiter.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+		<!-- EMF Ecore XMI -->
+		<dependency>
+			<groupId>org.eclipse.emf</groupId>
+			<artifactId>org.eclipse.emf.ecore.xmi</artifactId>
+			<version>2.39.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+			<version>3.27.6</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<pluginManagement>
+			<!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent
+			pom) -->
+			<plugins>
+				<plugin>
+					<artifactId>maven-clean-plugin</artifactId>
+					<version>3.5.0</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>3.3.1</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.14.1</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>3.5.4</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.4.2</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-install-plugin</artifactId>
+					<version>3.1.4</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-deploy-plugin</artifactId>
+					<version>3.1.4</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-site-plugin</artifactId>
+					<version>3.21.0</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-project-info-reports-plugin</artifactId>
+					<version>3.9.0</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-dependency-plugin</artifactId>
+					<version>3.9.0</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>3.4.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>maven-bundle-plugin</artifactId>
+					<version>5.1.9</version>
+				</plugin>
+				<!-- Configure PIT Mutation Testing plugin here since it is invoked explicitly in CI -->
+				<plugin>
+					<groupId>org.pitest</groupId>
+					<artifactId>pitest-maven</artifactId>
+					<version>1.22.0</version>
+					<dependencies>
+						<dependency>
+							<groupId>org.pitest</groupId>
+							<artifactId>pitest-junit5-plugin</artifactId>
+							<version>1.2.3</version>
+						</dependency>
+					</dependencies>
+					<configuration>
+						<timeoutConstant>${pit-timeout-const}</timeoutConstant>
+						<mutationThreshold>100</mutationThreshold>
+						<targetClasses>
+							<param>io.github.lorenzobettini.emfmodelgenerator.*</param>
+						</targetClasses>
+						<targetTests>
+							<param>io.github.lorenzobettini.emfmodelgenerator.*</param>
+						</targetTests>
+						<outputFormats>
+							<param>HTML</param>
+							<param>XML</param>
+						</outputFormats>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.sonarsource.scanner.maven</groupId>
+					<artifactId>sonar-maven-plugin</artifactId>
+					<version>5.5.0.6356</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+		<plugins>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-test-resources</id>
+						<phase>process-test-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<!-- Copy test resources to target directory instead
+							of the standard location,
+							this way, generated XMI files are relative to Ecore files according to
+							the way they are in src/test/resources.
+							This is useful for XMI files with schema location  -->
+							<outputDirectory>${project.build.directory}</outputDirectory>
+							<resources>
+								<resource>
+									<directory>src/test/resources</directory>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>bundle-manifest</id>
+						<phase>process-classes</phase>
+						<goals>
+							<goal>manifest</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<supportIncrementalBuild>true</supportIncrementalBuild>
+					<instructions>
+						<Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+						<Bundle-Name>${project.name}</Bundle-Name>
+						<Bundle-Version>${project.version}</Bundle-Version>
+						<Export-Package>
+							io.github.lorenzobettini.emfmodelgenerator
+						</Export-Package>
+						<Import-Package>
+							org.eclipse.emf.common.util,
+							org.eclipse.emf.ecore,
+							org.eclipse.emf.ecore.resource,
+							org.eclipse.emf.ecore.resource.impl,
+							org.eclipse.emf.ecore.util,
+							org.eclipse.emf.ecore.xmi.impl
+						</Import-Package>
+						<Require-Capability>
+							osgi.ee;filter:="(&amp;(osgi.ee=JavaSE)(version=21))"
+						</Require-Capability>
+					</instructions>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>jacoco</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.jacoco</groupId>
+						<artifactId>jacoco-maven-plugin</artifactId>
+						<version>0.8.14</version>
+						<executions>
+							<execution>
+								<goals>
+									<goal>prepare-agent</goal>
+									<goal>report</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>sonar-local</id>
+			<properties>
+				<!-- URL of your local SonarQube instance -->
+				<sonar.host.url>http://localhost:9000</sonar.host.url>
+				<!-- Use project coordinates or explicit key/name -->
+				<!-- If you don't set these, Sonar will infer from groupId:artifactId -->
+				<!-- Read token from environment variable SONAR_TOKEN -->
+				<sonar.token>${env.SONAR_TOKEN}</sonar.token>
+			</properties>
+		</profile>
+		<profile>
+			<id>performance-tests</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<version>3.5.0</version>
+						<executions>
+							<execution>
+								<id>run-performance-tests</id>
+								<goals>
+									<goal>java</goal>
+								</goals>
+								<configuration>
+									<mainClass>
+										io.github.lorenzobettini.emfmodelgenerator.performance.EMFModelGeneratorPerformanceStatistics</mainClass>
+									<classpathScope>test</classpathScope>
+									<arguments>
+										<!-- Configure via command line properties, e.g.: 
+										mvn test -Pperformance-tests -Ddepth.max=10 -->
+										<argument>--depth-min</argument>
+										<argument>${depth.min}</argument>
+										<argument>--depth-max</argument>
+										<argument>${depth.max}</argument>
+										<argument>--depth-step</argument>
+										<argument>${depth.step}</argument>
+										<argument>--models-min</argument>
+										<argument>${models.min}</argument>
+										<argument>--models-max</argument>
+										<argument>${models.max}</argument>
+										<argument>--models-step</argument>
+										<argument>${models.step}</argument>
+										<argument>--repetitions</argument>
+										<argument>${repetitions}</argument>
+										<argument>--warmup</argument>
+										<argument>${warmup}</argument>
+										<argument>--metamodel</argument>
+										<argument>${metamodel}</argument>
+									</arguments>
+									<cleanupDaemonThreads>false</cleanupDaemonThreads> <!-- see
+									https://bugs.eclipse.org/bugs/show_bug.cgi?id=475098#c3 -->
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+			<properties>
+				<!-- Default values for performance test parameters -->
+				<depth.min>1</depth.min>
+				<depth.max>10</depth.max>
+				<depth.step>1</depth.step>
+				<models.min>1</models.min>
+				<models.max>1000</models.max>
+				<models.step>100</models.step>
+				<repetitions>3</repetitions>
+				<warmup>10</warmup>
+				<metamodel>src/test/resources/inputs/extlibrary.ecore</metamodel>
+			</properties>
+		</profile>
+	</profiles>
+
+</project>

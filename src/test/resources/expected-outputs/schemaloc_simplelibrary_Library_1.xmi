@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="ASCII"?>
+<simplelibrary:Library
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:simplelibrary="http://www.example.org/simplelibrary"
+    xsi:schemaLocation="http://www.example.org/simplelibrary ../inputs/simplelibrary.ecore"
+    name="Library_name_1">
+  <books title="Book_title_1">
+    <authors
+        href="schemaloc_simplelibrary_Author_1.xmi#/"/>
+    <authors
+        href="#//@authors.0"/>
+  </books>
+  <books title="Book_title_2">
+    <authors
+        href="schemaloc_simplelibrary_Author_1.xmi#/"/>
+    <authors
+        href="#//@authors.1"/>
+  </books>
+  <authors name="Author_name_1">
+    <books href="schemaloc_simplelibrary_Book_1.xmi#/"/>
+    <books href="#//@books.0"/>
+  </authors>
+  <authors name="Author_name_2">
+    <books href="schemaloc_simplelibrary_Book_1.xmi#/"/>
+    <books href="#//@books.1"/>
+  </authors>
+</simplelibrary:Library>

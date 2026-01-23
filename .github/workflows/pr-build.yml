@@ -1,0 +1,50 @@
+name: PR Build (macOS and Windows)
+
+on:
+  push:
+    branches: [ 'master' ]
+    paths-ignore:
+      - '**.md'
+      - '**.tex'
+      - 'MODELSWARD-article/**'
+  pull_request:
+    branches: [ '**' ]
+    paths-ignore:
+      - '**.md'
+      - '**.tex'
+      - 'MODELSWARD-article/**'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Cache Maven packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+    
+    - name: Build with Maven
+      run: ./mvnw package
+    
+    - name: Archive Test Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}
+        path: target/surefire-reports/
+      if: always()

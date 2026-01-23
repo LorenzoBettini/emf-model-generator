@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="ASCII"?>
+<hierarchybase:Container
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:hierarchybase="http://www.example.org/hierarchybase"
+    xmlns:hierarchyleaf="http://www.example.org/hierarchyleaf"
+    xmlns:hierarchymiddle="http://www.example.org/hierarchymiddle"
+    title="Container_title_1">
+  <items xsi:type="hierarchyleaf:LeafItem"
+      name="LeafItem_name_1"
+      description="LeafItem_description_1"
+      value="20"/>
+  <items xsi:type="hierarchymiddle:MiddleItem"
+      name="MiddleItem_name_1"
+      description="MiddleItem_description_1"/>
+</hierarchybase:Container>

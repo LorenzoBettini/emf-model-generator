@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="ASCII"?>
+<simplelibrary:Library
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:simplelibrary="http://www.example.org/simplelibrary"
+    name="CUSTOM_Library">
+  <books title="Book_title_1"
+      authors="//@authors.0"/>
+  <books title="Book_title_2"
+      authors="//@authors.0"/>
+  <books title="Book_title_3"
+      authors="//@authors.0"/>
+  <authors name="CUSTOM_Author"
+      books="//@books.0 //@books.1 //@books.2"/>
+  <authors name="CUSTOM_Author"/>
+</simplelibrary:Library>

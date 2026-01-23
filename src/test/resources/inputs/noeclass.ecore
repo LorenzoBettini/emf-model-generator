@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="noeclass" nsURI="http://www.example.org/noeclass" nsPrefix="nec">
+  <!-- This package has only data types, no EClass -->
+  <eClassifiers xsi:type="ecore:EDataType" name="CustomString" instanceClassName="java.lang.String"/>
+  <eClassifiers xsi:type="ecore:EDataType" name="CustomInt" instanceClassName="java.lang.Integer"/>
+  <eClassifiers xsi:type="ecore:EEnum" name="Status">
+    <eLiterals name="ACTIVE" value="0"/>
+    <eLiterals name="INACTIVE" value="1"/>
+  </eClassifiers>
+</ecore:EPackage>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="ASCII"?>
+<graph:Graph
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:graph="http://www.example.org/graph"
+    name="Graph_name_1">
+  <nodes label="Node_label_1"
+      outgoing="//@nodes.0 //@nodes.1"/>
+  <nodes label="Node_label_2"
+      outgoing="//@nodes.2 //@nodes.0"/>
+  <nodes label="Node_label_3"
+      outgoing="//@nodes.1 //@nodes.2"/>
+  <edges label="Edge_label_1"
+      target="//@nodes.0"/>
+  <edges label="Edge_label_2"
+      target="//@nodes.1"/>
+  <edges label="Edge_label_3"
+      target="//@nodes.2"/>
+</graph:Graph>

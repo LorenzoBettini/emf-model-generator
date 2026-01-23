@@ -1,0 +1,44 @@
+name: Run Performance Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Cache Maven packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+    
+    - name: Run Performance Tests (Unix)
+      if: runner.os != 'Windows'
+      run: ./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests 2>&1 | tee performance-results-${{ matrix.os }}.txt
+    
+    - name: Run Performance Tests (Windows)
+      if: runner.os == 'Windows'
+      run: ./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests 2>&1 | tee performance-results-${{ matrix.os }}.txt
+      shell: bash
+    
+    - name: Upload Performance Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-results-${{ matrix.os }}
+        path: performance-results-*.txt

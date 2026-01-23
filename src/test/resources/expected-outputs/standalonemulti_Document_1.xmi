@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="ASCII"?>
+<sas:Document
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:sas="http://www.example.org/standalones"
+    title="Document_title_1">
+  <relatedDocs
+      href="standalones_RelatedDocument_1.xmi#/"/>
+  <relatedDocs
+      href="standalones_RelatedDocument_2.xmi#/"/>
+</sas:Document>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="ASCII"?>
+<tm:Project
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:tm="http://www.example.org/taskmanager"
+    xsi:schemaLocation="http://www.example.org/taskmanager ../inputs/taskmanager.ecore"
+    name="Project_name_1">
+  <tasks name="Task_name_1"
+      status="IN_PROGRESS">
+    <tags>MEDIUM</tags>
+    <tags>HIGH</tags>
+  </tasks>
+  <tasks name="Task_name_2"
+      status="COMPLETED"
+      priority="CRITICAL">
+    <tags>LOW</tags>
+    <tags>MEDIUM</tags>
+  </tasks>
+</tm:Project>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="ASCII"?>
+<company:Company
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:company="http://www.example.org/company"
+    name="Company_name_1"
+    ceo="//@employees.0">
+  <employees
+      name="Employee_name_1"
+      salary="20.5">
+    <manager
+        href="company_Employee_1.xmi#/"/>
+  </employees>
+  <employees
+      name="Employee_name_2"
+      salary="21.5"
+      manager="//@employees.0"/>
+</company:Company>

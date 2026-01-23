@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="ASCII"?>
+<dept:Organization
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:dept="http://www.example.org/dept"
+    name="Organization_name_1">
+  <departments
+      name="Department_name_1"
+      manager="//@departments.0/@teams.0/@members.0">
+    <teams name="Team_name_1"
+        lead="//@departments.0/@teams.1/@members.0">
+      <members
+          name="Person_name_1"/>
+      <members
+          name="Person_name_2"/>
+    </teams>
+    <teams name="Team_name_2"
+        lead="//@departments.0/@teams.1/@members.1">
+      <members
+          name="Person_name_3"/>
+      <members
+          name="Person_name_4"/>
+    </teams>
+  </departments>
+  <departments
+      name="Department_name_2"
+      manager="//@departments.0/@teams.0/@members.1">
+    <teams name="Team_name_3"
+        lead="//@departments.1/@teams.0/@members.0">
+      <members
+          name="Person_name_5"/>
+      <members
+          name="Person_name_6"/>
+    </teams>
+    <teams name="Team_name_4"
+        lead="//@departments.1/@teams.0/@members.1">
+      <members
+          name="Person_name_7"/>
+      <members
+          name="Person_name_8"/>
+    </teams>
+  </departments>
+</dept:Organization>

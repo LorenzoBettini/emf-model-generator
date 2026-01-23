@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="ASCII"?>
+<simplelibrary:Library
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:simplelibrary="http://www.example.org/simplelibrary"
+    xsi:schemaLocation="http://www.example.org/simplelibrary ../inputs/simplelibrary.ecore"
+    name="Library_name_1">
+  <books href="schemaloc_customcont_simplelibrary_Book_1.xmi#/"/>
+  <authors href="schemaloc_customcont_simplelibrary_Author_1.xmi#/"/>
+</simplelibrary:Library>

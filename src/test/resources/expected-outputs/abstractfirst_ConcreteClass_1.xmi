@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="ASCII"?>
+<abstractfirst:ConcreteClass
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:abstractfirst="http://www.example.org/abstractfirst"
+    name="ConcreteClass_name_1"/>

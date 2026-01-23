@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="ASCII"?>
+<nested:Container
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:nested="http://www.example.org/nested"
+    xmlns:sub1="http://www.example.org/nested/sub1"
+    xmlns:sub2="http://www.example.org/nested/sub2"
+    xmlns:subsub="http://www.example.org/nested/sub2/subsub"
+    xsi:schemaLocation="http://www.example.org/nested ../inputs/nested-packages.ecore http://www.example.org/nested/sub1 ../inputs/nested-packages.ecore#//sub1 http://www.example.org/nested/sub2 ../inputs/nested-packages.ecore#//sub2 http://www.example.org/nested/sub2/subsub ../inputs/nested-packages.ecore#//sub2/subsub">
+  <items xsi:type="nested:DirectSubclass"
+      id="DirectSubclass_id_1"/>
+  <items xsi:type="sub1:Sub1Class"
+      id="Sub1Class_id_1"/>
+  <items xsi:type="sub2:Sub2Class"
+      id="Sub2Class_id_1"/>
+  <items xsi:type="subsub:SubSubClass"
+      id="SubSubClass_id_1"/>
+  <items xsi:type="nested:DirectSubclass"
+      id="DirectSubclass_id_2"/>
+  <items xsi:type="sub1:Sub1Class"
+      id="Sub1Class_id_2"/>
+</nested:Container>

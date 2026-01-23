@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="nested" nsURI="http://www.example.org/nested" nsPrefix="nested">
+  <eClassifiers xsi:type="ecore:EClass" name="BaseClass" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="id" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DirectSubclass" eSuperTypes="#//BaseClass"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Container">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="items" upperBound="-1"
+        eType="#//BaseClass" containment="true"/>
+  </eClassifiers>
+  <eSubpackages name="sub1" nsURI="http://www.example.org/nested/sub1" nsPrefix="sub1">
+    <eClassifiers xsi:type="ecore:EClass" name="Sub1Class" eSuperTypes="#//BaseClass"/>
+    <eClassifiers xsi:type="ecore:EClass" name="UnrelatedSub1Class">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    </eClassifiers>
+  </eSubpackages>
+  <eSubpackages name="sub2" nsURI="http://www.example.org/nested/sub2" nsPrefix="sub2">
+    <eClassifiers xsi:type="ecore:EClass" name="Sub2Class" eSuperTypes="#//BaseClass"/>
+    <eSubpackages name="subsub" nsURI="http://www.example.org/nested/sub2/subsub"
+        nsPrefix="subsub">
+      <eClassifiers xsi:type="ecore:EClass" name="SubSubClass" eSuperTypes="#//BaseClass"/>
+    </eSubpackages>
+  </eSubpackages>
+</ecore:EPackage>
