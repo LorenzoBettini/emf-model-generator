@@ -1,4 +1,5 @@
 *
 !.gitignore
+!dependabot.yml
 !workflows/
 !workflows/*
