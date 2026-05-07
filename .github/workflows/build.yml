@@ -6,13 +6,11 @@ on:
     paths-ignore:
       - '**.md'
       - '**.tex'
-      - 'MODELSWARD-article/**'
   pull_request:
     branches: [ '**' ]
     paths-ignore:
       - '**.md'
       - '**.tex'
-      - 'MODELSWARD-article/**'
 
 jobs:
   build:
