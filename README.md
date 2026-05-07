@@ -240,11 +240,11 @@ EMFModelGenerator generator = new EMFModelGenerator();
 generator.setOutputDirectory("generated-models/");
 
 // Control how many instances are created for references
-generator.setContainmentReferenceDefaultMaxCount(3);
-generator.setNonContainmentReferenceDefaultMaxCount(2);
+generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
+generator.getInstancePopulator().setCrossReferenceDefaultMaxCount(2);
 
 // Limit recursion depth to avoid deep hierarchies
-generator.setMaxDepth(3);
+generator.getInstancePopulator().setMaxDepth(3);
 
 // Generate multiple instances of the same class
 generator.setNumberOfInstances(5);
@@ -319,7 +319,7 @@ import org.eclipse.emf.ecore.EAttribute;
 EMFModelGenerator generator = new EMFModelGenerator();
 
 // Custom attribute setter
-generator.setAttributeSetter(new EMFAttributeSetter() {
+generator.getInstancePopulator().setAttributeSetter(new EMFAttributeSetter() {
     @Override
     public void setAttribute(EObject eObject, EAttribute attribute) {
         if ("name".equals(attribute.getName())) {
@@ -346,7 +346,7 @@ import java.util.Collection;
 
 EMFModelGenerator generator = new EMFModelGenerator();
 
-generator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+generator.getInstancePopulator().setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
     @Override
     public Collection<EObject> setContainmentReference(EObject owner, EReference reference) {
         // Create 5 books for libraries instead of the default 2
@@ -371,7 +371,7 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFUtils;
 
 EMFModelGenerator generator = new EMFModelGenerator();
 
-generator.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+generator.getInstancePopulator().setCrossReferenceSetter(new EMFCrossReferenceSetter() {
     @Override
     public void setCrossReference(EObject owner, EReference reference) {
         // All books reference only the first author

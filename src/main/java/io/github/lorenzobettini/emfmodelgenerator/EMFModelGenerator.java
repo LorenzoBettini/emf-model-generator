@@ -10,21 +10,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.emf.common.util.URI;
-import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
-import org.eclipse.emf.ecore.EEnum;
-import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
-import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
-
-import io.github.lorenzobettini.emfmodelgenerator.EMFAttributeSetter.EMFAttributeValueFunction;
-import io.github.lorenzobettini.emfmodelgenerator.EMFContainmentReferenceSetter.EMFContainmentReferenceValueFunction;
-import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter.EMFCrossReferenceValueFunction;
 
 /**
  * Main entry point for programmatically generating EMF model instances.
@@ -58,9 +50,9 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter.EMFCro
  * <li>{@link #generateAllFrom(EClass)} - Generate instances of all subclasses of an EClass</li>
  * </ul>
  * 
- * <p><b>Customization:</b> The generator provides extensive customization options including
- * custom setters for attributes, containment references, and cross-references; per-feature
- * custom functions; configurable multiplicities; and hierarchical file extension settings.
+ * <p><b>Customization:</b> For population-related customization (custom setters, per-feature
+ * functions, multiplicities, depth, cycle policies, etc.), obtain the
+ * {@link EMFInstancePopulator} via {@link #getInstancePopulator()} and configure it directly.
  * 
  * @see #loadEcoreModel(String)
  * @see #unloadEcoreModels()
@@ -173,14 +165,6 @@ public class EMFModelGenerator {
 	}
 
 	/**
-	 * Set the maximum depth for containment references when populating instances.
-	 * @param maxDepth
-	 */
-	public void setMaxDepth(int maxDepth) {
-		instancePopulator.setMaxDepth(maxDepth);
-	}
-
-	/**
 	 * Set the number of instances to generate per EClass.
 	 * @param numberOfInstances
 	 */
@@ -188,170 +172,22 @@ public class EMFModelGenerator {
 		this.numberOfInstances = numberOfInstances;
 	}
 
-	public void setAttributeDefaultMaxCount(int count) {
-		instancePopulator.setAttributeDefaultMaxCount(count);
-	}
-
-	public void setCrossReferenceDefaultMaxCount(int count) {
-		instancePopulator.setCrossReferenceDefaultMaxCount(count);
-	}
-
-	public void setContainmentReferenceDefaultMaxCount(int count) {
-		instancePopulator.setContainmentReferenceDefaultMaxCount(count);
-	}
-
-	public void setAttributeMaxCountFor(EAttribute attribute, int count) {
-		instancePopulator.setAttributeMaxCountFor(attribute, count);
-	}
-
-	public void setCrossReferenceMaxCountFor(EReference reference, int count) {
-		instancePopulator.setCrossReferenceMaxCountFor(reference, count);
-	}
-
-	public void setContainmentReferenceMaxCountFor(EReference reference, int count) {
-		instancePopulator.setContainmentReferenceMaxCountFor(reference, count);
-	}
-
-	public void setFeatureMapDefaultMaxCount(int count) {
-		instancePopulator.setFeatureMapDefaultMaxCount(count);
-	}
-
-	public void setFeatureMapMaxCountFor(EAttribute featureMapAttribute, int count) {
-		instancePopulator.setFeatureMapMaxCountFor(featureMapAttribute, count);
-	}
-
 	/**
-	 * Set a custom function for generating values for the given EAttribute.
-	 * 
-	 * @param attribute the EAttribute for which to set the function
-	 * @param function  the function to generate values for the attribute
-	 */
-	public void functionForAttribute(EAttribute attribute,
-			EMFAttributeValueFunction function) {
-		instancePopulator.functionForAttribute(attribute, function);
-	}
-
-	/**
-	 * Set a custom function for generating values for the given cross EReference.
-	 * 
-	 * @param reference the cross EReference for which to set the function
-	 * @param function  the function to generate values for the cross reference
-	 */
-	public void functionForCrossReference(EReference reference,
-			EMFCrossReferenceValueFunction function) {
-		instancePopulator.functionForCrossReference(reference, function);
-	}
-
-	/**
-	 * Set a custom function for generating values for the given containment EReference.
-	 * 
-	 * @param reference the containment EReference for which to set the function
-	 * @param function  the function to generate values for the containment reference
-	 */
-	public void functionForContainmentReference(EReference reference,
-			EMFContainmentReferenceValueFunction function) {
-		instancePopulator.functionForContainmentReference(reference, function);
-	}
-
-	/**
-	 * Set a custom function for generating values for the given feature map group member.
-	 * 
-	 * @param groupMember the feature map group member EReference for which to set the function
-	 * @param function    the function to generate values for the group member
-	 */
-	public void functionForFeatureMapGroupMember(EReference groupMember,
-			EMFFeatureMapSetter.EMFFeatureMapValueFunction function) {
-		instancePopulator.functionForFeatureMapGroupMember(groupMember, function);
-	}
-
-	/**
-	 * Set a custom attribute setter to control how attribute values are generated.
-	 * 
-	 * @param attributeSetter the custom EMFAttributeSetter to use
-	 */
-	public void setAttributeSetter(EMFAttributeSetter attributeSetter) {
-		instancePopulator.setAttributeSetter(attributeSetter);
-	}
-
-	/**
-	 * Set a custom cross reference setter to control how cross references are populated.
-	 * 
-	 * @param crossReferenceSetter the custom EMFCrossReferenceSetter to use
-	 */
-	public void setCrossReferenceSetter(EMFCrossReferenceSetter crossReferenceSetter) {
-		instancePopulator.setCrossReferenceSetter(crossReferenceSetter);
-	}
-
-	/**
-	 * Set a custom containment reference setter to control how containment references are created.
-	 * 
-	 * @param containmentReferenceSetter the custom EMFContainmentReferenceSetter to use
-	 */
-	public void setContainmentReferenceSetter(EMFContainmentReferenceSetter containmentReferenceSetter) {
-		instancePopulator.setContainmentReferenceSetter(containmentReferenceSetter);
-	}
-
-	/**
-	 * Set a custom feature map setter to control how feature maps are populated.
-	 * 
-	 * @param featureMapSetter the custom EMFFeatureMapSetter to use
-	 */
-	public void setFeatureMapSetter(EMFFeatureMapSetter featureMapSetter) {
-		instancePopulator.setFeatureMapSetter(featureMapSetter);
-	}
-
-	/**
-	 * Set the candidate selector strategy for selecting instantiable subclasses in containment references.
-	 * 
-	 * @param strategy the candidate selector strategy to use
-	 */
-	public void setInstantiableSubclassSelectorStrategy(EMFCandidateSelectorStrategy<EClass, EClass> strategy) {
-		instancePopulator.setInstantiableSubclassSelectorStrategy(strategy);
-	}
-
-	/**
-	 * Set the candidate selector strategy for selecting existing EObject instances in cross references.
-	 * 
-	 * @param strategy the candidate selector strategy to use
-	 */
-	public void setCrossReferenceCandidateSelectorStrategy(EMFCandidateSelectorStrategy<EClass, EObject> strategy) {
-		instancePopulator.setCrossReferenceCandidateSelectorStrategy(strategy);
-	}
-
-	/**
-	 * Set the candidate selector strategy for selecting enum literals in attributes.
-	 * 
-	 * @param strategy the candidate selector strategy to use
-	 */
-	public void setEnumLiteralSelectorStrategy(EMFCandidateSelectorStrategy<EEnum, EEnumLiteral> strategy) {
-		instancePopulator.setEnumLiteralSelectorStrategy(strategy);
-	}
-
-	/**
-	 * Set the candidate selector strategy for selecting feature map group members.
-	 * 
-	 * @param strategy the candidate selector strategy to use
-	 */
-	public void setGroupMemberSelectorStrategy(EMFCandidateSelectorStrategy<EAttribute, EReference> strategy) {
-		instancePopulator.setGroupMemberSelectorStrategy(strategy);
-	}
-
-	/**
-	 * Set the cycle policy for determining whether self-references are allowed in cross references.
-	 * 
-	 * <p>Example usage:
+	 * Get the {@link EMFInstancePopulator} used to populate generated instances.
+	 * Use this to configure population behavior such as custom setters, functions,
+	 * multiplicities, depth limits, and cycle policies.
+	 *
+	 * <p>Example:
 	 * <pre>{@code
-	 * generator.setAllowCyclePolicy((owner, ref) -> {
-	 *     // Allow cycles only for the first Node
-	 *     return "Node".equals(owner.eClass().getName()) &&
-	 *            owner.eGet(owner.eClass().getEStructuralFeature("id")).equals(1);
-	 * });
+	 * generator.getInstancePopulator().setMaxDepth(3);
+	 * generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(4);
+	 * generator.getInstancePopulator().setAttributeSetter(myCustomSetter);
 	 * }</pre>
-	 * 
-	 * @param cyclePolicy a functional interface that determines if cycles are allowed for specific owner/reference combinations
+	 *
+	 * @return the instance populator
 	 */
-	public void setAllowCyclePolicy(EMFCrossReferenceSetter.CyclePolicy cyclePolicy) {
-		instancePopulator.setAllowCyclePolicy(cyclePolicy);
+	public final EMFInstancePopulator getInstancePopulator() {
+		return instancePopulator;
 	}
 
 	/**
