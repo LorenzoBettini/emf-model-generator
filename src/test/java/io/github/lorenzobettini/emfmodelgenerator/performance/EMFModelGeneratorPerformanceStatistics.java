@@ -192,7 +192,7 @@ public class EMFModelGeneratorPerformanceStatistics {
 		
 		for (int i = 0; i < warmupIterations; i++) {
 			var generator = new EMFModelGenerator();
-			generator.setMaxDepth(2);
+			generator.getInstancePopulator().setMaxDepth(2);
 			generator.setNumberOfInstances(5);
 			generator.generateAllFrom(ePackage);
 		}
@@ -231,7 +231,7 @@ public class EMFModelGeneratorPerformanceStatistics {
 		
 		for (int i = 0; i < repetitions; i++) {
 			var generator = new EMFModelGenerator();
-			generator.setMaxDepth(depth);
+			generator.getInstancePopulator().setMaxDepth(depth);
 			generator.setNumberOfInstances(BASELINE_INSTANCES);
 			
 			var startTime = System.nanoTime();
@@ -290,7 +290,7 @@ public class EMFModelGeneratorPerformanceStatistics {
 		
 		for (int i = 0; i < repetitions; i++) {
 			var generator = new EMFModelGenerator();
-			generator.setMaxDepth(BASELINE_DEPTH);
+			generator.getInstancePopulator().setMaxDepth(BASELINE_DEPTH);
 			generator.setNumberOfInstances(numInstances);
 			
 			var startTime = System.nanoTime();
