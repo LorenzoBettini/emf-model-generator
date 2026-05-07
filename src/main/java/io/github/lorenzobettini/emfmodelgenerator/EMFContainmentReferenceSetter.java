@@ -58,7 +58,6 @@ public class EMFContainmentReferenceSetter extends EMFInstanceCreatorFeatureSett
 		// For multi-valued references, add multiple EObjects
 		// Respect upper and lower bounds
 		for (int i = 0; i < count; i++) {
-			// Get next candidate using round-robin selection
 			final EObject created = createInstance(owner, reference, eReferenceType);
 			if (created != null) {
 				list.add(created);
