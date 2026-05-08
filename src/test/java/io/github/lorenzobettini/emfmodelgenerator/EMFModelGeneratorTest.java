@@ -1709,7 +1709,7 @@ class EMFModelGeneratorTest {
 		EClass rootClass = assertEClassExists(ePackage, "Root");
 		
 		// Set maxDepth to 2 (less than default 5, which goes up to Level5)
-		generator.setMaxDepth(2);
+		generator.getInstancePopulator().setMaxDepth(2);
 		
 		// Generate Root model
 		EObject generatedObject = generator.generateFrom(rootClass);
@@ -1755,7 +1755,7 @@ class EMFModelGeneratorTest {
 		EClass dataHolderClass = assertEClassExists(ePackage, "DataHolder");
 		
 		// Set attributeMultiValuedCount to 5 (more than default 2)
-		generator.setAttributeDefaultMaxCount(5);
+		generator.getInstancePopulator().setAttributeDefaultMaxCount(5);
 		
 		// Generate model
 		EObject generatedObject = generator.generateFrom(dataHolderClass);
@@ -1795,7 +1795,7 @@ class EMFModelGeneratorTest {
 		assertNotNull(tagsFeature, "tags feature should exist");
 		
 		// Set attributeMultiValuedCount to 5 (more than default 2)
-		generator.setAttributeMaxCountFor(tagsFeature, 5);
+		generator.getInstancePopulator().setAttributeMaxCountFor(tagsFeature, 5);
 		
 		// Generate model
 		EObject generatedObject = generator.generateFrom(dataHolderClass);
@@ -1829,7 +1829,7 @@ class EMFModelGeneratorTest {
 		EClass linkClass = assertEClassExists(ePackage, "Link");
 		
 		// Set nonContainmentReferenceMultiValuedCount to 1 (less than default 2)
-		generator.setCrossReferenceDefaultMaxCount(1);
+		generator.getInstancePopulator().setCrossReferenceDefaultMaxCount(1);
 		
 		// Generate both Registry and Link
 		List<EObject> models = generator.generateFromSeveral(registryClass, linkClass);
@@ -1869,7 +1869,7 @@ class EMFModelGeneratorTest {
 		assertNotNull(targetsFeature, "targets feature should exist");
 		
 		// Set nonContainmentReferenceMultiValuedCount to 1 (less than default 2)
-		generator.setCrossReferenceMaxCountFor(targetsFeature, 1);
+		generator.getInstancePopulator().setCrossReferenceMaxCountFor(targetsFeature, 1);
 		
 		// Generate both Registry and Link
 		List<EObject> models = generator.generateFromSeveral(registryClass, linkClass);
@@ -1900,7 +1900,7 @@ class EMFModelGeneratorTest {
 		EClass companyClass = assertEClassExists(ePackage, "Company");
 		
 		// Set containmentReferenceMultiValuedCount to 4 (more than default 2)
-		generator.setContainmentReferenceDefaultMaxCount(4);
+		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(4);
 		
 		// Generate Company model
 		EObject generatedObject = generator.generateFrom(companyClass);
@@ -1934,10 +1934,10 @@ class EMFModelGeneratorTest {
 		assertNotNull(branchesReference, "branches reference should exist");
 
 		// Generate Library model
-		generator.setContainmentReferenceMaxCountFor(branchesReference, 1);
-		generator.setContainmentReferenceDefaultMaxCount(5);
-		generator.setFeatureMapDefaultMaxCount(4);
-		generator.setMaxDepth(2);
+		generator.getInstancePopulator().setContainmentReferenceMaxCountFor(branchesReference, 1);
+		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(5);
+		generator.getInstancePopulator().setFeatureMapDefaultMaxCount(4);
+		generator.getInstancePopulator().setMaxDepth(2);
 		EObject generatedObject = generator.generateFrom(libraryClass);
 		assertNotNull(generatedObject);
 		validateModel(generatedObject);
@@ -2024,7 +2024,7 @@ class EMFModelGeneratorTest {
 		generator.setFilePrefix("schemaloc_customcont_");
 		// Custom containment reference setter to add existing Books and Authors in their own resources
 		// to the Library's containment references
-		generator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+		generator.getInstancePopulator().setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
 			@Override
 			public Collection<EObject> setContainmentReference(EObject owner, EReference reference) {
 				if (owner.eClass() == libraryClass && reference.getName().equals("books")) {
@@ -2099,11 +2099,11 @@ class EMFModelGeneratorTest {
 		EReference libraryAuthorsRef = assertEReferenceExists(libraryClass, "authors");
 
 		generator.setFilePrefix("schemaloc_customcont_");
-		generator.setContainmentReferenceDefaultMaxCount(1);
+		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(1);
 
 		// Function to provide existing Books without container in the resource set
 		var existingBooks = new ArrayList<EObject>();
-		generator.functionForContainmentReference(libraryBooksRef, owner -> {
+		generator.getInstancePopulator().functionForContainmentReference(libraryBooksRef, owner -> {
 			if (existingBooks.isEmpty()) {
 				// find existing books without container in the resource set
 				EMFUtils.findAllAssignableInstances(owner, bookClass).stream()
@@ -2114,7 +2114,7 @@ class EMFModelGeneratorTest {
 		});
 		// Function to provide existing Authors without container in the resource set
 		var existingAuthors = new ArrayList<EObject>();
-		generator.functionForContainmentReference(libraryAuthorsRef, owner -> {
+		generator.getInstancePopulator().functionForContainmentReference(libraryAuthorsRef, owner -> {
 			if (existingAuthors.isEmpty()) {
 				// find existing authors without container in the resource set
 				EMFUtils.findAllAssignableInstances(owner, authorClass).stream()
@@ -2168,10 +2168,10 @@ class EMFModelGeneratorTest {
 		// increase the number of edges to avoid
 		// generating empty collections for nodes outgoing and incoming
 		// The settings allow for a nice distribution of edges among nodes.
-		generator.setContainmentReferenceMaxCountFor(
+		generator.getInstancePopulator().setContainmentReferenceMaxCountFor(
 				(EReference) graphClass.getEStructuralFeature("edges"), 9);
-		generator.setContainmentReferenceDefaultMaxCount(3);
-		generator.setCrossReferenceDefaultMaxCount(3);
+		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
+		generator.getInstancePopulator().setCrossReferenceDefaultMaxCount(3);
 
 		// Generate Graph model
 		EObject generatedObject = generator.generateFrom(graphClass);
@@ -2218,10 +2218,10 @@ class EMFModelGeneratorTest {
 		// increase the number of edges to avoid
 		// generating empty collections for nodes outgoing and incoming
 		// The settings allow for a nice distribution of edges among nodes.
-		generator.setContainmentReferenceMaxCountFor(
+		generator.getInstancePopulator().setContainmentReferenceMaxCountFor(
 				(EReference) graphClass.getEStructuralFeature("edges"), 9);
-		generator.setContainmentReferenceDefaultMaxCount(3);
-		generator.setCrossReferenceDefaultMaxCount(2);
+		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
+		generator.getInstancePopulator().setCrossReferenceDefaultMaxCount(2);
 
 		// Generate Graph model
 		generator.setFilePrefix("graph2_");
@@ -2378,7 +2378,7 @@ class EMFModelGeneratorTest {
 		final var libraryEClass = assertEClassExists(ePackage, "Library");
 
 		// Custom attribute setter: set all "name" attributes to "CUSTOM_<ClassName>"
-		generator.setAttributeSetter(new EMFAttributeSetter() {
+		generator.getInstancePopulator().setAttributeSetter(new EMFAttributeSetter() {
 			@Override
 			public void setAttribute(EObject eObject, EAttribute attribute) {
 				if ("name".equals(attribute.getName())) {
@@ -2390,7 +2390,7 @@ class EMFModelGeneratorTest {
 		});
 
 		// Custom containment reference setter: create 3 books instead of default 2
-		generator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+		generator.getInstancePopulator().setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
 			@Override
 			public Collection<EObject> setContainmentReference(EObject owner, EReference reference) {
 				if ("books".equals(reference.getName())) {
@@ -2408,7 +2408,7 @@ class EMFModelGeneratorTest {
 		});
 
 		// Custom cross reference setter: all books reference only the first author
-		generator.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+		generator.getInstancePopulator().setCrossReferenceSetter(new EMFCrossReferenceSetter() {
 			@Override
 			public void setCrossReference(EObject owner, EReference reference) {
 				if ("authors".equals(reference.getName()) && "Book".equals(owner.eClass().getName())) {
@@ -2450,11 +2450,11 @@ class EMFModelGeneratorTest {
 		final var graphEClass = assertEClassExists(ePackage, "Graph");
 
 		// Configure to generate 3 nodes
-		generator.setContainmentReferenceDefaultMaxCount(3);
+		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
 
 		// Allow cycles (self-references) for nodes at specific positions:
 		// Node 0: yes, Node 1: no, Node 2: yes
-		generator.setAllowCyclePolicy((owner, reference) -> {
+		generator.getInstancePopulator().setAllowCyclePolicy((owner, reference) -> {
 			if ("outgoing".equals(reference.getName()) && "Node".equals(owner.eClass().getName())) {
 				// Get the graph container
 				final var graph = owner.eContainer();
@@ -2488,11 +2488,11 @@ class EMFModelGeneratorTest {
 		final var ageAttribute = (EAttribute) personClass.getEStructuralFeature("age");
 
 		// Set custom function for name attribute
-		generator.functionForAttribute(nameAttribute,
+		generator.getInstancePopulator().functionForAttribute(nameAttribute,
 				owner -> "FUNCTION_" + owner.eClass().getName());
 
 		// Set custom function for age attribute
-		generator.functionForAttribute(ageAttribute,
+		generator.getInstancePopulator().functionForAttribute(ageAttribute,
 				owner -> 42);
 
 		generator.setFilePrefix("function_attr_");
@@ -2515,7 +2515,7 @@ class EMFModelGeneratorTest {
 
 		// Set custom function for shelves containment reference:
 		// if already set, always return the same shelf instance
-		generator.functionForContainmentReference(shelvesReference, owner -> {
+		generator.getInstancePopulator().functionForContainmentReference(shelvesReference, owner -> {
 			var shelves = EMFUtils.getAsEObjectsList(owner, shelvesReference);
 			if (!shelves.isEmpty()) {
 				return shelves.get(0);
@@ -2524,7 +2524,7 @@ class EMFModelGeneratorTest {
 		});
 
 		// Configure to create 3 containment references
-		generator.setContainmentReferenceDefaultMaxCount(3);
+		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
 
 		generator.setFilePrefix("function_cont_");
 		var library = generator.generateFrom(libraryClass);
@@ -2565,7 +2565,7 @@ class EMFModelGeneratorTest {
 		final var bookClass = assertEClassExists(ePackage, "Book");
 		final var authorsReference = (EReference) bookClass.getEStructuralFeature("authors");
 		final var counter = new AtomicInteger(0);
-		generator.functionForCrossReference(authorsReference, owner -> {
+		generator.getInstancePopulator().functionForCrossReference(authorsReference, owner -> {
 			// Get the library containing this book
 			final var library = owner.eContainer();
 			final var authors = EMFUtils.getAsEObjectsList(library,
@@ -2608,7 +2608,7 @@ class EMFModelGeneratorTest {
 		final var bookClass = assertEClassExists(ePackage, "Book");
 		final var authorsClass = assertEClassExists(ePackage, "Author");
 		final var counter = new AtomicInteger(0);
-		generator.setCrossReferenceCandidateSelectorStrategy(new EMFRoundRobinEObjectCandidateSelector() {
+		generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(new EMFRoundRobinEObjectCandidateSelector() {
 			@Override
 			public EObject getNextCandidate(EObject context, EClass type) {
 				if (context.eClass() == bookClass && authorsClass == type) {
@@ -2642,10 +2642,10 @@ class EMFModelGeneratorTest {
 		final var graphEClass = assertEClassExists(ePackage, "Graph");
 
 		// Configure to generate 3 nodes
-		generator.setContainmentReferenceDefaultMaxCount(3);
+		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
 
 		// Always return false for allowCyclePolicy - no self-references should be created
-		generator.setAllowCyclePolicy((owner, reference) -> false);
+		generator.getInstancePopulator().setAllowCyclePolicy((owner, reference) -> false);
 
 		generator.generateFrom(graphEClass);
 		generator.save();
@@ -2763,7 +2763,7 @@ class EMFModelGeneratorTest {
 				return true;
 			}
 		};
-		generator.setInstantiableSubclassSelectorStrategy(customStrategy);
+		generator.getInstancePopulator().setInstantiableSubclassSelectorStrategy(customStrategy);
 		var result = generator.generateFrom(container);
 		var childrenList = EMFUtils.getAsEObjectsList(result, children);
 		assertThat(childrenList).hasSize(2)
@@ -2792,7 +2792,7 @@ class EMFModelGeneratorTest {
 				return true;
 			}
 		};
-		generator.setCrossReferenceCandidateSelectorStrategy(customStrategy);
+		generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(customStrategy);
 		var registry = generator.generateFrom(registryClass);
 		registry.eResource().getContents().add(entry1);
 		registry.eResource().getContents().add(entry2);
@@ -2829,7 +2829,7 @@ class EMFModelGeneratorTest {
 				return type == priorityEnum || type == statusEnum;
 			}
 		};
-		generator.setEnumLiteralSelectorStrategy(customStrategy);
+		generator.getInstancePopulator().setEnumLiteralSelectorStrategy(customStrategy);
 		var result = generator.generateFrom(taskClass);
 		var priorityValue = result.eGet(taskClass.getEStructuralFeature("priority"));
 		assertThat(priorityValue).isEqualTo(highLiteral.getInstance());
@@ -2919,7 +2919,7 @@ class EMFModelGeneratorTest {
 		assertNotNull(containerClass, "Container should exist");
 
 		// Generate model from ContainerClass
-		generator.setContainmentReferenceDefaultMaxCount(5);
+		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(5);
 		EObject generatedObject = generator.generateFrom(containerClass);
 		assertNotNull(generatedObject, "Generated object should not be null");
 		assertThat(generatedObject.eClass().getName()).isEqualTo("Container");
@@ -2953,7 +2953,7 @@ class EMFModelGeneratorTest {
 		assertNotNull(containerClass, "Container should exist");
 
 		// Generate model from ContainerClass
-		generator.setContainmentReferenceDefaultMaxCount(6);
+		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(6);
 		generator.setFilePrefix("schemaloc_");
 		EObject generatedObject = generator.generateFrom(containerClass);
 		assertNotNull(generatedObject, "Generated object should not be null");
@@ -2988,7 +2988,7 @@ class EMFModelGeneratorTest {
 		EClass playlistClass = assertEClassExists(ePackage, "Playlist");
 
 		// Generate model with duplicates in the queue
-		generator.setCrossReferenceDefaultMaxCount(5);
+		generator.getInstancePopulator().setCrossReferenceDefaultMaxCount(5);
 		EObject generatedObject = generator.generateFrom(playlistClass);
 		assertNotNull(generatedObject, "Generated object should not be null");
 		assertThat(generatedObject.eClass().getName()).isEqualTo("Playlist");
@@ -3038,8 +3038,8 @@ class EMFModelGeneratorTest {
 			}
 		};
 		
-		generator.setFeatureMapSetter(customSetter);
-		generator.setMaxDepth(1);
+		generator.getInstancePopulator().setFeatureMapSetter(customSetter);
+		generator.getInstancePopulator().setMaxDepth(1);
 		
 		var result = generator.generateFrom(libraryClass);
 		
@@ -3072,7 +3072,7 @@ class EMFModelGeneratorTest {
 			}
 		};
 		
-		generator.setGroupMemberSelectorStrategy(customStrategy);
+		generator.getInstancePopulator().setGroupMemberSelectorStrategy(customStrategy);
 		
 		var result = generator.generateFrom(libraryClass);
 		
@@ -3094,7 +3094,7 @@ class EMFModelGeneratorTest {
 		var employeesRef = (EReference) libraryClass.getEStructuralFeature("employees");
 		var borrowersRef = (EReference) libraryClass.getEStructuralFeature("borrowers");
 		
-		generator.setFeatureMapDefaultMaxCount(5);
+		generator.getInstancePopulator().setFeatureMapDefaultMaxCount(5);
 		
 		var result = generator.generateFrom(libraryClass);
 		
@@ -3116,7 +3116,7 @@ class EMFModelGeneratorTest {
 		var employeesRef = (EReference) libraryClass.getEStructuralFeature("employees");
 		var borrowersRef = (EReference) libraryClass.getEStructuralFeature("borrowers");
 		
-		generator.setFeatureMapMaxCountFor(peopleAttr, 7);
+		generator.getInstancePopulator().setFeatureMapMaxCountFor(peopleAttr, 7);
 		
 		var result = generator.generateFrom(libraryClass);
 		
@@ -3139,7 +3139,7 @@ class EMFModelGeneratorTest {
 		
 		var counter = new java.util.concurrent.atomic.AtomicInteger(0);
 		
-		generator.functionForFeatureMapGroupMember(writersRef, owner -> {
+		generator.getInstancePopulator().functionForFeatureMapGroupMember(writersRef, owner -> {
 			counter.incrementAndGet();
 			var writer = EcoreUtil.create(writerClass);
 			writer.eSet(writerClass.getEStructuralFeature("firstName"), "CustomWriter");
