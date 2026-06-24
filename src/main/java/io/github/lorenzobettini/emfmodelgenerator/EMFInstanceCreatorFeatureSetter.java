@@ -64,10 +64,10 @@ public abstract class EMFInstanceCreatorFeatureSetter<T extends EStructuralFeatu
 	 * and a new EObject of that subclass is created.
 	 * If no instantiable subclass is available, null is returned.
 	 * 
-	 * @param owner
-	 * @param reference
-	 * @param type
-	 * @return
+	 * @param owner     the EObject owning the reference
+	 * @param reference the reference for which to create an instance
+	 * @param type      the EClass of the instance to create
+	 * @return the created EObject, or null if no instantiable subclass is available
 	 */
 	protected EObject createInstance(EObject owner, EReference reference, EClass type) {
 		var function = getFunctionFor(reference);

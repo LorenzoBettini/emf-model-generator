@@ -59,7 +59,7 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	}
 
 	/**
-	 * Reset the round-robin candidate selection state.
+	 * Reset the candidate selection state.
 	 * 
 	 * <p>This clears the internal state of the candidate selector, causing it to
 	 * restart from the beginning on the next selection. This is useful when new
@@ -137,7 +137,7 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 		final int missingCount = count - list.size();
 
 		for (int i = 0; i < missingCount; i++) {
-			// Get next candidate using round-robin selection
+			// Get next candidate using the configured selector strategy
 			EObject referencedEObject = nextAssignableExistingInstance(owner, eReferenceType, reference);
 			// but skip already present ones (only if unique is true), avoiding infinite loops
 			if (reference.isUnique()) {
@@ -169,8 +169,8 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 			}
 		}
 
-		// Try to get candidates using round-robin until we find one that passes the
-		// opposite reference check and is not the owner itself (unless cycles are allowed)
+		// Try to get candidates using the configured selector strategy until we find one
+		// that passes the opposite reference check and is not the owner itself (unless cycles are allowed).
 		// Since the selector wraps around, we track the first candidate to detect when
 		// we've checked all
 		final EObject firstCandidate = candidateSelectorStrategy.getNextCandidate(owner, eReferenceType);

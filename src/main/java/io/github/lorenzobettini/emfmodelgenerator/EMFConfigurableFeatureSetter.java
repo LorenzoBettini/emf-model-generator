@@ -34,6 +34,13 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 		this.defaultMaxCount = defaultMaxCount;
 	}
 
+	/**
+	 * Set the default maximum count of values to generate for multi-valued features.
+	 * Used when no specific count has been configured for a feature via
+	 * {@link #setMaxCountFor(EStructuralFeature, int)}.
+	 *
+	 * @param defaultMaxCount the default maximum count
+	 */
 	public void setDefaultMaxCount(int defaultMaxCount) {
 		this.defaultMaxCount = defaultMaxCount;
 	}
@@ -42,9 +49,9 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 	 * Returns the maximum count of values to set for the given feature on the given
 	 * owner.
 	 * 
-	 * @param owner   The owner of the feature
-	 * @param feature The feature for the max count
-	 * @return
+	 * @param owner   the owner EObject
+	 * @param feature the feature for which to get the max count
+	 * @return the maximum count of values to generate for the feature
 	 */
 	protected int getMaxCountFor(EObject owner, T1 feature) {
 		return (featureMaxCountMap == null)
@@ -55,8 +62,8 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 	/**
 	 * Sets the maximum count of values to set for the given feature.
 	 * 
-	 * @param feature
-	 * @param maxCount
+	 * @param feature  the feature to configure
+	 * @param maxCount the maximum count of values to generate
 	 */
 	public void setMaxCountFor(T1 feature, int maxCount) {
 		if (featureMaxCountMap == null) {
@@ -68,8 +75,8 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 	/**
 	 * Returns the function associated with the given feature.
 	 * 
-	 * @param feature The feature for the operation
-	 * @return
+	 * @param feature the feature whose function is to be retrieved
+	 * @return the configured function, or null if none has been set
 	 */
 	protected FeatureFunction<V> getFunctionFor(T2 feature) {
 		return (featureFunctionMap == null)
@@ -80,8 +87,8 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 	/**
 	 * Sets the function associated with the given feature.
 	 * 
-	 * @param feature
-	 * @param function
+	 * @param feature  the feature to configure
+	 * @param function the function to use for generating values for the feature
 	 */
 	public void setFunctionFor(T2 feature, FeatureFunction<V> function) {
 		if (featureFunctionMap == null) {
@@ -94,9 +101,9 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 	 * Determines whether the feature should be set on the given owner EObject. By
 	 * default, the feature should be set if it is not already set.
 	 * 
-	 * @param owner
-	 * @param feature
-	 * @return
+	 * @param owner   the owner EObject
+	 * @param feature the feature to check
+	 * @return true if the feature should be set, false otherwise
 	 */
 	protected boolean shouldSetFeature(EObject owner, T1 feature) {
 		return !owner.eIsSet(feature);
@@ -110,8 +117,8 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 	 * ({@link #setSingleFeature(EObject, EStructuralFeature)}) or multi-valued
 	 * features ({@link #setMultiFeature(EObject, EStructuralFeature)}).
 	 * 
-	 * @param owner
-	 * @param feature
+	 * @param owner   the EObject on which to set the feature
+	 * @param feature the feature to set
 	 */
 	public void setFeature(EObject owner, T1 feature) {
 		if (!shouldSetFeature(owner, feature)) {
@@ -128,16 +135,16 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 	/**
 	 * Set a single-valued feature on the given owner EObject.
 	 * 
-	 * @param owner
-	 * @param feature
+	 * @param owner   the EObject on which to set the feature
+	 * @param feature the feature to set
 	 */
 	protected abstract void setSingleFeature(EObject owner, T1 feature);
 
 	/**
 	 * Set a multi-valued feature on the given owner EObject.
 	 * 
-	 * @param owner
-	 * @param feature
+	 * @param owner   the EObject on which to set the feature
+	 * @param feature the feature to set
 	 */
 	protected abstract void setMultiFeature(EObject owner, T1 feature);
 }

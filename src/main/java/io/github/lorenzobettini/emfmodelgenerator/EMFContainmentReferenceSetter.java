@@ -30,7 +30,8 @@ public class EMFContainmentReferenceSetter extends EMFInstanceCreatorFeatureSett
 	 * Set the containment reference on the given owner EObject.
 	 * 
 	 * For setting the containment reference, new EObjects are created.
-	 * For creating the EObjects, instantiable subclasses of the reference type are used in round-robin fashion. 
+	 * For creating the EObjects, instantiable subclasses of the reference type are
+	 * selected using the configured strategy (by default, round-robin).
 	 *
 	 * @param owner     the EObject owning the reference
 	 * @param reference the assumed containment EReference to set (its type is assumed to be in a resource, which is assumed to be in a resource set)
