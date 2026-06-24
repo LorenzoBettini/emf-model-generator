@@ -24,6 +24,12 @@
 		See https://github.com/eclipse-m2e/m2e-core/tree/main/org.eclipse.m2e.apt.ui
 		-->
 		<m2e.apt.activation>disabled</m2e.apt.activation>
+
+		<!-- Ignore Sonar rule java:S2143 only in EMFAttributeSetter.java
+			EMF EDate is backed by java.util.Date; keep java.time internally and convert at the boundary. -->
+		<sonar.issue.ignore.multicriteria>e1</sonar.issue.ignore.multicriteria>
+		<sonar.issue.ignore.multicriteria.e1.ruleKey>java:S2143</sonar.issue.ignore.multicriteria.e1.ruleKey>
+		<sonar.issue.ignore.multicriteria.e1.resourceKey>**/EMFAttributeSetter.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
 	</properties>
 
 	<dependencyManagement>
