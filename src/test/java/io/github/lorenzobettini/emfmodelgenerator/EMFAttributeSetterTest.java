@@ -8,6 +8,9 @@ import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.validateMo
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.ZoneId;
 
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
@@ -509,21 +512,13 @@ class EMFAttributeSetterTest {
 		
 		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
 		assertThat(value).isInstanceOf(java.util.Date.class);
-		
-		final java.util.Calendar cal = java.util.Calendar.getInstance();
-		cal.setTime((java.util.Date) value);
-		assertThat(cal.get(java.util.Calendar.YEAR)).isEqualTo(2025);
-		assertThat(cal.get(java.util.Calendar.MONTH)).isZero(); // January
-		assertThat(cal.get(java.util.Calendar.DAY_OF_MONTH)).isEqualTo(1);
+		assertThat(((java.util.Date) value).toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
+			.isEqualTo(LocalDate.of(2025, Month.JANUARY, 1));
 		
 		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
 		assertThat(value2).isInstanceOf(java.util.Date.class);
-		
-		final java.util.Calendar cal2 = java.util.Calendar.getInstance();
-		cal2.setTime((java.util.Date) value2);
-		assertThat(cal2.get(java.util.Calendar.YEAR)).isEqualTo(2025);
-		assertThat(cal2.get(java.util.Calendar.MONTH)).isZero(); // January
-		assertThat(cal2.get(java.util.Calendar.DAY_OF_MONTH)).isEqualTo(2);
+		assertThat(((java.util.Date) value2).toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
+			.isEqualTo(LocalDate.of(2025, Month.JANUARY, 2));
 	}
 
 	@Test

@@ -2,6 +2,10 @@ package io.github.lorenzobettini.emfmodelgenerator;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,6 +36,8 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	private static final int DEFAULT_MULTI_VALUED_COUNT = 2;
 	private static final int DEFAULT_INT_VALUE = 20;
 	private static final double DEFAULT_DOUBLE_VALUE = 20.5;
+	private static final ZoneId SYSTEM_ZONE = ZoneId.systemDefault();
+	private static final LocalDate BASE_DATE = LocalDate.of(2025, Month.JANUARY, 1);
 
 	private int defaultIntValue = DEFAULT_INT_VALUE;
 	private double defaultDoubleValue = DEFAULT_DOUBLE_VALUE;
@@ -213,10 +219,13 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	}
 
 	private Object generateDateValue(final int counter) {
-		final java.util.Calendar cal = java.util.Calendar.getInstance();
-		cal.set(2025, 0, 1 + counter, 0, 0, 0);
-		cal.set(java.util.Calendar.MILLISECOND, 0);
-		return cal.getTime();
+		// EMF EDate is backed by java.util.Date; keep java.time internally and convert at the boundary.
+		return Date.from(
+			BASE_DATE
+				.plusDays(counter)
+				.atStartOfDay(SYSTEM_ZONE)
+				.toInstant()
+		);
 	}
 
 	private byte[] generateByteArrayValue(final int counter) {
