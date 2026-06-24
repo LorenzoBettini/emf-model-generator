@@ -2,6 +2,9 @@ package io.github.lorenzobettini.emfmodelgenerator;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -213,10 +216,9 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	}
 
 	private Object generateDateValue(final int counter) {
-		final java.util.Calendar cal = java.util.Calendar.getInstance();
-		cal.set(2025, 0, 1 + counter, 0, 0, 0);
-		cal.set(java.util.Calendar.MILLISECOND, 0);
-		return cal.getTime();
+		final var localDate = LocalDate.of(2025, 1, 1).plusDays(counter);
+		final var instant = localDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+		return Date.from(instant);
 	}
 
 	private byte[] generateByteArrayValue(final int counter) {
