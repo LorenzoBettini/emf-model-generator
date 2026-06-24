@@ -36,6 +36,8 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	private static final int DEFAULT_MULTI_VALUED_COUNT = 2;
 	private static final int DEFAULT_INT_VALUE = 20;
 	private static final double DEFAULT_DOUBLE_VALUE = 20.5;
+	private static final ZoneId SYSTEM_ZONE = ZoneId.systemDefault();
+	private static final LocalDate BASE_DATE = LocalDate.of(2025, Month.JANUARY, 1);
 
 	private int defaultIntValue = DEFAULT_INT_VALUE;
 	private double defaultDoubleValue = DEFAULT_DOUBLE_VALUE;
@@ -219,9 +221,9 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	private Object generateDateValue(final int counter) {
 		// EMF EDate is backed by java.util.Date; keep java.time internally and convert at the boundary.
 		return Date.from(
-			LocalDate.of(2025, Month.JANUARY, 1)
+			BASE_DATE
 				.plusDays(counter)
-				.atStartOfDay(ZoneId.systemDefault())
+				.atStartOfDay(SYSTEM_ZONE)
 				.toInstant()
 		);
 	}
