@@ -21,9 +21,9 @@ public abstract class EMFRoundRobinCandidateSelector<K extends ENamedElement, V 
 	 * Get or compute the list of possible candidates for the specified key within
 	 * the resource set of the provided context EObject.
 	 * 
-	 * @param context
-	 * @param type
-	 * @return
+	 * @param context the EObject providing the resource set context
+	 * @param type    the type key to retrieve candidates for
+	 * @return the list of possible candidates for the given key
 	 */
 	protected abstract List<V> getOrCompute(final EObject context, final K type);
 
@@ -75,9 +75,9 @@ public abstract class EMFRoundRobinCandidateSelector<K extends ENamedElement, V 
 	 * retrieve the list of all possible candidates for the given type within the
 	 * resource set of the provided context EObject.
 	 * 
-	 * @param context
-	 * @param type
-	 * @return
+	 * @param context the EObject providing the resource set context
+	 * @param type    the type to check candidates for
+	 * @return true if there are candidates available, false otherwise
 	 */
 	@Override
 	public boolean hasCandidates(final EObject context, final K type) {

@@ -22,9 +22,9 @@ public interface EMFCandidateSelectorStrategy<K extends ENamedElement, V extends
 	/**
 	 * Check if there are any candidates available for the specified type.
 	 * 
-	 * @param context
-	 * @param type
-	 * @return
+	 * @param context the EObject providing the resource set context
+	 * @param type    the type to check candidates for
+	 * @return true if there are candidates available, false otherwise
 	 */
 	boolean hasCandidates(EObject context, K type);
 

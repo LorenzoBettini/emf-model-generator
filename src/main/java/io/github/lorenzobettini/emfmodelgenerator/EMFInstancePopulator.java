@@ -36,6 +36,10 @@ public class EMFInstancePopulator {
 
 	private EMFFeatureMapSetter featureMapSetter;
 
+	/**
+	 * Create a new EMFInstancePopulator with default settings.
+	 * All setter components are initialised with their default strategies.
+	 */
 	public EMFInstancePopulator() {
 		this.attributeSetter = new EMFAttributeSetter();
 		this.crossReferenceSetter = new EMFCrossReferenceSetter();
@@ -43,34 +47,74 @@ public class EMFInstancePopulator {
 		this.featureMapSetter = new EMFFeatureMapSetter();
 	}
 
+	/**
+	 * Returns the attribute setter used for populating EAttribute values.
+	 *
+	 * @return the attribute setter
+	 */
 	public EMFAttributeSetter getAttributeSetter() {
 		return attributeSetter;
 	}
 
+	/**
+	 * Returns the cross-reference setter used for populating non-containment references.
+	 *
+	 * @return the cross-reference setter
+	 */
 	public EMFCrossReferenceSetter getCrossReferenceSetter() {
 		return crossReferenceSetter;
 	}
 
+	/**
+	 * Returns the containment reference setter used for populating containment references.
+	 *
+	 * @return the containment reference setter
+	 */
 	public EMFContainmentReferenceSetter getContainmentReferenceSetter() {
 		return containmentReferenceSetter;
 	}
 
+	/**
+	 * Returns the feature map setter used for populating EMF feature maps.
+	 *
+	 * @return the feature map setter
+	 */
 	public EMFFeatureMapSetter getFeatureMapSetter() {
 		return featureMapSetter;
 	}
 
+	/**
+	 * Replace the attribute setter.
+	 *
+	 * @param attributeSetter the attribute setter to use
+	 */
 	public void setAttributeSetter(EMFAttributeSetter attributeSetter) {
 		this.attributeSetter = attributeSetter;
 	}
 
+	/**
+	 * Replace the cross-reference setter.
+	 *
+	 * @param crossReferenceSetter the cross-reference setter to use
+	 */
 	public void setCrossReferenceSetter(EMFCrossReferenceSetter crossReferenceSetter) {
 		this.crossReferenceSetter = crossReferenceSetter;
 	}
 
+	/**
+	 * Replace the containment reference setter.
+	 *
+	 * @param containmentReferenceSetter the containment reference setter to use
+	 */
 	public void setContainmentReferenceSetter(EMFContainmentReferenceSetter containmentReferenceSetter) {
 		this.containmentReferenceSetter = containmentReferenceSetter;
 	}
 
+	/**
+	 * Replace the feature map setter.
+	 *
+	 * @param featureMapSetter the feature map setter to use
+	 */
 	public void setFeatureMapSetter(EMFFeatureMapSetter featureMapSetter) {
 		this.featureMapSetter = featureMapSetter;
 	}
@@ -165,38 +209,88 @@ public class EMFInstancePopulator {
 		crossReferenceSetter.setAllowCyclePolicy(cyclePolicy);
 	}
 
+	/**
+	 * Set the maximum recursion depth for populating containment references.
+	 * Attributes are always populated regardless of depth.
+	 *
+	 * @param maxDepth the maximum depth
+	 */
 	public void setMaxDepth(final int maxDepth) {
 		this.maxDepth = maxDepth;
 	}
 
+	/**
+	 * Set the default maximum number of values generated for multi-valued attributes.
+	 *
+	 * @param count the default maximum count
+	 */
 	public void setAttributeDefaultMaxCount(int count) {
 		attributeSetter.setDefaultMaxCount(count);
 	}
 
+	/**
+	 * Set the default maximum number of values generated for multi-valued cross references.
+	 *
+	 * @param count the default maximum count
+	 */
 	public void setCrossReferenceDefaultMaxCount(int count) {
 		crossReferenceSetter.setDefaultMaxCount(count);
 	}
 
+	/**
+	 * Set the default maximum number of values generated for multi-valued containment references.
+	 *
+	 * @param count the default maximum count
+	 */
 	public void setContainmentReferenceDefaultMaxCount(int count) {
 		containmentReferenceSetter.setDefaultMaxCount(count);
 	}
 
+	/**
+	 * Set the maximum number of values generated for the given multi-valued attribute.
+	 *
+	 * @param attribute the attribute to configure
+	 * @param count     the maximum count
+	 */
 	public void setAttributeMaxCountFor(EAttribute attribute, int count) {
 		attributeSetter.setMaxCountFor(attribute, count);
 	}
 
+	/**
+	 * Set the maximum number of values generated for the given multi-valued cross reference.
+	 *
+	 * @param reference the cross reference to configure
+	 * @param count     the maximum count
+	 */
 	public void setCrossReferenceMaxCountFor(EReference reference, int count) {
 		crossReferenceSetter.setMaxCountFor(reference, count);
 	}
 
+	/**
+	 * Set the maximum number of values generated for the given multi-valued containment reference.
+	 *
+	 * @param reference the containment reference to configure
+	 * @param count     the maximum count
+	 */
 	public void setContainmentReferenceMaxCountFor(EReference reference, int count) {
 		containmentReferenceSetter.setMaxCountFor(reference, count);
 	}
 
+	/**
+	 * Set the default maximum number of entries generated for feature maps.
+	 *
+	 * @param count the default maximum count
+	 */
 	public void setFeatureMapDefaultMaxCount(int count) {
 		featureMapSetter.setDefaultMaxCount(count);
 	}
 
+	/**
+	 * Set the maximum number of entries generated for the given feature map attribute.
+	 *
+	 * @param featureMapAttribute the feature map attribute to configure
+	 * @param count               the maximum count
+	 */
 	public void setFeatureMapMaxCountFor(EAttribute featureMapAttribute, int count) {
 		featureMapSetter.setMaxCountFor(featureMapAttribute, count);
 	}

@@ -37,12 +37,8 @@ public class EMFFeatureMapSetter extends EMFInstanceCreatorFeatureSetter<EAttrib
 	}
 
 	/**
-	 * Reset the state of the group member selector.
-	 * 
-	 * <p>This clears the internal state of the candidate selector, causing it to
-	 * restart from the beginning on the next selection. This is useful when new
-	 * elements are added to the resource set and you want them to be considered
-	 * in subsequent selections.</p>
+	 * Reset the state of the group member selector, causing it to restart from the
+	 * beginning on the next selection.
 	 */
 	public void reset() {
 		groupMemberSelector.reset();
