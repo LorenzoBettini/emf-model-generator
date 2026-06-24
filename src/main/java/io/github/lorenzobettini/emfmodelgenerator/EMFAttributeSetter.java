@@ -2,11 +2,10 @@ package io.github.lorenzobettini.emfmodelgenerator;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.Month;
-import java.time.format.DateTimeFormatter;
 import java.time.ZoneId;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -218,13 +217,13 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	}
 
 	private Object generateDateValue(final int counter) {
-		final var localDateTime = LocalDate.of(2025, Month.JANUARY, 1)
-			.plusDays(counter)
-			.atTime(LocalDateTime.MIN.toLocalTime());
-		final var zonedDateTime = localDateTime.atZone(ZoneId.systemDefault());
-		return EcorePackage.eINSTANCE.getEFactoryInstance().createFromString(
-			EcorePackage.Literals.EDATE,
-			DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(zonedDateTime));
+		// EMF EDate is backed by java.util.Date; keep java.time internally and convert at the boundary.
+		return Date.from(
+			LocalDate.of(2025, Month.JANUARY, 1)
+				.plusDays(counter)
+				.atStartOfDay(ZoneId.systemDefault())
+				.toInstant()
+		);
 	}
 
 	private byte[] generateByteArrayValue(final int counter) {
