@@ -25,8 +25,8 @@ A Java library for programmatically generating instances of EMF (Eclipse Modelin
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/LorenzoBettini/emf-model-generator-experiments.git
-cd emf-model-generator-experiments
+git clone https://github.com/LorenzoBettini/emf-model-generator.git
+cd emf-model-generator
 ```
 
 ### Build and Install Locally
@@ -667,5 +667,5 @@ This project is licensed under the Eclipse Public License 2.0.
 ## Resources
 
 - **Eclipse Modeling Framework (EMF)**: <https://www.eclipse.org/modeling/emf/>
-- **GitHub Repository**: <https://github.com/LorenzoBettini/emf-model-generator-experiments>
-- **Issues**: <https://github.com/LorenzoBettini/emf-model-generator-experiments/issues>
+- **GitHub Repository**: <https://github.com/LorenzoBettini/emf-model-generator>
+- **Issues**: <https://github.com/LorenzoBettini/emf-model-generator/issues>
