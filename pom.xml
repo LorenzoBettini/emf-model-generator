@@ -11,6 +11,7 @@
 
 	<name>EMF Model Generator</name>
 	<description>A project for generating EMF models</description>
+	<url>https://github.com/LorenzoBettini/emf-model-generator</url>
 
 	<licenses>
 		<license>
