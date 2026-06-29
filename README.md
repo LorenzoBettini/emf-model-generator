@@ -25,6 +25,28 @@ The generator focuses on deterministic, reproducible, structurally valid EMF ins
 - **Java**: 21 or higher
 - **Maven**: 3.x
 
+## Usage in a Maven Project
+
+Add the dependency to your `pom.xml` (take the latest version from the Maven Central badge at the top of the file):
+
+```xml
+<dependency>
+    <groupId>io.github.lorenzobettini</groupId>
+    <artifactId>emf-model-generator</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+You'll also get the transitive dependencies, e.g., EMF dependencies:
+
+```xml
+<dependency>
+    <groupId>org.eclipse.emf</groupId>
+    <artifactId>org.eclipse.emf.ecore.xmi</artifactId>
+    <version>...</version>
+</dependency>
+```
+
 ## Building and Installing
 
 ### Clone the Repository
@@ -89,28 +111,6 @@ To measure how execution time scales with different metrics:
 ```
 
 See [PERFORMANCE.md](PERFORMANCE.md) for detailed instructions on running and analyzing performance tests.
-
-## Usage in a Maven Project
-
-Add the dependency to your `pom.xml` (take the latest version from the Maven Central badge at the top of the file):
-
-```xml
-<dependency>
-    <groupId>io.github.lorenzobettini</groupId>
-    <artifactId>emf-model-generator</artifactId>
-    <version>1.0.0</version>
-</dependency>
-```
-
-You'll also get the transitive dependencies, e.g., EMF dependencies:
-
-```xml
-<dependency>
-    <groupId>org.eclipse.emf</groupId>
-    <artifactId>org.eclipse.emf.ecore.xmi</artifactId>
-    <version>...</version>
-</dependency>
-```
 
 ## Basic Examples
 
