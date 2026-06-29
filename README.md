@@ -2,18 +2,21 @@
 
 [![Build Status](https://github.com/LorenzoBettini/emf-model-generator/actions/workflows/build.yml/badge.svg)](https://github.com/LorenzoBettini/emf-model-generator/actions) [![codecov](https://codecov.io/gh/LorenzoBettini/emf-model-generator/graph/badge.svg?token=TNphE6zefq)](https://codecov.io/gh/LorenzoBettini/emf-model-generator) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=LorenzoBettini_emf-model-generator&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=LorenzoBettini_emf-model-generator) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=LorenzoBettini_emf-model-generator&metric=coverage)](https://sonarcloud.io/summary/new_code?id=LorenzoBettini_emf-model-generator) [![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=LorenzoBettini_emf-model-generator&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=LorenzoBettini_emf-model-generator)
 
-A Java library for programmatically generating instances of EMF (Eclipse Modeling Framework) models. Given an Ecore metamodel and an EClass or EPackage, the tool generates model instances with populated attributes and references, and serializes them as XMI files.
+A Java library for programmatically generating instances of EMF (Eclipse Modeling Framework) models.
+Given an Ecore metamodel and an EClass or EPackage, the tool creates populated model instances and serializes them as XMI files.
+The generator focuses on deterministic, reproducible, structurally valid EMF instances for tests, examples, prototypes, and generated-editor wizards.
 
 ## Features
 
-- **Automatic Model Generation**: Generate instances of EMF models from Ecore metamodels
-- **Smart Reference Handling**: Automatically creates and links referenced objects with proper containment
-- **Constraint Compliance**: Respects multiplicities, required features, and metamodel constraints
-- **Flexible Configuration**: Customize generation behavior for attributes, references, and containments
-- **Multiple Generation Modes**: Generate from EPackage, EClass, or multiple EClasses
-- **File Extension Customization**: Configure extensions at global, package, or class level
-- **Feature Map Support**: Handles EMF feature maps correctly
-- **OSGi Compatible**: Includes OSGi bundle manifest
+- **Automatic Model Generation**: generate instances from EClasses, EPackages, or selected sets of EClasses
+- **Deterministic Defaults**: use predictable attribute values and round-robin candidate selection for reproducible output
+- **Reference Handling**: populate containment references first, then assign non-containment cross-references among existing instances
+- **Constraint Compliance**: respect multiplicities, required features, containment semantics, opposite references, abstract classes, and interfaces
+- **Flexible Configuration**: customize depth, multiplicities, per-feature functions, cycle policy, candidate selectors, and setter implementations
+- **Resource Management**: load Ecore files, register packages, create resources, save generated XMI, and unload metamodels
+- **File Naming Customization**: configure file prefixes and extensions globally, per package, or per class
+- **Feature Map Support**: populate EMF feature maps using ExtendedMetaData group members
+- **OSGi Compatible**: includes OSGi bundle metadata
 
 ## Requirements
 
@@ -42,15 +45,15 @@ To build and install the library to your local Maven repository:
 To run the test suite without installing:
 
 ```bash
-./mvnw clean test
+./mvnw test
 ```
 
 ### Run Tests with Coverage
 
-To generate a JaCoCo coverage report:
+To run the full verification phase with JaCoCo coverage:
 
 ```bash
-./mvnw -P jacoco clean test jacoco:report
+./mvnw verify -Pjacoco
 ```
 
 The coverage report will be available at `target/site/jacoco/index.html`.
@@ -183,6 +186,7 @@ generator.save();
 Always validate generated models to ensure they conform to the metamodel:
 
 ```java
+import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.ecore.util.Diagnostician;
 
 EObject generated = generator.generateFrom(personClass);
@@ -256,7 +260,9 @@ generator.save();
 
 ### Example 7: Save with Schema Location
 
-Include schema location in generated XMI files:
+Ask EMF's XMI serializer to emit `xsi:schemaLocation` entries.
+When EMF can compute metamodel locations, the generated XMI records the association between package namespace URIs and those locations.
+This can make generated files easier to inspect and exchange in contexts where the receiver does not rely only on a pre-populated `EPackage` registry.
 
 ```java
 import org.eclipse.emf.ecore.xmi.XMLResource;
@@ -265,11 +271,7 @@ import java.util.Map;
 EMFModelGenerator generator = new EMFModelGenerator();
 generator.generateFrom(personClass);
 
-// Save with schemaLocation attribute
-Map<Object, Object> options = Map.of(
-    XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE
-);
-generator.save(options);
+generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 ```
 
 ### Example 8: Custom File Extensions
@@ -335,55 +337,53 @@ generator.generateFrom(libraryClass);
 generator.save();
 ```
 
-### Example 11: Custom Containment Reference Behavior
+### Example 11: Configure Containment Multiplicity
 
 Control how many instances are created for containment references:
 
 ```java
-import io.github.lorenzobettini.emfmodelgenerator.EMFContainmentReferenceSetter;
-import org.eclipse.emf.ecore.EReference;
-import java.util.Collection;
-
 EMFModelGenerator generator = new EMFModelGenerator();
+EMFInstancePopulator populator = generator.getInstancePopulator();
 
-generator.getInstancePopulator().setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
-    @Override
-    public Collection<EObject> setContainmentReference(EObject owner, EReference reference) {
-        // Create 5 books for libraries instead of the default 2
-        if ("books".equals(reference.getName())) {
-            return createInstances(owner, reference, 5);
-        }
-        return super.setContainmentReference(owner, reference);
-    }
-});
+// Use 3 as the default for all multi-valued containment references
+populator.setContainmentReferenceDefaultMaxCount(3);
+
+// Override one specific containment reference
+EReference booksReference = (EReference)
+    libraryClass.getEStructuralFeature("books");
+populator.setContainmentReferenceMaxCountFor(booksReference, 5);
 
 generator.generateFrom(libraryClass);
 generator.save();
 ```
 
-### Example 12: Custom Cross-Reference Strategy
+### Example 12: Custom Cross-Reference Function
 
-Control how cross-references are set between objects:
+Customize one cross-reference while keeping the default validity checks for the rest:
 
 ```java
-import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter;
-import io.github.lorenzobettini.emfmodelgenerator.EMFUtils;
+import java.util.concurrent.atomic.AtomicInteger;
 
 EMFModelGenerator generator = new EMFModelGenerator();
+EMFInstancePopulator populator = generator.getInstancePopulator();
 
-generator.getInstancePopulator().setCrossReferenceSetter(new EMFCrossReferenceSetter() {
-    @Override
-    public void setCrossReference(EObject owner, EReference reference) {
-        // All books reference only the first author
-        if ("author".equals(reference.getName())) {
-            var authors = getInstantiableObjects(owner, reference);
-            if (!authors.isEmpty()) {
-                EMFUtils.setReference(owner, reference, authors.get(0));
-            }
-            return;
-        }
-        super.setCrossReference(owner, reference);
+EClass bookClass = (EClass) ePackage.getEClassifier("Book");
+EReference authorsReference = (EReference)
+    bookClass.getEStructuralFeature("authors");
+AtomicInteger counter = new AtomicInteger();
+
+// Select authors in reverse order instead of the default round-robin order
+populator.functionForCrossReference(authorsReference, owner -> {
+    EObject library = owner.eContainer();
+    var authors = EMFUtils.getAsEObjectsList(
+        library,
+        library.eClass().getEStructuralFeature("authors")
+    );
+    if (authors.isEmpty()) {
+        return null; // fall back to default behavior if no custom value exists
     }
+    int index = authors.size() - 1 - (counter.getAndIncrement() % authors.size());
+    return authors.get(index);
 });
 
 generator.generateFrom(libraryClass);
@@ -392,7 +392,7 @@ generator.save();
 
 ### Example 13: Function-Based Customization for Individual Features
 
-Configure specific functions for individual attributes, containments, or cross-references:
+Configure specific functions for individual attributes, containments, cross-references, or feature-map group members:
 
 ```java
 import io.github.lorenzobettini.emfmodelgenerator.EMFInstancePopulator;
@@ -400,27 +400,24 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFInstancePopulator;
 EMFModelGenerator generator = new EMFModelGenerator();
 EMFInstancePopulator populator = generator.getInstancePopulator();
 
-// Custom function for a specific attribute
-populator.getAttributeSetter().setFunctionFor(
-    myAttribute,
-    (owner, attr) -> owner.eSet(attr, "SpecialValue")
-);
+populator.functionForAttribute(nameAttribute,
+    owner -> "CUSTOM_" + owner.eClass().getName());
 
-// Custom function for a specific containment reference
-populator.getContainmentReferenceSetter().setFunctionFor(
-    myContainment,
-    (owner, ref) -> createCustomInstances(owner, ref, 10)
-);
+populator.functionForContainmentReference(shelfReference,
+    owner -> EcoreUtil.create(shelfReference.getEReferenceType()));
 
-// Custom function for a specific cross-reference
-populator.getCrossReferenceSetter().setFunctionFor(
-    myCrossRef,
-    (owner, ref) -> setSpecificCrossReference(owner, ref)
-);
+populator.functionForCrossReference(authorsReference,
+    owner -> findPreferredAuthor(owner));
+
+populator.functionForFeatureMapGroupMember(writersReference,
+    owner -> EcoreUtil.create(writerClass));
 
 generator.generateFrom(myClass);
 generator.save();
 ```
+
+If a custom cross-reference function returns `null`, the default cross-reference selection is used.
+For containment references and feature-map group members, returned objects are recursively populated by the populator.
 
 ### Example 14: Configure Feature Map Max Count
 
@@ -430,40 +427,30 @@ Control the number of entries generated for feature maps:
 EMFModelGenerator generator = new EMFModelGenerator();
 EMFInstancePopulator populator = generator.getInstancePopulator();
 
-// Set max count for a specific feature map attribute
-populator.getFeatureMapSetter().setMaxCountFor(featureMapAttribute, 5);
+populator.setFeatureMapDefaultMaxCount(4);
+populator.setFeatureMapMaxCountFor(featureMapAttribute, 5);
 
 generator.generateFrom(documentClass);
 generator.save();
 ```
 
-### Example 15: Reuse ResourceSet Across Multiple Generations
+### Example 15: Generate Related Models in One ResourceSet
 
-For generating multiple related models that reference each other:
+`EMFModelGenerator` uses one `ResourceSet` for the generated resources.
+When several root objects are generated together, containment trees are populated first and then cross-references are assigned among all generated objects.
 
 ```java
-import org.eclipse.emf.ecore.resource.ResourceSet;
-import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
-import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
+EMFModelGenerator generator = new EMFModelGenerator();
+generator.setOutputDirectory("output/");
 
-// Create a shared ResourceSet
-ResourceSet resourceSet = new ResourceSetImpl();
-resourceSet.getResourceFactoryRegistry()
-    .getExtensionToFactoryMap()
-    .put("xmi", new XMIResourceFactoryImpl());
+EClass companyClass = (EClass) ePackage.getEClassifier("Company");
+EClass employeeClass = (EClass) ePackage.getEClassifier("Employee");
 
-// Use the same ResourceSet for all generations
-EMFModelGenerator generator = new EMFModelGenerator(resourceSet);
-
-// First generation
-EObject company = generator.generateFrom(companyClass);
-
-// Second generation - can reference instances from first generation
-EObject employee = generator.generateFrom(employeeClass);
-
-// Save all resources together
+generator.generateFromSeveral(companyClass, employeeClass);
 generator.save();
 ```
+
+You can also provide an existing `ResourceSet` to the constructor when generated models must live together with resources managed by your application.
 
 ## Using EMFInstancePopulator Directly
 
@@ -522,42 +509,37 @@ resource.save(null);
 
 ### Example 18: Configure Population Behavior
 
-Control how many instances are created for references:
+Control how many values are generated for multi-valued features:
 
 ```java
 EMFInstancePopulator populator = new EMFInstancePopulator();
 
-// Configure multiplicity for all containment references
-populator.getContainmentReferenceSetter().setDefaultMaxCount(3);
+populator.setContainmentReferenceDefaultMaxCount(3);
+populator.setCrossReferenceDefaultMaxCount(2);
+populator.setAttributeDefaultMaxCount(2);
+populator.setFeatureMapDefaultMaxCount(4);
 
-// Configure multiplicity for all cross-references
-populator.getCrossReferenceSetter().setDefaultMaxCount(2);
-
-// Configure maximum depth for recursive population
+// Configure maximum depth for recursive containment and feature-map population
 populator.setMaxDepth(4);
 
-// Populate
 populator.populateEObjects(library);
 ```
 
-### Example 19: Populate Multiple Independent Objects
+### Example 19: Populate Objects in Separate Calls
 
-You can populate multiple objects in separate calls, and they maintain independent state (if they are in different resources in different ResourceSets):
+You can reuse a populator across multiple calls, but its setters and selectors may keep deterministic state such as counters and round-robin positions.
+Create a new populator if you want a fresh generation state.
 
 ```java
 EMFInstancePopulator populator = new EMFInstancePopulator();
 
-// Create and add first library to a resource
 EObject library1 = EcoreUtil.create(libraryClass);
 resource1.getContents().add(library1);
 populator.populateEObjects(library1);
 
-// Create and add second library to another resource
 EObject library2 = EcoreUtil.create(libraryClass);
 resource2.getContents().add(library2);
 populator.populateEObjects(library2);
-
-// Each library gets its own sample data with independent counters
 ```
 
 ### Example 20: Populate Multiple Related Objects Together
@@ -637,18 +619,23 @@ Examples:
 
 The generator uses predictable patterns for sample data:
 
-- **Strings**: `<AttributeName>_<Counter>` (e.g., `name_1`, `title_2`)
-- **Integers**: Fixed range (20-30)
-- **Booleans**: Alternates between `true` and `false`
-- **Dates**: Fixed date for reproducibility
-- **References**: Round-robin selection from available instances
+- **Strings**: `<EClassName>_<AttributeName>_<Counter>` (e.g., `Person_name_1`)
+- **Integers and integer-like values**: start at `20` and increase with the per-class/attribute counter
+- **Doubles and floats**: start at `20.5` and increase with the per-class/attribute counter
+- **Booleans**: alternate between `true` and `false`
+- **Dates**: start from `2025-01-01` and advance by one day per generated value
+- **Enums**: selected with a deterministic round-robin selector
+- **References**: selected with deterministic round-robin strategies from available assignable instances
 
-## Constraints
+## Constraints and Scope
 
-- Abstract EClasses cannot be instantiated directly (use `generateAllFrom()` for their concrete subclasses)
-- Maximum recursion depth is configurable (default: 2) to prevent infinite loops
-- Feature maps require the ExtendedMetaData annotations in the Ecore model
-- Container references (opposites of containment) cannot be set directly (EMF does not allow it)
+- Abstract EClasses and interfaces cannot be instantiated directly; use `generateAllFrom(EClass)` to generate their concrete subclasses.
+- Multi-valued feature counts respect lower and upper bounds; a requested count below the lower bound is raised to the lower bound, and a requested count above the upper bound is capped.
+- Maximum containment depth is configurable and defaults to `5`.
+- Feature maps require ExtendedMetaData annotations in the Ecore model.
+- Container references, which are opposites of containment references, cannot be set directly from the contained side.
+- Cross-references are assigned only among existing instances; the generator does not create new objects just to satisfy a non-containment reference.
+- The generator targets structural EMF validity, not arbitrary OCL or domain-specific invariants.
 
 ## Contributing
 
