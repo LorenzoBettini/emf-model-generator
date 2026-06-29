@@ -1,5 +1,7 @@
 # EMF Model Generator
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.lorenzobettini/emf-model-generator.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.lorenzobettini/emf-model-generator)
+
 [![Build Status](https://github.com/LorenzoBettini/emf-model-generator/actions/workflows/build.yml/badge.svg)](https://github.com/LorenzoBettini/emf-model-generator/actions) [![codecov](https://codecov.io/gh/LorenzoBettini/emf-model-generator/graph/badge.svg?token=TNphE6zefq)](https://codecov.io/gh/LorenzoBettini/emf-model-generator) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=LorenzoBettini_emf-model-generator&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=LorenzoBettini_emf-model-generator) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=LorenzoBettini_emf-model-generator&metric=coverage)](https://sonarcloud.io/summary/new_code?id=LorenzoBettini_emf-model-generator) [![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=LorenzoBettini_emf-model-generator&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=LorenzoBettini_emf-model-generator)
 
 A Java library for programmatically generating instances of EMF (Eclipse Modeling Framework) models.
