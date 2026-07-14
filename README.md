@@ -47,6 +47,10 @@ You'll also get the transitive dependencies, e.g., EMF dependencies:
 </dependency>
 ```
 
+## Usage in an Eclipse Plug-in Project
+
+Use this update site https://lorenzobettini.github.io/emf-model-generator-update-site/ to either install the "EMF Model Generator" feature in your Eclipse or in your Target Platform.
+
 ## Building and Installing
 
 ### Clone the Repository
