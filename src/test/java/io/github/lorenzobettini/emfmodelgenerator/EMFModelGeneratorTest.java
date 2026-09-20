@@ -3131,7 +3131,7 @@ class EMFModelGeneratorTest {
 		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
 		generator.generateFrom(assertEClassExists(ePackage, "Book"));
 
-		assertThatThrownBy(generator::validateOrThrow)
+		assertThatThrownBy(() -> generator.validateOrThrow())
 			.isInstanceOfSatisfying(EMFValidationException.class, exception -> {
 				assertThat(exception.getResult().kind())
 					.isEqualTo(EMFValidationKind.VALIDATION_FAILURE);
@@ -3172,6 +3172,11 @@ class EMFModelGeneratorTest {
 		assertThat(validator.validateAllCalls).isOne();
 		assertThat(validator.validatedRoots).isEmpty();
 		assertThat(validator.closed).isTrue();
+	}
+
+	@Test
+	void testDefaultValidateOrThrowReturnsNormallyWithNoRoots() {
+		generator.validateOrThrow();
 	}
 
 	@Test
@@ -3233,6 +3238,15 @@ class EMFModelGeneratorTest {
 		assertThatThrownBy(() -> generator.validateOrThrow(ignored -> validator))
 			.isInstanceOfSatisfying(EMFValidationException.class,
 					exception -> assertThat(exception.getResult()).isSameAs(invalid));
+		assertThat(validator.closed).isTrue();
+	}
+
+	@Test
+	void testCustomValidateOrThrowReturnsNormallyForValidResult() {
+		var validator = new RecordingValidator(validValidationResult());
+
+		generator.validateOrThrow(ignored -> validator);
+
 		assertThat(validator.closed).isTrue();
 	}
 
