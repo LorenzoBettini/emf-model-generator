@@ -28,6 +28,17 @@ public interface EMFModelValidator extends AutoCloseable {
 	}
 
 	/**
+	 * Creates a validator using standard EMF validation.
+	 *
+	 * @param resourceSet the non-null resource set containing the models to validate
+	 * @return a standard EMF validator
+	 * @throws NullPointerException if {@code resourceSet} is {@code null}
+	 */
+	static EMFModelValidator standard(final ResourceSet resourceSet) {
+		return new StandardEMFModelValidator(resourceSet);
+	}
+
+	/**
 	 * Validates one model root.
 	 *
 	 * @param root the root to validate
