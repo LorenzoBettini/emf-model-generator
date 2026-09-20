@@ -22,56 +22,57 @@ class EMFModelValidatorTest {
 
 	@Test
 	void validateOrThrowReturnsNormallyForValidResult() {
-		var validator = new StubValidator(validResult(), validResult());
-
-		assertThatNoException().isThrownBy(() -> validator.validateOrThrow(ROOT));
-		assertThat(validator.validatedRoot).isSameAs(ROOT);
+		try (var validator = new StubValidator(validResult(), validResult())) {
+			assertThatNoException().isThrownBy(() -> validator.validateOrThrow(ROOT));
+			assertThat(validator.validatedRoot).isSameAs(ROOT);
+		}
 	}
 
 	@Test
 	void validateOrThrowRetainsInvalidResultInException() {
 		var invalid = invalidResult();
-		var validator = new StubValidator(invalid, validResult());
-
-		assertThatExceptionOfType(EMFValidationException.class)
-				.isThrownBy(() -> validator.validateOrThrow(ROOT))
-				.satisfies(exception -> assertThat(exception.getResult()).isSameAs(invalid));
+		try (var validator = new StubValidator(invalid, validResult())) {
+			assertThatExceptionOfType(EMFValidationException.class)
+					.isThrownBy(() -> validator.validateOrThrow(ROOT))
+					.satisfies(exception -> assertThat(exception.getResult()).isSameAs(invalid));
+		}
 	}
 
 	@Test
 	void validateAllOrThrowHandlesValidAndInvalidResults() {
 		var roots = List.of(ROOT);
-		var validValidator = new StubValidator(validResult(), validResult());
-		assertThatNoException().isThrownBy(() -> validValidator.validateAllOrThrow(roots));
-		assertThat(validValidator.validatedRoots).isSameAs(roots);
-
+		try (var validValidator = new StubValidator(validResult(), validResult())) {
+			assertThatNoException().isThrownBy(() -> validValidator.validateAllOrThrow(roots));
+			assertThat(validValidator.validatedRoots).isSameAs(roots);
+		}
 		var invalid = invalidResult();
-		var invalidValidator = new StubValidator(validResult(), invalid);
-		assertThatExceptionOfType(EMFValidationException.class)
-				.isThrownBy(() -> invalidValidator.validateAllOrThrow(roots))
-				.satisfies(exception -> assertThat(exception.getResult()).isSameAs(invalid));
+		try (var invalidValidator = new StubValidator(validResult(), invalid)) {
+			assertThatExceptionOfType(EMFValidationException.class)
+					.isThrownBy(() -> invalidValidator.validateAllOrThrow(roots))
+					.satisfies(exception -> assertThat(exception.getResult()).isSameAs(invalid));
+		}
 	}
 
 	@Test
 	void convenienceMethodsRejectNullArgumentsBeforeDelegating() {
-		var validator = new StubValidator(validResult(), validResult());
-
-		assertThatNullPointerException().isThrownBy(() -> validator.validateOrThrow(null));
-		assertThatNullPointerException().isThrownBy(() -> validator.validateAllOrThrow(null));
-		assertThat(validator.validatedRoot).isNull();
-		assertThat(validator.validatedRoots).isNull();
+		try (var validator = new StubValidator(validResult(), validResult())) {
+			assertThatNullPointerException().isThrownBy(() -> validator.validateOrThrow(null));
+			assertThatNullPointerException().isThrownBy(() -> validator.validateAllOrThrow(null));
+			assertThat(validator.validatedRoot).isNull();
+			assertThat(validator.validatedRoots).isNull();
+		}
 	}
 
 	@Test
 	void convenienceMethodsRejectNullImplementationResults() {
-		var validator = new StubValidator(null, null);
-
-		assertThatNullPointerException()
-				.isThrownBy(() -> validator.validateOrThrow(ROOT))
-				.withMessage("Validator returned a null result");
-		assertThatNullPointerException()
-				.isThrownBy(() -> validator.validateAllOrThrow(List.of(ROOT)))
-				.withMessage("Validator returned a null result");
+		try (var validator = new StubValidator(null, null)) {
+			assertThatNullPointerException()
+					.isThrownBy(() -> validator.validateOrThrow(ROOT))
+					.withMessage("Validator returned a null result");
+			assertThatNullPointerException()
+					.isThrownBy(() -> validator.validateAllOrThrow(List.of(ROOT)))
+					.withMessage("Validator returned a null result");
+		}
 	}
 
 	@Test

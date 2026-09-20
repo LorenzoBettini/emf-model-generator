@@ -3082,7 +3082,7 @@ class EMFModelGeneratorTest {
 		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
 		var bookClass = assertEClassExists(ePackage, "Book");
 		var authorReference = assertEReferenceExists(bookClass, "author");
-		var book = generator.generateFrom(bookClass);
+		generator.generateFrom(bookClass);
 
 		generator.save();
 
