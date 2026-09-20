@@ -6,8 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EClass;
@@ -406,6 +408,74 @@ public class EMFModelGenerator {
 		resource.getContents().add(rootInstance);
 
 		return rootInstance;
+	}
+
+	/**
+	 * Validates all model roots using standard EMF validation.
+	 *
+	 * <p>Validation covers every root in every non-Ecore resource in this generator's
+	 * resource set. When an external {@link ResourceSet} was supplied, this includes
+	 * its existing non-Ecore resources, matching the scope of {@link #save()}.</p>
+	 *
+	 * @return the aggregate validation result
+	 */
+	public EMFValidationResult validate() {
+		return validate(EMFModelValidator::standard);
+	}
+
+	/**
+	 * Validates all model roots using a validator created for this generator's exact
+	 * resource set.
+	 *
+	 * <p>Validation covers every root in every non-Ecore resource in this generator's
+	 * resource set, preserving resource and root order.</p>
+	 *
+	 * @param validatorFactory the factory used to create one validator for this call
+	 * @return the aggregate validation result
+	 * @throws NullPointerException if the factory, validator, or result is {@code null}
+	 */
+	public EMFValidationResult validate(final EMFModelValidator.Factory validatorFactory) {
+		Objects.requireNonNull(validatorFactory, "validatorFactory");
+		try (var validator = Objects.requireNonNull(validatorFactory.create(sharedResourceSet),
+				"Validator factory returned null")) {
+			return Objects.requireNonNull(validator.validateAll(modelRoots()),
+					"Validator returned a null result");
+		}
+	}
+
+	/**
+	 * Validates all model roots with standard EMF validation and throws when invalid.
+	 *
+	 * @throws EMFValidationException if validation is not valid
+	 */
+	public void validateOrThrow() {
+		validateOrThrow(EMFModelValidator::standard);
+	}
+
+	/**
+	 * Validates all model roots with a custom validator and throws when invalid.
+	 *
+	 * @param validatorFactory the factory used to create one validator for this call
+	 * @throws NullPointerException if the factory, validator, or result is {@code null}
+	 * @throws EMFValidationException if validation is not valid
+	 */
+	public void validateOrThrow(final EMFModelValidator.Factory validatorFactory) {
+		var result = validate(validatorFactory);
+		if (!result.isValid()) {
+			throw new EMFValidationException(result);
+		}
+	}
+
+	private Collection<Resource> modelResources() {
+		return sharedResourceSet.getResources().stream()
+				.filter(resource -> !EMFUtils.isEcoreResource(resource))
+				.toList();
+	}
+
+	private List<EObject> modelRoots() {
+		return modelResources().stream()
+				.flatMap(resource -> resource.getContents().stream())
+				.toList();
 	}
 
 	/**
