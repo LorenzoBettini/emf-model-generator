@@ -1,12 +1,12 @@
 package io.github.lorenzobettini.emfmodelgenerator;
 
+import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEAttributeExists;
+import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEClassExists;
+import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEReferenceExists;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertXMIMatchesExpected;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createContainmentEReference;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createEClass;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createEPackage;
-import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEAttributeExists;
-import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEClassExists;
-import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEReferenceExists;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.loadEcoreModel;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.loadGeneratedModel;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.validateModel;
@@ -37,9 +37,9 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
-import org.eclipse.emf.ecore.EcoreFactory;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EcoreFactory;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;

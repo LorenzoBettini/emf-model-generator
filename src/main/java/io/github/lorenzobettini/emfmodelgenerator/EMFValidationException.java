@@ -3,8 +3,6 @@ package io.github.lorenzobettini.emfmodelgenerator;
 import java.io.Serial;
 import java.util.Objects;
 
-import org.eclipse.emf.common.util.Diagnostic;
-
 /**
  * Indicates that model validation produced a non-valid result.
  */
