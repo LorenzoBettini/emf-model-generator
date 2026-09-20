@@ -127,7 +127,6 @@ public final class EMFUtils {
 	 * <li>If the feature has a lower bound, the count will be at least that value</li>
 	 * <li>If both bounds are set, the count will be within the range [lowerBound, upperBound]</li>
 	 * </ul>
-	 * </p>
 	 * 
 	 * <p>Examples:
 	 * <ul>
@@ -135,7 +134,6 @@ public final class EMFUtils {
 	 * <li>defaultCount=2, lowerBound=5, upperBound=-1 → returns 5</li>
 	 * <li>defaultCount=10, lowerBound=2, upperBound=4 → returns 4</li>
 	 * </ul>
-	 * </p>
 	 * 
 	 * @param feature the feature to calculate the count for
 	 * @param defaultCount the default count to use if bounds do not restrict it

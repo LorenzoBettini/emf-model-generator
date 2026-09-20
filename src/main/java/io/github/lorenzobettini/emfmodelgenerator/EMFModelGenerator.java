@@ -55,6 +55,29 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * <p><b>Customization:</b> For population-related customization (custom setters, per-feature
  * functions, multiplicities, depth, cycle policies, etc.), obtain the
  * {@link EMFInstancePopulator} via {@link #getInstancePopulator()} and configure it directly.
+ *
+ * <p><b>Post-generation validation:</b> Generation fills features where suitable values are
+ * available. In particular, a required non-containment reference can remain unset when the
+ * generated population has no assignable target. Use standard EMF validation to inspect or reject
+ * the completed candidate:
+ * <pre>{@code
+ * generator.generateFrom(personClass);
+ * EMFValidationResult result = generator.validate();
+ * generator.validateOrThrow();
+ * }</pre>
+ * Validation before saving is optional and disabled by default. Enabling it prevents any resource
+ * from being serialized when validation fails:
+ * <pre>{@code
+ * generator.enableValidationBeforeSave();
+ * generator.save();
+ * }</pre>
+ * A custom implementation can be supplied through {@link EMFModelValidator.Factory}:
+ * <pre>{@code
+ * EMFModelValidator.Factory factory = resourceSet ->
+ *     new MyProjectModelValidator(resourceSet);
+ * EMFValidationResult customResult = generator.validate(factory);
+ * generator.enableValidationBeforeSave(factory);
+ * }</pre>
  * 
  * @see #loadEcoreModel(String)
  * @see #unloadEcoreModels()
@@ -412,7 +435,7 @@ public class EMFModelGenerator {
 	}
 
 	/**
-	 * Validates all model roots using standard EMF validation.
+	 * Performs post-generation validation of all model roots using standard EMF validation.
 	 *
 	 * <p>Validation covers every root in every non-Ecore resource in this generator's
 	 * resource set. When an external {@link ResourceSet} was supplied, this includes
@@ -483,7 +506,8 @@ public class EMFModelGenerator {
 	 * Enables standard EMF validation before each save operation.
 	 *
 	 * <p>Validation occurs before the output directory is created or any resource is
-	 * serialized. An invalid result causes {@link EMFValidationException} to be thrown.</p>
+	 * serialized. An invalid result causes {@link EMFValidationException} to be thrown.
+	 * Validation before saving is disabled by default.</p>
 	 */
 	public void enableValidationBeforeSave() {
 		enableValidationBeforeSave(EMFModelValidator::standard);

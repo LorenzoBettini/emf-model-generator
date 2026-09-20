@@ -6,14 +6,19 @@
 
 A Java library for programmatically generating instances of EMF (Eclipse Modeling Framework) models.
 Given an Ecore metamodel and an EClass or EPackage, the tool creates populated model instances and serializes them as XMI files.
-The generator focuses on deterministic, reproducible, structurally valid EMF instances for tests, examples, prototypes, and generated-editor wizards.
+The generator focuses on deterministic, reproducible EMF instances for tests, examples, prototypes,
+and generated-editor wizards. Generated candidates can be checked for structural validity with the
+post-generation validation API.
 
 ## Features
 
 - **Automatic Model Generation**: generate instances from EClasses, EPackages, or selected sets of EClasses
 - **Deterministic Defaults**: use predictable attribute values and round-robin candidate selection for reproducible output
 - **Reference Handling**: populate containment references first, then assign non-containment cross-references among existing instances
-- **Constraint Compliance**: respect multiplicities, required features, containment semantics, opposite references, abstract classes, and interfaces
+- **Structural Awareness**: respect containment semantics, opposite references, abstract classes,
+  interfaces, and configured multiplicities where suitable values are available
+- **Post-Generation Validation**: validate candidates with standard EMF validation immediately or
+  opt in to validation before saving
 - **Flexible Configuration**: customize depth, multiplicities, per-feature functions, cycle policy, candidate selectors, and setter implementations
 - **Resource Management**: load Ecore files, register packages, create resources, save generated XMI, and unload metamodels
 - **File Naming Customization**: configure file prefixes and extensions globally, per package, or per class
@@ -187,24 +192,59 @@ List<EObject> allModels = generator.generateAllFrom(ePackage);
 generator.save();
 ```
 
-### Example 5: Generate with Validation
+### Example 5: Post-Generation Validation
 
-Always validate generated models to ensure they conform to the metamodel:
+Generation populates structural features where suitable values are available. Validation is a
+separate post-generation step: `validate()` uses standard EMF validation and returns the complete
+diagnostic tree for every model root in the generator's non-Ecore resources.
 
 ```java
-import org.eclipse.emf.common.util.Diagnostic;
-import org.eclipse.emf.ecore.util.Diagnostician;
+generator.generateFrom(personClass);
 
-EObject generated = generator.generateFrom(personClass);
-
-// Validate before saving
-var diagnostic = Diagnostician.INSTANCE.validate(generated);
-if (diagnostic.getSeverity() != Diagnostic.OK) {
-    System.err.println("Validation failed: " + diagnostic);
-} else {
-    generator.save();
+var result = generator.validate();
+if (!result.isValid()) {
+    result.rejectedDiagnostics().forEach(diagnostic ->
+        System.err.println(diagnostic.getMessage()));
 }
 ```
+
+Use `validateOrThrow()` when an invalid candidate should stop the workflow:
+
+```java
+generator.generateFrom(personClass);
+generator.validateOrThrow(); // throws EMFValidationException when invalid
+generator.save();
+```
+
+Validation before saving is optional and disabled by default, preserving the existing save
+behavior. Once enabled, every `save()` and `save(options)` validates all selected roots before
+creating the output directory or writing any resource:
+
+```java
+generator.enableValidationBeforeSave();
+generator.generateFrom(personClass);
+generator.save(); // writes nothing and throws if validation fails
+```
+
+Alternative validation implementations are supplied without a dependency-injection framework. A
+factory receives the exact `ResourceSet` used by the generator:
+
+```java
+EMFModelValidator.Factory validatorFactory = resourceSet ->
+    new MyProjectModelValidator(resourceSet);
+
+var result = generator.validate(validatorFactory);
+generator.enableValidationBeforeSave(validatorFactory);
+```
+
+`MyProjectModelValidator` implements `EMFModelValidator`; the generator creates and closes one
+validator per validation call. Standard structural validation is available through
+`EMFModelValidator::standard`. OCL validation remains the responsibility of the separate
+`emf-model-generator-ocl` companion project.
+
+Required non-containment references can remain unset when the generated population contains no
+existing assignable target. Such a candidate fails standard validation. By contrast, an unset
+optional cross-reference is structurally valid and is not itself a validation error.
 
 ## Loading Ecore Models
 
@@ -619,6 +659,8 @@ Examples:
 - **`EMFContainmentReferenceSetter`**: Creates and sets containment references (extendable)
 - **`EMFCrossReferenceSetter`**: Sets cross-references between objects (extendable)
 - **`EMFFeatureMapSetter`**: Handles EMF feature maps (extendable)
+- **`EMFModelValidator`**: Contract and factory for standard or custom post-generation validation
+- **`EMFValidationResult`**: Immutable validation outcome retaining the complete EMF diagnostic tree
 - **`EMFUtils`**: Utility methods for EMF operations and validation
 
 ## Sample Data Generation Patterns
@@ -640,8 +682,17 @@ The generator uses predictable patterns for sample data:
 - Maximum containment depth is configurable and defaults to `5`.
 - Feature maps require ExtendedMetaData annotations in the Ecore model.
 - Container references, which are opposites of containment references, cannot be set directly from the contained side.
-- Cross-references are assigned only among existing instances; the generator does not create new objects just to satisfy a non-containment reference.
-- The generator targets structural EMF validity, not arbitrary OCL or domain-specific invariants.
+- Cross-references are assigned only among existing compatible instances; the generator does not
+  create new objects just to satisfy a non-containment reference.
+- If no assignable target exists, a non-containment reference remains unchanged. This is valid for
+  an optional reference, but a required reference then fails standard EMF validation.
+- Generation does not by itself guarantee structural validity. Call `validate()` or
+  `validateOrThrow()`, or opt in with `enableValidationBeforeSave()` when invalid candidates must
+  not be serialized.
+- With an externally supplied `ResourceSet`, validation and saving both cover all non-Ecore resources in that set.
+- Standard validation checks structural EMF constraints. OCL and other domain-specific invariants
+  remain outside the core library and can be integrated through `EMFModelValidator.Factory`; OCL
+  support lives in the separate companion project.
 
 ## Contributing
 
