@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
@@ -40,6 +41,7 @@ import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
+import org.eclipse.emf.ecore.util.Diagnostician;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
@@ -54,6 +56,13 @@ class EMFModelGeneratorTest {
 	private static final String TEST_OUTPUT_DIR = "target/test-output";
 	private static final String TEST_INPUTS_DIR = "target/inputs";
 	private static final String EXPECTED_OUTPUTS_DIR = "src/test/resources/expected-outputs";
+
+	private static List<Diagnostic> flattenDiagnostics(final Diagnostic diagnostic) {
+		var diagnostics = new ArrayList<Diagnostic>();
+		diagnostics.add(diagnostic);
+		diagnostic.getChildren().forEach(child -> diagnostics.addAll(flattenDiagnostics(child)));
+		return diagnostics;
+	}
 	
 	@BeforeEach
 	void setUp() throws IOException {
@@ -3018,6 +3027,69 @@ class EMFModelGeneratorTest {
 		assertThat(queue).hasSize(5);
 		// With only 2 songs in the containment, we should see duplicates in the queue
 		assertThat(queue.stream().distinct().count()).isLessThan(queue.size());
+	}
+
+	@Test
+	void testRequiredCrossReferenceWithoutCandidateFailsStandardValidation() {
+		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		var bookClass = assertEClassExists(ePackage, "Book");
+		var authorReference = assertEReferenceExists(bookClass, "author");
+
+		var book = generator.generateFrom(bookClass);
+
+		assertThat(book.eIsSet(authorReference)).isFalse();
+		var diagnostic = Diagnostician.INSTANCE.validate(book);
+		assertThat(diagnostic.getSeverity()).isNotEqualTo(Diagnostic.OK);
+		assertThat(flattenDiagnostics(diagnostic))
+			.extracting(Diagnostic::getMessage)
+			.anySatisfy(message -> assertThat(message)
+				.containsAnyOf("author", "lower bound"));
+	}
+
+	@Test
+	void testRequiredCrossReferenceWithCandidatePassesStandardValidation() {
+		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		var bookClass = assertEClassExists(ePackage, "Book");
+		var writerClass = assertEClassExists(ePackage, "Writer");
+		var authorReference = assertEReferenceExists(bookClass, "author");
+
+		var roots = generator.generateFromSeveral(bookClass, writerClass);
+
+		assertThat(roots).hasSize(2);
+		assertThat(roots.get(0).eGet(authorReference)).isSameAs(roots.get(1));
+		assertThat(roots)
+			.allSatisfy(root -> assertThat(Diagnostician.INSTANCE.validate(root).getSeverity())
+				.isEqualTo(Diagnostic.OK));
+	}
+
+	@Test
+	void testOptionalCrossReferenceWithoutCandidatePassesStandardValidation() {
+		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		var bookOnTapeClass = assertEClassExists(ePackage, "BookOnTape");
+		var readerReference = assertEReferenceExists(bookOnTapeClass, "reader");
+
+		var bookOnTape = generator.generateFrom(bookOnTapeClass);
+
+		assertThat(bookOnTape.eIsSet(readerReference)).isFalse();
+		assertThat(Diagnostician.INSTANCE.validate(bookOnTape).getSeverity())
+			.isEqualTo(Diagnostic.OK);
+	}
+
+	@Test
+	void testPlainSaveSerializesBookWithMissingRequiredAuthor() throws IOException {
+		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		var bookClass = assertEClassExists(ePackage, "Book");
+		var authorReference = assertEReferenceExists(bookClass, "author");
+		var book = generator.generateFrom(bookClass);
+
+		generator.save();
+
+		var outputFile = new File(TEST_OUTPUT_DIR, "extlibrary_Book_1.xmi");
+		assertThat(outputFile).exists();
+		var savedBook = loadGeneratedModel(outputFile, ePackage);
+		assertThat(savedBook.eIsSet(authorReference)).isFalse();
+		assertThat(Diagnostician.INSTANCE.validate(savedBook).getSeverity())
+			.isNotEqualTo(Diagnostic.OK);
 	}
 
 	@Test
