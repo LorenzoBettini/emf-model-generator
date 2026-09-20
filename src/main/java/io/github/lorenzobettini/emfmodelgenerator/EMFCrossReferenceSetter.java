@@ -7,6 +7,11 @@ import org.eclipse.emf.ecore.EReference;
 /**
  * Responsible for setting cross reference (non-containment) values on EMF EObjects.
  * This class handles both single-valued and multi-valued cross references.
+ * Non-containment references are assigned from existing compatible instances. If no
+ * candidate exists, the reference is left unchanged; this is valid for optional references,
+ * while required references may then fail structural validation. Call
+ * {@link EMFModelGenerator#validate()} or enable validation before saving when structural
+ * conformance is required.
  */
 public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<EReference, EReference, EObject> {
 

@@ -70,6 +70,7 @@ public class EMFModelGenerator {
 	private int numberOfInstances = 1;
 	private final List<Resource> loadedEcoreResources = new ArrayList<>();
 	private final List<String> loadedEcoreNsURIs = new ArrayList<>();
+	private EMFModelValidator.Factory validationBeforeSaveFactory;
 
 	/**
 	 * Create a new EMFModelGenerator with default settings.
@@ -479,6 +480,42 @@ public class EMFModelGenerator {
 	}
 
 	/**
+	 * Enables standard EMF validation before each save operation.
+	 *
+	 * <p>Validation occurs before the output directory is created or any resource is
+	 * serialized. An invalid result causes {@link EMFValidationException} to be thrown.</p>
+	 */
+	public void enableValidationBeforeSave() {
+		enableValidationBeforeSave(EMFModelValidator::standard);
+	}
+
+	/**
+	 * Enables validation with a custom validator factory before each save operation.
+	 *
+	 * @param validatorFactory the factory used by subsequent save operations
+	 * @throws NullPointerException if {@code validatorFactory} is {@code null}
+	 */
+	public void enableValidationBeforeSave(final EMFModelValidator.Factory validatorFactory) {
+		validationBeforeSaveFactory = Objects.requireNonNull(validatorFactory, "validatorFactory");
+	}
+
+	/**
+	 * Disables validation before saving, restoring the default save behavior.
+	 */
+	public void disableValidationBeforeSave() {
+		validationBeforeSaveFactory = null;
+	}
+
+	/**
+	 * Reports whether validation before saving is enabled.
+	 *
+	 * @return {@code true} when subsequent saves validate before serialization
+	 */
+	public boolean isValidationBeforeSaveEnabled() {
+		return validationBeforeSaveFactory != null;
+	}
+
+	/**
 	 * Save all generated models to XMI files.
 	 * The file names are determined by the resources created during generation.
 	 * Ecore files are automatically skipped.
@@ -505,16 +542,16 @@ public class EMFModelGenerator {
 	 * @throws IOException if the files cannot be written
 	 */
 	public void save(final Map<Object, Object> options) throws IOException {
+		if (validationBeforeSaveFactory != null) {
+			validateOrThrow(validationBeforeSaveFactory);
+		}
+
 		// Ensure output directory exists
 		String outputDir = resourceHelper.getOutputDirectory();
 		Path outputPath = Paths.get(outputDir);
 		Files.createDirectories(outputPath);
 
-		for (Resource resource : sharedResourceSet.getResources()) {
-			// Skip resources that correspond to Ecore files
-			if (EMFUtils.isEcoreResource(resource)) {
-				continue;
-			}
+		for (Resource resource : modelResources()) {
 			resource.save(options);
 		}
 	}
