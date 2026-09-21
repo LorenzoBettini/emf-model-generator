@@ -35,7 +35,7 @@ public interface EMFModelValidator extends AutoCloseable {
 	 * @throws NullPointerException if {@code resourceSet} is {@code null}
 	 */
 	static EMFModelValidator standard(final ResourceSet resourceSet) {
-		return new StandardEMFModelValidator(resourceSet);
+		return new EMFStandardModelValidator(resourceSet);
 	}
 
 	/**

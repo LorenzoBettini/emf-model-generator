@@ -18,7 +18,7 @@ import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-class StandardEMFModelValidatorTest {
+class EMFStandardModelValidatorTest {
 
 	private static final String TEST_INPUTS_DIR = "target/inputs";
 	private static final EObject FIRST_ROOT = EcoreFactory.eINSTANCE.createEObject();
@@ -32,7 +32,7 @@ class StandardEMFModelValidatorTest {
 	@Test
 	void standardFactoryCreatesValidatorAndRejectsNullResourceSet() {
 		assertThat(EMFModelValidator.standard(new ResourceSetImpl()))
-				.isInstanceOf(StandardEMFModelValidator.class);
+				.isInstanceOf(EMFStandardModelValidator.class);
 		assertThatNullPointerException()
 				.isThrownBy(() -> EMFModelValidator.standard(null))
 				.withMessage("resourceSet");
@@ -195,8 +195,8 @@ class StandardEMFModelValidatorTest {
 		assertThat(result.diagnostic().getMessage()).contains("null diagnostic");
 	}
 
-	private static StandardEMFModelValidator validator(
+	private static EMFStandardModelValidator validator(
 			final java.util.function.Function<EObject, Diagnostic> diagnosticFunction) {
-		return new StandardEMFModelValidator(new ResourceSetImpl(), diagnosticFunction);
+		return new EMFStandardModelValidator(new ResourceSetImpl(), diagnosticFunction);
 	}
 }

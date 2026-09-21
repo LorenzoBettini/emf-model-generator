@@ -10,18 +10,18 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.Diagnostician;
 
-final class StandardEMFModelValidator implements EMFModelValidator {
+final class EMFStandardModelValidator implements EMFModelValidator {
 
-	private static final String DIAGNOSTIC_SOURCE = StandardEMFModelValidator.class.getName();
+	private static final String DIAGNOSTIC_SOURCE = EMFStandardModelValidator.class.getName();
 	private static final String AGGREGATE_MESSAGE = "Standard EMF validation";
 
 	private final Function<EObject, Diagnostic> diagnosticFunction;
 
-	StandardEMFModelValidator(final ResourceSet resourceSet) {
+	EMFStandardModelValidator(final ResourceSet resourceSet) {
 		this(resourceSet, Diagnostician.INSTANCE::validate);
 	}
 
-	StandardEMFModelValidator(final ResourceSet resourceSet,
+	EMFStandardModelValidator(final ResourceSet resourceSet,
 			final Function<EObject, Diagnostic> diagnosticFunction) {
 		Objects.requireNonNull(resourceSet, "resourceSet");
 		this.diagnosticFunction = Objects.requireNonNull(diagnosticFunction, "diagnosticFunction");
