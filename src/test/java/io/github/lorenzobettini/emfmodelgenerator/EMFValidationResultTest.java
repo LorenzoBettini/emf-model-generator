@@ -68,12 +68,13 @@ class EMFValidationResultTest {
 		root.add(second);
 		var result = new EMFValidationResult(root, Diagnostic.ERROR,
 				EMFValidationKind.VALIDATION_FAILURE);
+		var newDiagnostic = diagnostic(Diagnostic.OK, "new");
 
 		var flattened = result.flattenedDiagnostics();
 
 		assertThat(result.diagnostic()).isSameAs(root);
 		assertThat(flattened).containsExactly(root, first, grandchild, second);
-		assertThatThrownBy(() -> flattened.add(diagnostic(Diagnostic.OK, "new")))
+		assertThatThrownBy(() -> flattened.add(newDiagnostic))
 				.isInstanceOf(UnsupportedOperationException.class);
 	}
 
