@@ -7,7 +7,10 @@ import java.util.Objects;
 import org.eclipse.emf.common.util.Diagnostic;
 
 /**
- * The immutable outcome of model validation, retaining the complete diagnostic tree.
+ * The outcome of model validation, retaining the complete diagnostic tree.
+ *
+ * <p>The result components are fixed at construction time. The original
+ * {@link Diagnostic} instance is retained and may itself be mutable.</p>
  *
  * @param diagnostic the root diagnostic; the original instance is retained
  * @param rejectedSeverity the minimum severity that makes the result invalid
