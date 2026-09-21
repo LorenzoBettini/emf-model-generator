@@ -7,7 +7,6 @@ import java.util.function.Function;
 import org.eclipse.emf.common.util.BasicDiagnostic;
 import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.ecore.EObject;
-import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.Diagnostician;
 
 final class EMFStandardModelValidator implements EMFModelValidator {
@@ -17,12 +16,11 @@ final class EMFStandardModelValidator implements EMFModelValidator {
 
 	private final Function<EObject, Diagnostic> diagnosticFunction;
 
-	EMFStandardModelValidator(final ResourceSet resourceSet) {
-		this(resourceSet, Diagnostician.INSTANCE::validate);
+	EMFStandardModelValidator() {
+		this(Diagnostician.INSTANCE::validate);
 	}
 
-	EMFStandardModelValidator(final ResourceSet resourceSet,
-			final Function<EObject, Diagnostic> diagnosticFunction) {
+	EMFStandardModelValidator(final Function<EObject, Diagnostic> diagnosticFunction) {
 		this.diagnosticFunction = diagnosticFunction;
 	}
 

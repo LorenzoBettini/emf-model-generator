@@ -227,7 +227,10 @@ generator.save(); // writes nothing and throws if validation fails
 ```
 
 Alternative validation implementations are supplied without a dependency-injection framework. A
-factory receives the exact `ResourceSet` used by the generator:
+factory receives the exact `ResourceSet` used by the generator as optional construction context.
+Validators that depend on resource-set-local state may use it, while validators that do not may
+ignore it. The actual roots are supplied separately to the validator's `validate(...)` or
+`validateAll(...)` methods:
 
 ```java
 EMFModelValidator.Factory validatorFactory = resourceSet ->
@@ -238,9 +241,9 @@ generator.enableValidationBeforeSave(validatorFactory);
 ```
 
 `MyProjectModelValidator` implements `EMFModelValidator`; the generator creates and closes one
-validator per validation call. Standard structural validation is available through
-`EMFModelValidator::standard`. OCL validation remains the responsibility of the separate
-`emf-model-generator-ocl` companion project.
+validator per validation call. Standard structural validation does not need resource-set context
+and is available through `EMFModelValidator.standard()`. OCL validation remains the responsibility
+of the separate `emf-model-generator-ocl` companion project.
 
 Required non-containment references can remain unset when the generated population contains no
 existing assignable target. Such a candidate fails standard validation. By contrast, an unset

@@ -1,8 +1,6 @@
 package io.github.lorenzobettini.emfmodelgenerator;
 
 import java.util.Collection;
-import java.util.Objects;
-
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 
@@ -14,15 +12,21 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 public interface EMFModelValidator extends AutoCloseable {
 
 	/**
-	 * Creates a validator for a generator's exact resource set.
+	 * Factory for validators used by an {@link EMFModelGenerator}.
+	 *
+	 * <p>The generator supplies its exact {@link ResourceSet} as validation context.
+	 * Implementations that depend on resource-set-local state may use it; validators that
+	 * do not require such context may ignore it. The model roots to validate are supplied
+	 * separately through {@link #validate(EObject)} or {@link #validateAll(Collection)}.</p>
 	 */
 	@FunctionalInterface
 	interface Factory {
 		/**
 		 * Creates a validator.
 		 *
-		 * @param resourceSet the resource set containing the models to validate
-		 * @return a validator for the resource set
+		 * @param resourceSet the generator's non-null resource set, available as context
+		 *        for validators that need resource-set-local state
+		 * @return a non-null validator
 		 */
 		EMFModelValidator create(ResourceSet resourceSet);
 	}
@@ -30,12 +34,10 @@ public interface EMFModelValidator extends AutoCloseable {
 	/**
 	 * Creates a validator using standard EMF validation.
 	 *
-	 * @param resourceSet the non-null resource set containing the models to validate
 	 * @return a standard EMF validator
-	 * @throws NullPointerException if {@code resourceSet} is {@code null}
 	 */
-	static EMFModelValidator standard(final ResourceSet resourceSet) {
-		return new EMFStandardModelValidator(Objects.requireNonNull(resourceSet, "resourceSet"));
+	static EMFModelValidator standard() {
+		return new EMFStandardModelValidator();
 	}
 
 	/**

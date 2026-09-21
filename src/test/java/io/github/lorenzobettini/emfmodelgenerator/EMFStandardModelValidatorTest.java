@@ -30,19 +30,16 @@ class EMFStandardModelValidatorTest {
 	}
 
 	@Test
-	void standardFactoryCreatesValidatorAndRejectsNullResourceSet() {
-		assertThat(EMFModelValidator.standard(new ResourceSetImpl()))
+	void standardFactoryCreatesValidator() {
+		assertThat(EMFModelValidator.standard())
 				.isInstanceOf(EMFStandardModelValidator.class);
-		assertThatNullPointerException()
-				.isThrownBy(() -> EMFModelValidator.standard(null))
-				.withMessage("resourceSet");
 	}
 
 	@Test
 	void validatesOneValidRoot() {
 		var root = EcoreFactory.eINSTANCE.createEObject();
 
-		var result = EMFModelValidator.standard(new ResourceSetImpl()).validate(root);
+		var result = EMFModelValidator.standard().validate(root);
 
 		assertThat(result.isValid()).isTrue();
 		assertThat(result.rejectedSeverity()).isEqualTo(Diagnostic.ERROR);
@@ -57,7 +54,7 @@ class EMFStandardModelValidatorTest {
 		var authorReference = assertEReferenceExists(bookClass, "author");
 		var book = ePackage.getEFactoryInstance().create(bookClass);
 
-		var result = EMFModelValidator.standard(resourceSet).validate(book);
+		var result = EMFModelValidator.standard().validate(book);
 
 		assertThat(book.eIsSet(authorReference)).isFalse();
 		assertThat(result.kind()).isEqualTo(EMFValidationKind.VALIDATION_FAILURE);
@@ -74,7 +71,7 @@ class EMFStandardModelValidatorTest {
 		var readerReference = assertEReferenceExists(bookOnTapeClass, "reader");
 		var bookOnTape = ePackage.getEFactoryInstance().create(bookOnTapeClass);
 
-		var result = EMFModelValidator.standard(resourceSet).validate(bookOnTape);
+		var result = EMFModelValidator.standard().validate(bookOnTape);
 
 		assertThat(bookOnTape.eIsSet(readerReference)).isFalse();
 		assertThat(result.isValid()).isTrue();
@@ -112,7 +109,7 @@ class EMFStandardModelValidatorTest {
 
 	@Test
 	void emptyRootsProduceValidAggregate() {
-		var result = EMFModelValidator.standard(new ResourceSetImpl()).validateAll(List.of());
+		var result = EMFModelValidator.standard().validateAll(List.of());
 
 		assertThat(result.isValid()).isTrue();
 		assertThat(result.diagnostic().getSeverity()).isEqualTo(Diagnostic.OK);
@@ -121,7 +118,7 @@ class EMFStandardModelValidatorTest {
 
 	@Test
 	void standardValidationAggregatesSeveralValidRoots() {
-		var result = EMFModelValidator.standard(new ResourceSetImpl())
+		var result = EMFModelValidator.standard()
 				.validateAll(List.of(FIRST_ROOT, SECOND_ROOT));
 
 		assertThat(result.isValid()).isTrue();
@@ -157,7 +154,7 @@ class EMFStandardModelValidatorTest {
 
 	@Test
 	void rejectsNullInputsWithClearMessages() {
-		var validator = EMFModelValidator.standard(new ResourceSetImpl());
+		var validator = EMFModelValidator.standard();
 
 		assertThatNullPointerException().isThrownBy(() -> validator.validate(null))
 				.withMessage("root");
@@ -169,26 +166,16 @@ class EMFStandardModelValidatorTest {
 	}
 
 	@Test
-	void doesNotMutateOrRetainCallerResourceSetAndCloseIsIdempotent() {
-		var resourceSet = new ResourceSetImpl();
-		var resources = List.copyOf(resourceSet.getResources());
-		var packageRegistry = new java.util.HashMap<>(resourceSet.getPackageRegistry());
-		var factoryRegistry = new java.util.HashMap<>(
-				resourceSet.getResourceFactoryRegistry().getExtensionToFactoryMap());
-		var validator = EMFModelValidator.standard(resourceSet);
+	void closeIsIdempotent() {
+		var validator = EMFModelValidator.standard();
 
 		validator.validate(FIRST_ROOT);
 		assertThatNoException().isThrownBy(validator::close);
 		assertThatNoException().isThrownBy(validator::close);
-
-		assertThat(resourceSet.getResources()).containsExactlyElementsOf(resources);
-		assertThat(resourceSet.getPackageRegistry()).containsExactlyInAnyOrderEntriesOf(packageRegistry);
-		assertThat(resourceSet.getResourceFactoryRegistry().getExtensionToFactoryMap())
-				.containsExactlyInAnyOrderEntriesOf(factoryRegistry);
 	}
 
 	private static EMFStandardModelValidator validator(
 			final java.util.function.Function<EObject, Diagnostic> diagnosticFunction) {
-		return new EMFStandardModelValidator(new ResourceSetImpl(), diagnosticFunction);
+		return new EMFStandardModelValidator(diagnosticFunction);
 	}
 }

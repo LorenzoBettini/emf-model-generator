@@ -86,6 +86,9 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  */
 public class EMFModelGenerator {
 
+	private static final EMFModelValidator.Factory STANDARD_VALIDATOR_FACTORY =
+			ignored -> EMFModelValidator.standard();
+
 	private String outputDirectory = "target/test-output";
 	private final ResourceSet sharedResourceSet;
 	private EMFResourceHelper resourceHelper;
@@ -444,7 +447,7 @@ public class EMFModelGenerator {
 	 * @return the aggregate validation result
 	 */
 	public EMFValidationResult validate() {
-		return validate(EMFModelValidator::standard);
+		return validate(STANDARD_VALIDATOR_FACTORY);
 	}
 
 	/**
@@ -473,7 +476,7 @@ public class EMFModelGenerator {
 	 * @throws EMFValidationException if validation is not valid
 	 */
 	public void validateOrThrow() {
-		validateOrThrow(EMFModelValidator::standard);
+		validateOrThrow(STANDARD_VALIDATOR_FACTORY);
 	}
 
 	/**
@@ -510,7 +513,7 @@ public class EMFModelGenerator {
 	 * Validation before saving is disabled by default.</p>
 	 */
 	public void enableValidationBeforeSave() {
-		enableValidationBeforeSave(EMFModelValidator::standard);
+		enableValidationBeforeSave(STANDARD_VALIDATOR_FACTORY);
 	}
 
 	/**
