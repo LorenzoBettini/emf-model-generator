@@ -11,7 +11,7 @@ public final class EMFValidationException extends RuntimeException {
 	@Serial
 	private static final long serialVersionUID = 1L;
 
-	private final EMFValidationResult result;
+	private final transient EMFValidationResult result;
 
 	/**
 	 * Creates an exception for a non-valid validation result.
