@@ -545,6 +545,8 @@ public class EMFModelGenerator {
 	 * Ecore files are automatically skipped.
 	 *
 	 * @throws IOException if the files cannot be written
+	 * @throws EMFValidationException if validation before saving is enabled
+		and the generated model fails validation
 	 */
 	public void save() throws IOException {
 		save(null);
@@ -564,6 +566,8 @@ public class EMFModelGenerator {
 	 *
 	 * @param options the save options to pass to EMF resources, or null for default options
 	 * @throws IOException if the files cannot be written
+	 * @throws EMFValidationException if validation before saving is enabled
+		and the generated model fails validation
 	 */
 	public void save(final Map<Object, Object> options) throws IOException {
 		if (validationBeforeSaveFactory != null) {
