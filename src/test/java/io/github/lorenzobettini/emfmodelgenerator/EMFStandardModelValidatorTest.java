@@ -165,7 +165,7 @@ class EMFStandardModelValidatorTest {
 				.withMessage("roots");
 		assertThatNullPointerException()
 				.isThrownBy(() -> validator.validateAll(java.util.Arrays.asList(FIRST_ROOT, null)))
-				.withMessage("roots must not contain null elements");
+				.withMessage("root");
 	}
 
 	@Test
@@ -185,14 +185,6 @@ class EMFStandardModelValidatorTest {
 		assertThat(resourceSet.getPackageRegistry()).containsExactlyInAnyOrderEntriesOf(packageRegistry);
 		assertThat(resourceSet.getResourceFactoryRegistry().getExtensionToFactoryMap())
 				.containsExactlyInAnyOrderEntriesOf(factoryRegistry);
-	}
-
-	@Test
-	void convertsNullDiagnosticIntoValidatorFailure() {
-		var result = validator(root -> null).validate(FIRST_ROOT);
-
-		assertThat(result.kind()).isEqualTo(EMFValidationKind.VALIDATOR_FAILURE);
-		assertThat(result.diagnostic().getMessage()).contains("null diagnostic");
 	}
 
 	private static EMFStandardModelValidator validator(

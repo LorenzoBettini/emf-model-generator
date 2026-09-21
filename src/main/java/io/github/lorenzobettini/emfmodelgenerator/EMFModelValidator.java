@@ -35,7 +35,7 @@ public interface EMFModelValidator extends AutoCloseable {
 	 * @throws NullPointerException if {@code resourceSet} is {@code null}
 	 */
 	static EMFModelValidator standard(final ResourceSet resourceSet) {
-		return new EMFStandardModelValidator(resourceSet);
+		return new EMFStandardModelValidator(Objects.requireNonNull(resourceSet, "resourceSet"));
 	}
 
 	/**
@@ -58,12 +58,10 @@ public interface EMFModelValidator extends AutoCloseable {
 	 * Validates one root and throws if it is invalid.
 	 *
 	 * @param root the non-null root to validate
-	 * @throws NullPointerException if the root or implementation result is {@code null}
 	 * @throws EMFValidationException if validation is not valid
 	 */
 	default void validateOrThrow(final EObject root) {
-		var result = Objects.requireNonNull(validate(Objects.requireNonNull(root, "root")),
-				"Validator returned a null result");
+		var result = validate(root);
 		if (!result.isValid()) {
 			throw new EMFValidationException(result);
 		}
@@ -73,12 +71,10 @@ public interface EMFModelValidator extends AutoCloseable {
 	 * Validates all roots and throws if the aggregate result is invalid.
 	 *
 	 * @param roots the non-null roots to validate
-	 * @throws NullPointerException if the collection or implementation result is {@code null}
 	 * @throws EMFValidationException if validation is not valid
 	 */
 	default void validateAllOrThrow(final Collection<? extends EObject> roots) {
-		var result = Objects.requireNonNull(validateAll(Objects.requireNonNull(roots, "roots")),
-				"Validator returned a null result");
+		var result = validateAll(roots);
 		if (!result.isValid()) {
 			throw new EMFValidationException(result);
 		}

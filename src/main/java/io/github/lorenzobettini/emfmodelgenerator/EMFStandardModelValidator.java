@@ -23,16 +23,14 @@ final class EMFStandardModelValidator implements EMFModelValidator {
 
 	EMFStandardModelValidator(final ResourceSet resourceSet,
 			final Function<EObject, Diagnostic> diagnosticFunction) {
-		Objects.requireNonNull(resourceSet, "resourceSet");
-		this.diagnosticFunction = Objects.requireNonNull(diagnosticFunction, "diagnosticFunction");
+		this.diagnosticFunction = diagnosticFunction;
 	}
 
 	@Override
 	public EMFValidationResult validate(final EObject root) {
 		Objects.requireNonNull(root, "root");
 		try {
-			var diagnostic = Objects.requireNonNull(diagnosticFunction.apply(root),
-					"Diagnostician returned a null diagnostic");
+			var diagnostic = diagnosticFunction.apply(root);
 			return result(diagnostic, EMFValidationKind.VALIDATION_FAILURE);
 		} catch (RuntimeException exception) {
 			return validatorFailure(exception);
@@ -46,7 +44,6 @@ final class EMFStandardModelValidator implements EMFModelValidator {
 				new Object[0]);
 		var validatorFailed = false;
 		for (var root : roots) {
-			Objects.requireNonNull(root, "roots must not contain null elements");
 			var result = validate(root);
 			aggregate.add(result.diagnostic());
 			validatorFailed |= result.kind() == EMFValidationKind.VALIDATOR_FAILURE;

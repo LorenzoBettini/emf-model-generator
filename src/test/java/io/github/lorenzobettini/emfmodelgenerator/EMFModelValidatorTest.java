@@ -4,7 +4,6 @@ import static io.github.lorenzobettini.emfmodelgenerator.EMFValidationResultTest
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.Collection;
 import java.util.List;
@@ -50,28 +49,6 @@ class EMFModelValidatorTest {
 			assertThatExceptionOfType(EMFValidationException.class)
 					.isThrownBy(() -> invalidValidator.validateAllOrThrow(roots))
 					.satisfies(exception -> assertThat(exception.getResult()).isSameAs(invalid));
-		}
-	}
-
-	@Test
-	void convenienceMethodsRejectNullArgumentsBeforeDelegating() {
-		try (var validator = new StubValidator(validResult(), validResult())) {
-			assertThatNullPointerException().isThrownBy(() -> validator.validateOrThrow(null));
-			assertThatNullPointerException().isThrownBy(() -> validator.validateAllOrThrow(null));
-			assertThat(validator.validatedRoot).isNull();
-			assertThat(validator.validatedRoots).isNull();
-		}
-	}
-
-	@Test
-	void convenienceMethodsRejectNullImplementationResults() {
-		try (var validator = new StubValidator(null, null)) {
-			assertThatNullPointerException()
-					.isThrownBy(() -> validator.validateOrThrow(ROOT))
-					.withMessage("Validator returned a null result");
-			assertThatNullPointerException()
-					.isThrownBy(() -> validator.validateAllOrThrow(List.of(ROOT)))
-					.withMessage("Validator returned a null result");
 		}
 	}
 
