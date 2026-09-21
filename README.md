@@ -242,8 +242,7 @@ generator.enableValidationBeforeSave(validatorFactory);
 
 `MyProjectModelValidator` implements `EMFModelValidator`; the generator creates and closes one
 validator per validation call. Standard structural validation does not need resource-set context
-and is available through `EMFModelValidator.standard()`. OCL validation remains the responsibility
-of the separate `emf-model-generator-ocl` companion project.
+and is available through `EMFModelValidator.standard()`.
 
 Required non-containment references can remain unset when the generated population contains no
 existing assignable target. Such a candidate fails standard validation. By contrast, an unset
@@ -694,8 +693,7 @@ The generator uses predictable patterns for sample data:
   not be serialized.
 - With an externally supplied `ResourceSet`, validation and saving both cover all non-Ecore resources in that set.
 - Standard validation checks structural EMF constraints. OCL and other domain-specific invariants
-  remain outside the core library and can be integrated through `EMFModelValidator.Factory`; OCL
-  support lives in the separate companion project.
+  remain outside the core library and can be integrated through `EMFModelValidator.Factory`.
 
 ## Contributing
 
