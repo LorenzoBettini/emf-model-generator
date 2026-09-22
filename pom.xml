@@ -123,6 +123,10 @@
 					<version>3.6.0</version>
 				</plugin>
 				<plugin>
+					<artifactId>maven-surefire-report-plugin</artifactId>
+					<version>3.6.0</version>
+				</plugin>
+				<plugin>
 					<artifactId>maven-jar-plugin</artifactId>
 					<version>3.5.1</version>
 				</plugin>
@@ -154,6 +158,16 @@
 					<groupId>org.apache.felix</groupId>
 					<artifactId>maven-bundle-plugin</artifactId>
 					<version>6.2.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>${maven-javadoc-plugin-version}</version>
+					<!-- Use the following configuration with Java 8 -->
+					<configuration>
+						<doclint>none</doclint>
+						<failOnError>false</failOnError>
+					</configuration>
 				</plugin>
 				<!-- Configure PIT Mutation Testing plugin here since it is invoked explicitly in CI -->
 				<plugin>
@@ -440,18 +454,12 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>${maven-javadoc-plugin-version}</version>
 						<executions>
 							<execution>
 								<id>attach-javadocs</id>
 								<goals>
 									<goal>jar</goal>
 								</goals>
-								<!-- Use the following configuration with Java 8 -->
-								<configuration>
-									<doclint>none</doclint>
-									<failOnError>false</failOnError>
-								</configuration>
 							</execution>
 						</executions>
 					</plugin>
@@ -475,6 +483,33 @@
 								</configuration>
 							</execution>
 						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>reports</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-report-plugin</artifactId>
+						<configuration>
+							<outputDirectory>
+								${project.build.directory}/surefire-report
+							</outputDirectory>
+							<outputName>index</outputName>
+							<linkXRef>false</linkXRef>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<configuration>
+							<outputDirectory>
+								${project.build.directory}/javadoc-report
+							</outputDirectory>
+						</configuration>
 					</plugin>
 				</plugins>
 			</build>
