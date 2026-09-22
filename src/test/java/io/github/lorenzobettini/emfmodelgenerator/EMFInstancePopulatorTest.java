@@ -1,9 +1,9 @@
 package io.github.lorenzobettini.emfmodelgenerator;
 
-import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createInstance;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEAttributeExists;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEClassExists;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEReferenceExists;
+import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createInstance;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.loadEcoreModel;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.validateModel;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -857,25 +857,21 @@ class EMFInstancePopulatorTest {
 		
 		final var shelvesReference = (EReference) library.eClass()
 				.getEStructuralFeature("shelves");
+		final var customShelf = EcoreUtil.create(shelvesReference.getEReferenceType());
 		
-		// Set custom function for shelves containment reference:
-		// if already set, always return the same shelf instance
-		populator.functionForContainmentReference(shelvesReference, owner -> {
-			var shelves = EMFUtils.getAsEObjectsList(owner, shelvesReference);
-			if (!shelves.isEmpty()) {
-				return shelves.get(0);
-			}
-			return EcoreUtil.create(shelvesReference.getEReferenceType());
-		});
+		// Set custom function for the shelves containment reference.
+		populator.functionForContainmentReference(shelvesReference,
+				owner -> customShelf);
 		
-		// Configure to create 3 shelves
+		// Create one shelf and three objects for its multi-valued containments.
 		populator.getContainmentReferenceSetter().setDefaultMaxCount(3);
+		populator.setContainmentReferenceMaxCountFor(shelvesReference, 1);
 		
 		populator.populateEObjects(library);
 		
-		// Verify just one shelf was created using the custom containment function
+		// Verify the custom containment function supplied the shelf.
 		final var shelves = EMFUtils.getAsEObjectsList(library, shelvesReference);
-		assertThat(shelves).hasSize(1);
+		assertThat(shelves).containsExactly(customShelf);
 		
 		validateModel(library);
 	}

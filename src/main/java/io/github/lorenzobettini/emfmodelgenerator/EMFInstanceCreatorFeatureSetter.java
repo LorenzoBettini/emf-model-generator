@@ -57,23 +57,30 @@ public abstract class EMFInstanceCreatorFeatureSetter<T extends EStructuralFeatu
 	}
 
 	/**
-	 * Create an instance of the given type for the specified owner and reference.
-	 * 
-	 * If a custom function is defined for the reference, it is used to create the instance.
-	 * Otherwise, an instantiable subclass of the type is selected using the configured strategy,
-	 * and a new EObject of that subclass is created.
-	 * If no instantiable subclass is available, null is returned.
-	 * 
-	 * @param owner     the EObject owning the reference
+	 * Creates an instance of the given type for the specified owner and reference.
+	 *
+	 * <p>If a custom function is defined for the reference, it is invoked first.
+	 * A non-null object returned by the function is used only if it is not already
+	 * contained by another object. Reusing an already-contained object could make
+	 * EMF move it from its current container. In that case, or if the function
+	 * returns {@code null}, the default creation strategy is used instead.</p>
+	 *
+	 * <p>The default strategy selects an instantiable subclass of the requested
+	 * type using the configured strategy and creates a new {@link EObject} of that
+	 * subclass. If no instantiable subclass is available, {@code null} is
+	 * returned.</p>
+	 *
+	 * @param owner the EObject owning the reference
 	 * @param reference the reference for which to create an instance
-	 * @param type      the EClass of the instance to create
-	 * @return the created EObject, or null if no instantiable subclass is available
+	 * @param type the EClass of the instance to create
+	 * @return the created or selected EObject, or {@code null} if no suitable
+	 *         instance can be obtained
 	 */
 	protected EObject createInstance(EObject owner, EReference reference, EClass type) {
 		var function = getFunctionFor(reference);
 		if (function != null) {
 			final EObject instance = function.apply(owner);
-			if (instance != null) {
+			if (instance != null && instance.eContainer() == null) {
 				createdEObjects.add(instance);
 				return instance;
 			}

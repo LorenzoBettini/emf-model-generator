@@ -1,9 +1,9 @@
 package io.github.lorenzobettini.emfmodelgenerator;
 
-import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createResource;
-import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createResourceSet;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEAttributeExists;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEClassExists;
+import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createResource;
+import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createResourceSet;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.loadEcoreModel;
 import static org.assertj.core.api.Assertions.assertThat;
 

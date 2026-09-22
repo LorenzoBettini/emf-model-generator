@@ -6,8 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EClass;
@@ -53,6 +55,38 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * <p><b>Customization:</b> For population-related customization (custom setters, per-feature
  * functions, multiplicities, depth, cycle policies, etc.), obtain the
  * {@link EMFInstancePopulator} via {@link #getInstancePopulator()} and configure it directly.
+ *
+ * <p><b>Post-generation validation:</b> Generation fills features where suitable values are
+ * available. In particular, a required non-containment reference can remain unset when the
+ * generated population has no assignable target. Use {@link #validate()} to inspect and handle the
+ * validation result:
+ * <pre>{@code
+ * generator.generateFrom(personClass);
+ * EMFValidationResult result = generator.validate();
+ * if (!result.isValid()) {
+ *     result.rejectedDiagnostics().forEach(diagnostic ->
+ *         System.err.println(diagnostic.getMessage()));
+ * }
+ * }</pre>
+ * Alternatively, use {@link #validateOrThrow()} when an invalid candidate should stop the
+ * workflow:
+ * <pre>{@code
+ * generator.generateFrom(personClass);
+ * generator.validateOrThrow();
+ * }</pre>
+ * Validation before saving is optional and disabled by default. Enabling it prevents any resource
+ * from being serialized when validation fails:
+ * <pre>{@code
+ * generator.enableValidationBeforeSave();
+ * generator.save();
+ * }</pre>
+ * A custom implementation can be supplied through {@link EMFModelValidator.Factory}:
+ * <pre>{@code
+ * EMFModelValidator.Factory factory = resourceSet ->
+ *     new MyProjectModelValidator(resourceSet);
+ * EMFValidationResult customResult = generator.validate(factory);
+ * generator.enableValidationBeforeSave(factory);
+ * }</pre>
  * 
  * @see #loadEcoreModel(String)
  * @see #unloadEcoreModels()
@@ -61,6 +95,9 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  */
 public class EMFModelGenerator {
 
+	private static final EMFModelValidator.Factory STANDARD_VALIDATOR_FACTORY =
+			ignored -> EMFModelValidator.standard();
+
 	private String outputDirectory = "target/test-output";
 	private final ResourceSet sharedResourceSet;
 	private EMFResourceHelper resourceHelper;
@@ -68,6 +105,7 @@ public class EMFModelGenerator {
 	private int numberOfInstances = 1;
 	private final List<Resource> loadedEcoreResources = new ArrayList<>();
 	private final List<String> loadedEcoreNsURIs = new ArrayList<>();
+	private EMFModelValidator.Factory validationBeforeSaveFactory;
 
 	/**
 	 * Create a new EMFModelGenerator with default settings.
@@ -409,11 +447,118 @@ public class EMFModelGenerator {
 	}
 
 	/**
+	 * Performs post-generation validation of all model roots using standard EMF validation.
+	 *
+	 * <p>Validation covers every root in every non-Ecore resource in this generator's
+	 * resource set. When an external {@link ResourceSet} was supplied, this includes
+	 * its existing non-Ecore resources, matching the scope of {@link #save()}.</p>
+	 *
+	 * @return the aggregate validation result
+	 */
+	public EMFValidationResult validate() {
+		return validate(STANDARD_VALIDATOR_FACTORY);
+	}
+
+	/**
+	 * Validates all model roots using a validator created for this generator's exact
+	 * resource set.
+	 *
+	 * <p>Validation covers every root in every non-Ecore resource in this generator's
+	 * resource set, preserving resource and root order.</p>
+	 *
+	 * @param validatorFactory the factory used to create one validator for this call
+	 * @return the aggregate validation result
+	 * @throws NullPointerException if the factory, validator, or result is {@code null}
+	 */
+	public EMFValidationResult validate(final EMFModelValidator.Factory validatorFactory) {
+		Objects.requireNonNull(validatorFactory, "validatorFactory");
+		try (var validator = Objects.requireNonNull(validatorFactory.create(sharedResourceSet),
+				"Validator factory returned null")) {
+			return Objects.requireNonNull(validator.validateAll(modelRoots()),
+					"Validator returned a null result");
+		}
+	}
+
+	/**
+	 * Validates all model roots with standard EMF validation and throws when invalid.
+	 *
+	 * @throws EMFValidationException if validation is not valid
+	 */
+	public void validateOrThrow() {
+		validateOrThrow(STANDARD_VALIDATOR_FACTORY);
+	}
+
+	/**
+	 * Validates all model roots with a custom validator and throws when invalid.
+	 *
+	 * @param validatorFactory the factory used to create one validator for this call
+	 * @throws NullPointerException if the factory, validator, or result is {@code null}
+	 * @throws EMFValidationException if validation is not valid
+	 */
+	public void validateOrThrow(final EMFModelValidator.Factory validatorFactory) {
+		var result = validate(validatorFactory);
+		if (!result.isValid()) {
+			throw new EMFValidationException(result);
+		}
+	}
+
+	private Collection<Resource> modelResources() {
+		return sharedResourceSet.getResources().stream()
+				.filter(resource -> !EMFUtils.isEcoreResource(resource))
+				.toList();
+	}
+
+	private List<EObject> modelRoots() {
+		return modelResources().stream()
+				.flatMap(resource -> resource.getContents().stream())
+				.toList();
+	}
+
+	/**
+	 * Enables standard EMF validation before each save operation.
+	 *
+	 * <p>Validation occurs before the output directory is created or any resource is
+	 * serialized. An invalid result causes {@link EMFValidationException} to be thrown.
+	 * Validation before saving is disabled by default.</p>
+	 */
+	public void enableValidationBeforeSave() {
+		enableValidationBeforeSave(STANDARD_VALIDATOR_FACTORY);
+	}
+
+	/**
+	 * Enables validation with a custom validator factory before each save operation.
+	 *
+	 * @param validatorFactory the factory used by subsequent save operations
+	 * @throws NullPointerException if {@code validatorFactory} is {@code null}
+	 */
+	public void enableValidationBeforeSave(final EMFModelValidator.Factory validatorFactory) {
+		validationBeforeSaveFactory = Objects.requireNonNull(validatorFactory, "validatorFactory");
+	}
+
+	/**
+	 * Disables validation before saving, restoring the default save behavior.
+	 */
+	public void disableValidationBeforeSave() {
+		validationBeforeSaveFactory = null;
+	}
+
+	/**
+	 * Reports whether validation before saving is enabled.
+	 *
+	 * @return {@code true} when subsequent saves validate before serialization
+	 */
+	public boolean isValidationBeforeSaveEnabled() {
+		return validationBeforeSaveFactory != null;
+	}
+
+	/**
 	 * Save all generated models to XMI files.
 	 * The file names are determined by the resources created during generation.
 	 * Ecore files are automatically skipped.
 	 *
 	 * @throws IOException if the files cannot be written
+	 * @throws EMFValidationException if validation before saving is enabled
+		and the generated model fails validation
 	 */
 	public void save() throws IOException {
 		save(null);
@@ -433,18 +578,20 @@ public class EMFModelGenerator {
 	 *
 	 * @param options the save options to pass to EMF resources, or null for default options
 	 * @throws IOException if the files cannot be written
+	 * @throws EMFValidationException if validation before saving is enabled
+		and the generated model fails validation
 	 */
 	public void save(final Map<Object, Object> options) throws IOException {
+		if (validationBeforeSaveFactory != null) {
+			validateOrThrow(validationBeforeSaveFactory);
+		}
+
 		// Ensure output directory exists
 		String outputDir = resourceHelper.getOutputDirectory();
 		Path outputPath = Paths.get(outputDir);
 		Files.createDirectories(outputPath);
 
-		for (Resource resource : sharedResourceSet.getResources()) {
-			// Skip resources that correspond to Ecore files
-			if (EMFUtils.isEcoreResource(resource)) {
-				continue;
-			}
+		for (Resource resource : modelResources()) {
 			resource.save(options);
 		}
 	}

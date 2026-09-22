@@ -7,10 +7,10 @@ import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createInst
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.validateModel;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
+import java.util.List;
 
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;

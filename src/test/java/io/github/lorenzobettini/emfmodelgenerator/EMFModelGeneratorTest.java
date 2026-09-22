@@ -1,12 +1,12 @@
 package io.github.lorenzobettini.emfmodelgenerator;
 
+import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEAttributeExists;
+import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEClassExists;
+import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEReferenceExists;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertXMIMatchesExpected;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createContainmentEReference;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createEClass;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createEPackage;
-import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEAttributeExists;
-import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEClassExists;
-import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEReferenceExists;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.loadEcoreModel;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.loadGeneratedModel;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.validateModel;
@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.emf.common.util.BasicDiagnostic;
+import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
@@ -37,9 +39,11 @@ import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EcoreFactory;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
+import org.eclipse.emf.ecore.util.Diagnostician;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
@@ -54,6 +58,13 @@ class EMFModelGeneratorTest {
 	private static final String TEST_OUTPUT_DIR = "target/test-output";
 	private static final String TEST_INPUTS_DIR = "target/inputs";
 	private static final String EXPECTED_OUTPUTS_DIR = "src/test/resources/expected-outputs";
+
+	private static List<Diagnostic> flattenDiagnostics(final Diagnostic diagnostic) {
+		var diagnostics = new ArrayList<Diagnostic>();
+		diagnostics.add(diagnostic);
+		diagnostic.getChildren().forEach(child -> diagnostics.addAll(flattenDiagnostics(child)));
+		return diagnostics;
+	}
 	
 	@BeforeEach
 	void setUp() throws IOException {
@@ -2512,27 +2523,23 @@ class EMFModelGeneratorTest {
 		final var libraryClass = assertEClassExists(ePackage, "Library");
 
 		final var shelvesReference = (EReference) libraryClass.getEStructuralFeature("shelves");
+		final var customShelf = EcoreUtil.create(shelvesReference.getEReferenceType());
 
-		// Set custom function for shelves containment reference:
-		// if already set, always return the same shelf instance
-		generator.getInstancePopulator().functionForContainmentReference(shelvesReference, owner -> {
-			var shelves = EMFUtils.getAsEObjectsList(owner, shelvesReference);
-			if (!shelves.isEmpty()) {
-				return shelves.get(0);
-			}
-			return EcoreUtil.create(shelvesReference.getEReferenceType());
-		});
+		// Set custom function for the shelves containment reference.
+		generator.getInstancePopulator().functionForContainmentReference(shelvesReference,
+				owner -> customShelf);
 
-		// Configure to create 3 containment references
+		// Create one shelf and three objects for its multi-valued containments.
 		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
+		generator.getInstancePopulator().setContainmentReferenceMaxCountFor(shelvesReference, 1);
 
 		generator.setFilePrefix("function_cont_");
 		var library = generator.generateFrom(libraryClass);
 		generator.save();
 
-		// just one shelve should be created (due to the custom function)
+		// Verify the custom containment function supplied the shelf.
 		var shelves = EMFUtils.getAsEObjectsList(library, shelvesReference);
-		assertThat(shelves).hasSize(1);
+		assertThat(shelves).containsExactly(customShelf);
 		// but 3 books should be contained in that shelf (due to the set max count)
 		var shelfClass = assertEClassExists(ePackage, "Shelf");
 		var booksReference = (EReference) shelfClass.getEStructuralFeature("books");
@@ -3018,6 +3025,263 @@ class EMFModelGeneratorTest {
 		assertThat(queue).hasSize(5);
 		// With only 2 songs in the containment, we should see duplicates in the queue
 		assertThat(queue.stream().distinct().count()).isLessThan(queue.size());
+	}
+
+	@Test
+	void testRequiredCrossReferenceWithoutCandidateFailsStandardValidation() {
+		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		var bookClass = assertEClassExists(ePackage, "Book");
+		var authorReference = assertEReferenceExists(bookClass, "author");
+
+		var book = generator.generateFrom(bookClass);
+
+		assertThat(book.eIsSet(authorReference)).isFalse();
+		var diagnostic = Diagnostician.INSTANCE.validate(book);
+		assertThat(diagnostic.getSeverity()).isNotEqualTo(Diagnostic.OK);
+		assertThat(flattenDiagnostics(diagnostic))
+			.extracting(Diagnostic::getMessage)
+			.anySatisfy(message -> assertThat(message)
+				.containsAnyOf("author", "lower bound"));
+	}
+
+	@Test
+	void testRequiredCrossReferenceWithCandidatePassesStandardValidation() {
+		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		var bookClass = assertEClassExists(ePackage, "Book");
+		var writerClass = assertEClassExists(ePackage, "Writer");
+		var authorReference = assertEReferenceExists(bookClass, "author");
+
+		var roots = generator.generateFromSeveral(bookClass, writerClass);
+
+		assertThat(roots).hasSize(2);
+		assertThat(roots.get(0).eGet(authorReference)).isSameAs(roots.get(1));
+		assertThat(roots)
+			.allSatisfy(root -> assertThat(Diagnostician.INSTANCE.validate(root).getSeverity())
+				.isEqualTo(Diagnostic.OK));
+	}
+
+	@Test
+	void testOptionalCrossReferenceWithoutCandidatePassesStandardValidation() {
+		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		var bookOnTapeClass = assertEClassExists(ePackage, "BookOnTape");
+		var readerReference = assertEReferenceExists(bookOnTapeClass, "reader");
+
+		var bookOnTape = generator.generateFrom(bookOnTapeClass);
+
+		assertThat(bookOnTape.eIsSet(readerReference)).isFalse();
+		assertThat(Diagnostician.INSTANCE.validate(bookOnTape).getSeverity())
+			.isEqualTo(Diagnostic.OK);
+	}
+
+	@Test
+	void testPlainSaveSerializesBookWithMissingRequiredAuthor() throws IOException {
+		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		var bookClass = assertEClassExists(ePackage, "Book");
+		var authorReference = assertEReferenceExists(bookClass, "author");
+		generator.generateFrom(bookClass);
+
+		generator.save();
+
+		var outputFile = new File(TEST_OUTPUT_DIR, "extlibrary_Book_1.xmi");
+		assertThat(outputFile).exists();
+		var savedBook = loadGeneratedModel(outputFile, ePackage);
+		assertThat(savedBook.eIsSet(authorReference)).isFalse();
+		assertThat(Diagnostician.INSTANCE.validate(savedBook).getSeverity())
+			.isNotEqualTo(Diagnostic.OK);
+	}
+
+	@Test
+	void testImmediateDefaultValidationOfRequiredAndOptionalCrossReferences() throws IOException {
+		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		var bookClass = assertEClassExists(ePackage, "Book");
+		generator.generateFrom(bookClass);
+
+		var invalidResult = generator.validate();
+
+		assertThat(invalidResult.kind()).isEqualTo(EMFValidationKind.VALIDATION_FAILURE);
+		assertThat(invalidResult.flattenedDiagnostics())
+			.extracting(Diagnostic::getMessage)
+			.anySatisfy(message -> assertThat(message).containsAnyOf("author", "lower bound"));
+
+		var optionalGenerator = new EMFModelGenerator();
+		ePackage = optionalGenerator.loadEcoreModel(TEST_INPUTS_DIR + "/extlibrary.ecore");
+		var bookOnTapeClass = assertEClassExists(ePackage, "BookOnTape");
+		optionalGenerator.generateFrom(bookOnTapeClass);
+
+		assertThat(optionalGenerator.validate().isValid()).isTrue();
+		optionalGenerator.unloadEcoreModels();
+	}
+
+	@Test
+	void testImmediateDefaultValidationSucceedsWithRequiredCandidate() {
+		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		var bookClass = assertEClassExists(ePackage, "Book");
+		var writerClass = assertEClassExists(ePackage, "Writer");
+		generator.generateFromSeveral(bookClass, writerClass);
+
+		assertThat(generator.validate().isValid()).isTrue();
+	}
+
+	@Test
+	void testValidateOrThrowRetainsDefaultValidationResult() {
+		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		generator.generateFrom(assertEClassExists(ePackage, "Book"));
+
+		assertThatThrownBy(() -> generator.validateOrThrow())
+			.isInstanceOfSatisfying(EMFValidationException.class, exception -> {
+				assertThat(exception.getResult().kind())
+					.isEqualTo(EMFValidationKind.VALIDATION_FAILURE);
+				assertThat(exception.getResult().diagnostic()).isNotNull();
+			});
+	}
+
+	@Test
+	void testCustomValidationReceivesAllNonEcoreRootsInOrder() {
+		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		var bookClass = assertEClassExists(ePackage, "Book");
+		var writerClass = assertEClassExists(ePackage, "Writer");
+		var generated = generator.generateFromSeveral(bookClass, writerClass);
+		var additionalRoot = EcoreUtil.create(bookClass);
+		generated.get(0).eResource().getContents().add(additionalRoot);
+		var validator = new RecordingValidator(validValidationResult());
+		var factoryCalls = new AtomicInteger();
+
+		var result = generator.validate(resourceSet -> {
+			factoryCalls.incrementAndGet();
+			assertThat(resourceSet).isSameAs(generator.getResourceSet());
+			return validator;
+		});
+
+		assertThat(result.isValid()).isTrue();
+		assertThat(factoryCalls).hasValue(1);
+		assertThat(validator.validatedRoots)
+			.containsExactly(generated.get(0), additionalRoot, generated.get(1));
+		assertThat(validator.closed).isTrue();
+	}
+
+	@Test
+	void testCustomValidationOfNoRootsUsesOneCallAndClosesValidator() {
+		var validator = new RecordingValidator(validValidationResult());
+
+		assertThat(generator.validate(resourceSet -> validator).isValid()).isTrue();
+
+		assertThat(validator.validateAllCalls).isOne();
+		assertThat(validator.validatedRoots).isEmpty();
+		assertThat(validator.closed).isTrue();
+	}
+
+	@Test
+	void testDefaultValidateOrThrowReturnsNormallyWithNoRoots() {
+		generator.validateOrThrow();
+	}
+
+	@Test
+	void testExternalResourceSetResourcesAreIncludedAndEcoreResourcesExcluded() throws IOException {
+		var resourceSet = EMFResourceSetHelper.createResourceSet();
+		var externalRoot = EcoreFactory.eINSTANCE.createEObject();
+		resourceSet.createResource(URI.createURI("memory:/external.xmi"))
+			.getContents().add(externalRoot);
+		var externalGenerator = new EMFModelGenerator(resourceSet);
+		externalGenerator.loadEcoreModel(TEST_INPUTS_DIR + "/simple.ecore");
+		var validator = new RecordingValidator(validValidationResult());
+
+		externalGenerator.validate(ignored -> validator);
+
+		assertThat(validator.validatedRoots).containsExactly(externalRoot);
+		externalGenerator.unloadEcoreModels();
+	}
+
+	@Test
+	void testCustomValidatorIsClosedForInvalidResultAndRuntimeFailure() {
+		var invalid = new EMFValidationResult(
+				new BasicDiagnostic(Diagnostic.ERROR, "test", 0, "invalid", new Object[0]),
+				Diagnostic.ERROR, EMFValidationKind.VALIDATION_FAILURE);
+		var invalidValidator = new RecordingValidator(invalid);
+
+		assertThat(generator.validate(ignored -> invalidValidator)).isSameAs(invalid);
+		assertThat(invalidValidator.closed).isTrue();
+
+		var failingValidator = new RecordingValidator(validValidationResult());
+		failingValidator.failure = new IllegalStateException("validation failed");
+		assertThatThrownBy(() -> generator.validate(ignored -> failingValidator))
+			.isSameAs(failingValidator.failure);
+		assertThat(failingValidator.closed).isTrue();
+	}
+
+	@Test
+	void testImmediateValidationRejectsNullFactoryValidatorAndResult() {
+		assertThatThrownBy(() -> generator.validate(null))
+			.isInstanceOf(NullPointerException.class)
+			.hasMessage("validatorFactory");
+		assertThatThrownBy(() -> generator.validate(resourceSet -> null))
+			.isInstanceOf(NullPointerException.class)
+			.hasMessage("Validator factory returned null");
+
+		var validator = new RecordingValidator(null);
+		assertThatThrownBy(() -> generator.validate(resourceSet -> validator))
+			.isInstanceOf(NullPointerException.class)
+			.hasMessage("Validator returned a null result");
+		assertThat(validator.closed).isTrue();
+	}
+
+	@Test
+	void testCustomValidateOrThrowUsesResultAndClosesValidator() {
+		var invalid = new EMFValidationResult(
+				new BasicDiagnostic(Diagnostic.ERROR, "test", 0, "invalid", new Object[0]),
+				Diagnostic.ERROR, EMFValidationKind.VALIDATION_FAILURE);
+		var validator = new RecordingValidator(invalid);
+
+		assertThatThrownBy(() -> generator.validateOrThrow(ignored -> validator))
+			.isInstanceOfSatisfying(EMFValidationException.class,
+					exception -> assertThat(exception.getResult()).isSameAs(invalid));
+		assertThat(validator.closed).isTrue();
+	}
+
+	@Test
+	void testCustomValidateOrThrowReturnsNormallyForValidResult() {
+		var validator = new RecordingValidator(validValidationResult());
+
+		generator.validateOrThrow(ignored -> validator);
+
+		assertThat(validator.closed).isTrue();
+	}
+
+	private static EMFValidationResult validValidationResult() {
+		return new EMFValidationResult(
+				new BasicDiagnostic(Diagnostic.OK, "test", 0, "valid", new Object[0]),
+				Diagnostic.ERROR, EMFValidationKind.VALID);
+	}
+
+	private static final class RecordingValidator implements EMFModelValidator {
+		private final EMFValidationResult result;
+		private List<EObject> validatedRoots;
+		private int validateAllCalls;
+		private boolean closed;
+		private RuntimeException failure;
+
+		private RecordingValidator(final EMFValidationResult result) {
+			this.result = result;
+		}
+
+		@Override
+		public EMFValidationResult validate(final EObject root) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public EMFValidationResult validateAll(final Collection<? extends EObject> roots) {
+			validateAllCalls++;
+			validatedRoots = List.copyOf(roots);
+			if (failure != null) {
+				throw failure;
+			}
+			return result;
+		}
+
+		@Override
+		public void close() {
+			closed = true;
+		}
 	}
 
 	@Test
