@@ -2463,9 +2463,9 @@ class EMFModelGeneratorTest {
 		// Configure to generate 3 nodes
 		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
 
-		// Allow cycles (self-references) for nodes at specific positions:
+		// Allow direct self-references for nodes at specific positions:
 		// Node 0: yes, Node 1: no, Node 2: yes
-		generator.getInstancePopulator().setAllowCyclePolicy((owner, reference) -> {
+		generator.getInstancePopulator().setSelfReferencePolicy((owner, reference) -> {
 			if ("outgoing".equals(reference.getName()) && "Node".equals(owner.eClass().getName())) {
 				// Get the graph container
 				final var graph = owner.eContainer();
@@ -2473,7 +2473,7 @@ class EMFModelGeneratorTest {
 					final var nodes = EMFUtils.getAsEObjectsList(graph,
 							graph.eClass().getEStructuralFeature("nodes"));
 					final var index = nodes.indexOf(owner);
-					// Allow cycles for nodes at even indices (0, 2, 4, ...)
+					// Allow direct self-references for nodes at even indices (0, 2, 4, ...)
 					return index % 2 == 0;
 				}
 			}
@@ -2487,7 +2487,7 @@ class EMFModelGeneratorTest {
 		assertThat(outputFile).exists();
 
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"graph_Graph_1.xmi", "graph_selective_cycles_Graph_1.xmi");
+				"graph_Graph_1.xmi", "graph_selective_self_references_Graph_1.xmi");
 	}
 
 	@Test
@@ -2644,15 +2644,15 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
-	void shouldPreventSelfReferencesWhenAllowCyclePolicyReturnsFalse() throws IOException {
+	void shouldPreventSelfReferencesWhenSelfReferencePolicyReturnsFalse() throws IOException {
 		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "graph.ecore");
 		final var graphEClass = assertEClassExists(ePackage, "Graph");
 
 		// Configure to generate 3 nodes
 		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
 
-		// Always return false for allowCyclePolicy - no self-references should be created
-		generator.getInstancePopulator().setAllowCyclePolicy((owner, reference) -> false);
+		// Always return false from the policy: no direct self-references should be created
+		generator.getInstancePopulator().setSelfReferencePolicy((owner, reference) -> false);
 
 		generator.generateFrom(graphEClass);
 		generator.save();

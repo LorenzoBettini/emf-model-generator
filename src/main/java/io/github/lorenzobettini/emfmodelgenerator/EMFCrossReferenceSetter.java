@@ -17,7 +17,7 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 	private static final int DEFAULT_MULTI_VALUED_COUNT = 2;
 	private EMFCandidateSelectorStrategy<EClass, EObject> candidateSelectorStrategy = new EMFRoundRobinEObjectCandidateSelector();
-	private CyclePolicy cyclePolicy = (owner, reference) -> false;
+	private SelfReferencePolicy selfReferencePolicy = (owner, reference) -> false;
 
 	/**
 	 * Function interface for cross reference operations.
@@ -27,18 +27,22 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	}
 
 	/**
-	 * Functional interface for determining whether cycles (self-references) are allowed.
+	 * Functional interface for determining whether direct self-references are allowed.
+	 *
+	 * <p>This policy concerns only references where the owner and candidate are the same
+	 * EObject (cycles of length one). It does not detect or prevent longer cycles among
+	 * non-containment references.</p>
 	 */
 	@FunctionalInterface
-	public static interface CyclePolicy {
+	public static interface SelfReferencePolicy {
 		/**
 		 * Determines whether an EObject is allowed to reference itself through the given reference.
 		 * 
 		 * @param owner the EObject that would reference itself
-		 * @param reference the reference through which the cycle would be created
+		 * @param reference the reference through which the owner would reference itself
 		 * @return true if the owner is allowed to reference itself, false otherwise
 		 */
-		boolean allowCycleFor(EObject owner, EReference reference);
+		boolean allowSelfReferenceFor(EObject owner, EReference reference);
 	}
 
 	public EMFCrossReferenceSetter() {
@@ -55,12 +59,12 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	}
 
 	/**
-	 * Set the cycle policy for determining whether self-references are allowed.
+	 * Set the policy for determining whether direct self-references are allowed.
 	 * 
-	 * @param cyclePolicy the cycle policy to use
+	 * @param policy the self-reference policy to use
 	 */
-	public void setAllowCyclePolicy(CyclePolicy cyclePolicy) {
-		this.cyclePolicy = cyclePolicy;
+	public void setSelfReferencePolicy(SelfReferencePolicy policy) {
+		this.selfReferencePolicy = policy;
 	}
 
 	/**
@@ -77,14 +81,14 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 	/**
 	 * Determines whether an EObject is allowed to reference itself through the given reference.
-	 * Uses the configured cycle policy.
+	 * Uses the configured self-reference policy.
 	 * 
 	 * @param owner the EObject that would reference itself
-	 * @param reference the reference through which the cycle would be created
+	 * @param reference the reference through which the owner would reference itself
 	 * @return true if the owner is allowed to reference itself, false otherwise
 	 */
-	protected boolean allowCycleFor(EObject owner, EReference reference) {
-		return cyclePolicy.allowCycleFor(owner, reference);
+	protected boolean allowSelfReferenceFor(EObject owner, EReference reference) {
+		return selfReferencePolicy.allowSelfReferenceFor(owner, reference);
 	}
 
 	/**
@@ -175,7 +179,8 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 		}
 
 		// Try to get candidates using the configured selector strategy until we find one
-		// that passes the opposite reference check and is not the owner itself (unless cycles are allowed).
+		// that passes the opposite reference check and is not the owner itself (unless a direct
+		// self-reference is allowed).
 		// Since the selector wraps around, we track the first candidate to detect when
 		// we've checked all
 		final EObject firstCandidate = candidateSelectorStrategy.getNextCandidate(owner, eReferenceType);
@@ -197,7 +202,7 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	}
 
 	private boolean isCandidateValid(EObject owner, EReference reference, EObject candidate) {
-		return (owner != candidate || allowCycleFor(owner, reference)) &&
+		return (owner != candidate || allowSelfReferenceFor(owner, reference)) &&
 				EMFUtils.canSetInThePresenceOfOppositeReference(reference, candidate);
 	}
 }

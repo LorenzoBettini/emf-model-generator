@@ -1053,10 +1053,10 @@ class EMFCrossReferenceSetterTest {
 
 		EObject owner = createOwner();
 
-		// Create a custom setter that allows cycles
+		// Create a custom setter that allows direct self-references
 		var customSetter = new EMFCrossReferenceSetter() {
 			@Override
-			protected boolean allowCycleFor(EObject owner, EReference reference) {
+			protected boolean allowSelfReferenceFor(EObject owner, EReference reference) {
 				return true;
 			}
 		};
@@ -1081,10 +1081,10 @@ class EMFCrossReferenceSetterTest {
 
 		EObject owner = createOwner();
 
-		// Create a custom setter that allows cycles
+		// Create a custom setter that allows direct self-references
 		var customSetter = new EMFCrossReferenceSetter() {
 			@Override
-			protected boolean allowCycleFor(EObject owner, EReference reference) {
+			protected boolean allowSelfReferenceFor(EObject owner, EReference reference) {
 				return true;
 			}
 		};
@@ -1113,10 +1113,10 @@ class EMFCrossReferenceSetterTest {
 
 		EObject owner = createOwner();
 
-		// Create a custom setter that allows cycles
+		// Create a custom setter that allows direct self-references
 		var customSetter = new EMFCrossReferenceSetter() {
 			@Override
-			protected boolean allowCycleFor(EObject owner, EReference reference) {
+			protected boolean allowSelfReferenceFor(EObject owner, EReference reference) {
 				return true;
 			}
 		};
@@ -1276,7 +1276,7 @@ class EMFCrossReferenceSetterTest {
 	}
 
 	@Test
-	void testSetAllowCyclePolicy() {
+	void shouldAllowDirectSelfReferenceWithPolicy() {
 		// Create reference with the same type as owner (allowing self-reference)
 		EReference selfReference = ECORE_FACTORY.createEReference();
 		selfReference.setName("self");
@@ -1285,15 +1285,33 @@ class EMFCrossReferenceSetterTest {
 		
 		EObject owner = createOwner();
 		
-		// By default, cycles are not allowed
+		// By default, direct self-references are not allowed
 		setter.setCrossReference(owner, selfReference);
 		assertThat(owner.eGet(selfReference)).isNull();
 		
-		// Set a cycle policy that allows cycles
-		setter.setAllowCyclePolicy((o, ref) -> true);
+		// Set a policy that allows direct self-references
+		setter.setSelfReferencePolicy((o, ref) -> true);
 		
 		setter.setCrossReference(owner, selfReference);
 		assertThat(owner.eGet(selfReference)).isEqualTo(owner);
+	}
+
+	@Test
+	void shouldNotTreatLongerCyclesAsDirectSelfReferences() {
+		EReference reference = ECORE_FACTORY.createEReference();
+		reference.setName("next");
+		reference.setEType(ownerClass);
+		ownerClass.getEStructuralFeatures().add(reference);
+
+		EObject first = createOwner();
+		EObject second = createOwner();
+		first.eSet(reference, second);
+		setter.setFunctionFor(reference, owner -> first);
+
+		setter.setCrossReference(second, reference);
+
+		assertThat(second.eGet(reference)).isSameAs(first);
+		assertThat(first.eGet(reference)).isSameAs(second);
 	}
 
 }
