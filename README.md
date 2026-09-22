@@ -101,7 +101,9 @@ To run PIT mutation testing (it might take a few minutes):
 
 The mutation testing report will be available at `target/pit-reports/index.html`.
 
-Note that only "Mutation Coverage" and "Test Strength" are important: "Line Coverage" is below 100% due to a limitation of PIT, which considers also private constructors (in classes with only static utility methods).
+**Note:** Code coverage for this project is measured and enforced with JaCoCo. PIT also reports a "Line Coverage" value as part of its mutation-testing analysis, but this value is not used as the project's code-coverage metric.
+In particular, PIT may count private constructors of static utility classes as uncovered (see [PIT issue #1104](https://github.com/hcoles/pitest/issues/1104)), whereas JaCoCo deliberately filters private empty no-argument constructors from its coverage report.
+These constructors are intentionally private because the classes are not meant to be instantiated. Therefore, for the PIT report, the relevant metrics in this project are **Mutation Coverage** and **Test Strength**.
 
 For faster mutation testing on a single class:
 
