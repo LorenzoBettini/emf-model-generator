@@ -58,11 +58,20 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  *
  * <p><b>Post-generation validation:</b> Generation fills features where suitable values are
  * available. In particular, a required non-containment reference can remain unset when the
- * generated population has no assignable target. Use standard EMF validation to inspect or reject
- * the completed candidate:
+ * generated population has no assignable target. Use {@link #validate()} to inspect and handle the
+ * validation result:
  * <pre>{@code
  * generator.generateFrom(personClass);
  * EMFValidationResult result = generator.validate();
+ * if (!result.isValid()) {
+ *     result.rejectedDiagnostics().forEach(diagnostic ->
+ *         System.err.println(diagnostic.getMessage()));
+ * }
+ * }</pre>
+ * Alternatively, use {@link #validateOrThrow()} when an invalid candidate should stop the
+ * workflow:
+ * <pre>{@code
+ * generator.generateFrom(personClass);
  * generator.validateOrThrow();
  * }</pre>
  * Validation before saving is optional and disabled by default. Enabling it prevents any resource

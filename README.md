@@ -216,7 +216,8 @@ if (!result.isValid()) {
 }
 ```
 
-Use `validateOrThrow()` when an invalid candidate should stop the workflow:
+These are two alternative validation styles. Use `validateOrThrow()` instead of inspecting a
+returned result when an invalid candidate should stop the workflow:
 
 ```java
 generator.generateFrom(personClass);
