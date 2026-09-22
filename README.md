@@ -91,6 +91,9 @@ To run the full verification phase with JaCoCo coverage:
 
 The coverage report will be available at `target/site/jacoco/index.html`.
 
+The latest published
+[JaCoCo report](https://lorenzobettini.github.io/emf-model-generator-site/jacoco/).
+
 ### Run Mutation Testing
 
 To run PIT mutation testing (it might take a few minutes):
@@ -100,6 +103,9 @@ To run PIT mutation testing (it might take a few minutes):
 ```
 
 The mutation testing report will be available at `target/pit-reports/index.html`.
+
+The latest published
+[PIT report](https://lorenzobettini.github.io/emf-model-generator-site/pit/).
 
 **Note:** Code coverage for this project is measured and enforced with JaCoCo. PIT also reports a "Line Coverage" value as part of its mutation-testing analysis, but this value is not used as the project's code-coverage metric.
 In particular, PIT may count private constructors of static utility classes as uncovered (see [PIT issue #1104](https://github.com/hcoles/pitest/issues/1104)), whereas JaCoCo deliberately filters private empty no-argument constructors from its coverage report.
