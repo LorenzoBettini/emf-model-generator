@@ -201,12 +201,12 @@ public class EMFInstancePopulator {
 	}
 
 	/**
-	 * Set the cycle policy for determining whether self-references are allowed in cross references.
+	 * Set the policy for determining whether direct self-references are allowed in cross references.
 	 * 
-	 * @param cyclePolicy the cycle policy to use
+	 * @param policy the self-reference policy to use
 	 */
-	public void setAllowCyclePolicy(EMFCrossReferenceSetter.CyclePolicy cyclePolicy) {
-		crossReferenceSetter.setAllowCyclePolicy(cyclePolicy);
+	public void setSelfReferencePolicy(EMFCrossReferenceSetter.SelfReferencePolicy policy) {
+		crossReferenceSetter.setSelfReferencePolicy(policy);
 	}
 
 	/**

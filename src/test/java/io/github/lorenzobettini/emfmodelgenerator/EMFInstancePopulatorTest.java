@@ -1720,7 +1720,7 @@ class EMFInstancePopulatorTest {
 	}
 
 	@Test
-	void testSetAllowCyclePolicy() {
+	void shouldSetSelfReferencePolicy() {
 		// Create a package and an EClass with a self-reference
 		final var testPkg = EcoreFactory.eINSTANCE.createEPackage();
 		testPkg.setName("testpkg");
@@ -1736,11 +1736,11 @@ class EMFInstancePopulatorTest {
 		selfRef.setEType(nodeClass);
 		nodeClass.getEStructuralFeatures().add(selfRef);
 		
-		// Create node and set custom policy that allows cycles
-		populator.setAllowCyclePolicy((owner, ref) -> true);
+		// Create node and set custom policy that allows direct self-references
+		populator.setSelfReferencePolicy((owner, ref) -> true);
 		
 		final var node = EcoreUtil.create(nodeClass);
-		createInstanceInResource(node, "test_cycle_policy.xmi");
+		createInstanceInResource(node, "test_self_reference_policy.xmi");
 		populator.populateEObjects(node);
 		
 		// Verify the policy was applied - node should reference itself
