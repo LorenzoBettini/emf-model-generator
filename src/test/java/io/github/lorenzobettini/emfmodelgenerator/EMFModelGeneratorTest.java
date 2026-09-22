@@ -2524,24 +2524,19 @@ class EMFModelGeneratorTest {
 
 		final var shelvesReference = (EReference) libraryClass.getEStructuralFeature("shelves");
 
-		// Set custom function for shelves containment reference:
-		// if already set, always return the same shelf instance
-		generator.getInstancePopulator().functionForContainmentReference(shelvesReference, owner -> {
-			var shelves = EMFUtils.getAsEObjectsList(owner, shelvesReference);
-			if (!shelves.isEmpty()) {
-				return shelves.get(0);
-			}
-			return EcoreUtil.create(shelvesReference.getEReferenceType());
-		});
+		// Set custom function for the shelves containment reference.
+		generator.getInstancePopulator().functionForContainmentReference(shelvesReference,
+				owner -> EcoreUtil.create(shelvesReference.getEReferenceType()));
 
-		// Configure to create 3 containment references
+		// Create one shelf and three objects for its multi-valued containments.
 		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
+		generator.getInstancePopulator().setContainmentReferenceMaxCountFor(shelvesReference, 1);
 
 		generator.setFilePrefix("function_cont_");
 		var library = generator.generateFrom(libraryClass);
 		generator.save();
 
-		// just one shelve should be created (due to the custom function)
+		// Just one shelf should be created using the custom function.
 		var shelves = EMFUtils.getAsEObjectsList(library, shelvesReference);
 		assertThat(shelves).hasSize(1);
 		// but 3 books should be contained in that shelf (due to the set max count)
