@@ -858,22 +858,17 @@ class EMFInstancePopulatorTest {
 		final var shelvesReference = (EReference) library.eClass()
 				.getEStructuralFeature("shelves");
 		
-		// Set custom function for shelves containment reference:
-		// if already set, always return the same shelf instance
-		populator.functionForContainmentReference(shelvesReference, owner -> {
-			var shelves = EMFUtils.getAsEObjectsList(owner, shelvesReference);
-			if (!shelves.isEmpty()) {
-				return shelves.get(0);
-			}
-			return EcoreUtil.create(shelvesReference.getEReferenceType());
-		});
+		// Set custom function for the shelves containment reference.
+		populator.functionForContainmentReference(shelvesReference,
+				owner -> EcoreUtil.create(shelvesReference.getEReferenceType()));
 		
-		// Configure to create 3 shelves
+		// Create one shelf and three objects for its multi-valued containments.
 		populator.getContainmentReferenceSetter().setDefaultMaxCount(3);
+		populator.setContainmentReferenceMaxCountFor(shelvesReference, 1);
 		
 		populator.populateEObjects(library);
 		
-		// Verify just one shelf was created using the custom containment function
+		// Verify one shelf was created using the custom containment function.
 		final var shelves = EMFUtils.getAsEObjectsList(library, shelvesReference);
 		assertThat(shelves).hasSize(1);
 		

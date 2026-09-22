@@ -465,7 +465,9 @@ generator.save();
 ```
 
 If a custom cross-reference function returns `null`, the default cross-reference selection is used.
-For containment references and feature-map group members, returned objects are recursively populated by the populator.
+For containment references and feature-map group members, a returned object is used only when it is
+not already contained by another object; otherwise, default instance creation is used so the object is
+not moved from its current container. Returned objects are recursively populated by the populator.
 
 ### Example 14: Configure Feature Map Max Count
 

@@ -153,6 +153,34 @@ class EMFInstanceCreatorFeatureSetterTest {
 	}
 
 	@Test
+	void testCreateInstanceWithCustomFunctionReturningContainedInstance() {
+		reference.setContainment(true);
+		var containedInstance = EcoreUtil.create(subClass1);
+		EMFUtils.getAsEObjectsList(owner, reference).add(containedInstance);
+		var otherOwner = EcoreUtil.create(owner.eClass());
+		setter.setFunctionFor(reference, o -> containedInstance);
+		setter.setInstantiableSubclassSelectorStrategy(new EMFCandidateSelectorStrategy<>() {
+			@Override
+			public EClass getNextCandidate(EObject context, EClass type) {
+				return subClass2;
+			}
+
+			@Override
+			public boolean hasCandidates(EObject context, EClass type) {
+				return true;
+			}
+		});
+
+		var instance = setter.createInstance(otherOwner, reference, targetClass);
+
+		assertThat(instance)
+				.isNotSameAs(containedInstance)
+				.extracting(EObject::eClass)
+				.isEqualTo(subClass2);
+		assertThat(containedInstance.eContainer()).isSameAs(owner);
+	}
+
+	@Test
 	void testCreateInstanceWhenNoInstantiableSubclass() {
 		EMFCandidateSelectorStrategy<EClass, EClass> customStrategy = new EMFCandidateSelectorStrategy<EClass, EClass>() {
 			@Override
