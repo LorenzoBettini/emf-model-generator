@@ -28,14 +28,7 @@ jobs:
       with:
         java-version: '25'
         distribution: 'temurin'
-
-    - name: Cache Maven packages
-      uses: actions/cache@v6
-      with:
-        path: |
-          ~/.m2
-          ~/.sonar/cache
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        cache: maven
 
     # execute sonar:sonar only for internal PRs
     - name: Set Maven Additional Goals

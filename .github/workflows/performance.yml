@@ -21,12 +21,7 @@ jobs:
       with:
         java-version: '25'
         distribution: 'temurin'
-
-    - name: Cache Maven packages
-      uses: actions/cache@v6
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        cache: maven
     
     - name: Run Performance Tests (Unix)
       if: runner.os != 'Windows'
