@@ -15,6 +15,18 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
  * Helper class for managing EMF resources in a given ResourceSet,
  * including resource creation with proper naming schemes and output directory management.
  *
+ * <p>For example, package-wide naming can be combined with a more specific class override:</p>
+ * {@snippet :
+ * EMFResourceHelper helper = new EMFResourceHelper(resourceSet, "output");
+ * helper.setFilePrefix("sample_");
+ * helper.setFileExtensionForEPackage(ePackage, "model");
+ * helper.setFileExtensionForEClass(libraryClass, "library");
+ *
+ * Resource resource = helper.createResource(libraryClass);
+ * resource.getContents().add(library);
+ * // The first resource is named sample_<package>_Library_1.library.
+ * }
+ *
  * @author Lorenzo Bettini
  */
 public final class EMFResourceHelper {
