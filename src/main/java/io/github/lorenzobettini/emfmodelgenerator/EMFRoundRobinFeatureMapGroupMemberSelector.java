@@ -16,7 +16,7 @@ import org.eclipse.emf.ecore.EReference;
  * available group members.</p>
  * 
  * <p>Example:
- * <pre>{@code
+ * {@snippet :
  * EMFRoundRobinFeatureMapGroupMemberSelector selector = new EMFRoundRobinFeatureMapGroupMemberSelector();
  * 
  * // First call returns first group member (e.g., sections)
@@ -30,7 +30,7 @@ import org.eclipse.emf.ecore.EReference;
  * 
  * // If no group members available, returns null
  * EReference noMember = selector.getNextCandidate(context, emptyFeatureMap); // returns null
- * }</pre>
+ * }
  *
  * @author Lorenzo Bettini
  */

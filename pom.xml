@@ -166,6 +166,9 @@
 					<configuration>
 						<doclint>none</doclint>
 						<failOnError>false</failOnError>
+						<additionalOptions>
+							<additionalOption>--syntax-highlight</additionalOption>
+						</additionalOptions>
 					</configuration>
 				</plugin>
 				<!-- Configure PIT Mutation Testing plugin here since it is invoked explicitly in CI -->

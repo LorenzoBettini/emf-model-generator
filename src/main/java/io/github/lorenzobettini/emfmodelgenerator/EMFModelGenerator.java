@@ -27,7 +27,7 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * with support for automatic attribute population, reference handling, and XMI serialization.
  * 
  * <p><b>Basic Usage:</b>
- * <pre>{@code
+ * {@snippet :
  * EMFModelGenerator generator = new EMFModelGenerator();
  * EPackage ePackage = generator.loadEcoreModel("model.ecore");
  * EClass personClass = (EClass) ePackage.getEClassifier("Person");
@@ -37,7 +37,7 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * generator.save();
  * 
  * generator.unloadEcoreModels(); // Clean up
- * }</pre>
+ * }
  * 
  * <p><b>Loading Ecore Models:</b> Use {@link #loadEcoreModel(String)} to load Ecore files.
  * This automatically registers the resource factory and package registry entries.
@@ -60,33 +60,33 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * available. In particular, a required non-containment reference can remain unset when the
  * generated population has no assignable target. Use {@link #validate()} to inspect and handle the
  * validation result:
- * <pre>{@code
+ * {@snippet :
  * generator.generateFrom(personClass);
  * EMFValidationResult result = generator.validate();
  * if (!result.isValid()) {
  *     result.rejectedDiagnostics().forEach(diagnostic ->
  *         System.err.println(diagnostic.getMessage()));
  * }
- * }</pre>
+ * }
  * Alternatively, use {@link #validateOrThrow()} when an invalid candidate should stop the
  * workflow:
- * <pre>{@code
+ * {@snippet :
  * generator.generateFrom(personClass);
  * generator.validateOrThrow();
- * }</pre>
+ * }
  * Validation before saving is optional and disabled by default. Enabling it prevents any resource
  * from being serialized when validation fails:
- * <pre>{@code
+ * {@snippet :
  * generator.enableValidationBeforeSave();
  * generator.save();
- * }</pre>
+ * }
  * A custom implementation can be supplied through {@link EMFModelValidator.Factory}:
- * <pre>{@code
+ * {@snippet :
  * EMFModelValidator.Factory factory = resourceSet ->
  *     new MyProjectModelValidator(resourceSet);
  * EMFValidationResult customResult = generator.validate(factory);
  * generator.enableValidationBeforeSave(factory);
- * }</pre>
+ * }
  * 
  * @see #loadEcoreModel(String)
  * @see #unloadEcoreModels()
@@ -127,7 +127,7 @@ public class EMFModelGenerator {
 	 * which will automatically register the EcoreResourceFactoryImpl if needed.
 	 * 
 	 * <p>Example usage:
-	 * <pre>{@code
+	 * {@snippet :
 	 * ResourceSet resourceSet = new ResourceSetImpl();
 	 * resourceSet.getResourceFactoryRegistry().getExtensionToFactoryMap()
 	 *     .put("xmi", new XMIResourceFactoryImpl());
@@ -149,7 +149,7 @@ public class EMFModelGenerator {
 	 * generator.save(); // Saves all generated resources
 	 * 
 	 * generator.unloadEcoreModels(); // Clean up
-	 * }</pre>
+	 * }
 	 * 
 	 * @param resourceSet the ResourceSet to use for all generations
 	 */
@@ -218,11 +218,11 @@ public class EMFModelGenerator {
 	 * multiplicities, depth limits, and self-reference policies.
 	 *
 	 * <p>Example:
-	 * <pre>{@code
+	 * {@snippet :
 	 * generator.getInstancePopulator().setMaxDepth(3);
 	 * generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(4);
 	 * generator.getInstancePopulator().setAttributeSetter(myCustomSetter);
-	 * }</pre>
+	 * }
 	 *
 	 * @return the instance populator
 	 */
@@ -268,14 +268,14 @@ public class EMFModelGenerator {
 	 * is a valid Ecore model.
 	 * 
 	 * <p>Example usage:
-	 * <pre>{@code
+	 * {@snippet :
 	 * EMFModelGenerator generator = new EMFModelGenerator();
 	 * EPackage myPackage = generator.loadEcoreModel("models/mymodel.ecore");
 	 * EClass myClass = (EClass) myPackage.getEClassifier("MyClass");
 	 * EObject instance = generator.generateFrom(myClass);
 	 * generator.save();
 	 * generator.unloadEcoreModels(); // Clean up
-	 * }</pre>
+	 * }
 	 * 
 	 * @param ecoreFilePath the path to the Ecore file (absolute or relative)
 	 * @return the loaded EPackage
@@ -572,11 +572,11 @@ public class EMFModelGenerator {
 	 * Ecore files are automatically skipped.
 	 * 
 	 * <p>Example usage with schemaLocation:
-	 * <pre>{@code
+	 * {@snippet :
 	 * Map<Object, Object> options = new HashMap<>();
 	 * options.put(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE);
 	 * generator.save(options);
-	 * }</pre>
+	 * }
 	 *
 	 * @param options the save options to pass to EMF resources, or null for default options
 	 * @throws IOException if the files cannot be written
