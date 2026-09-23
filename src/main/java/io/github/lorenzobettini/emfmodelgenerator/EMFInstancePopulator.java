@@ -21,6 +21,8 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFFeatureMapSetter.EMFFeature
  * and cross references, with support for configurable multi-valued
  * counts and maximum depth for recursive population.
  * Also handles feature maps, which allow heterogeneous collections.
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFInstancePopulator {
 

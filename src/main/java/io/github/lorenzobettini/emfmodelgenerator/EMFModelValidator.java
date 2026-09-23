@@ -8,6 +8,8 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
  * Validates generated EMF model roots.
  *
  * <p>Implementations may own resources and release them from {@link #close()}.</p>
+ *
+ * @author Lorenzo Bettini
  */
 public interface EMFModelValidator extends AutoCloseable {
 

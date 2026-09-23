@@ -9,6 +9,11 @@ import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.util.Diagnostician;
 
+/**
+ * Standard model validator backed by the EMF {@link Diagnostician}.
+ *
+ * @author Lorenzo Bettini
+ */
 final class EMFStandardModelValidator implements EMFModelValidator {
 
 	private static final String DIAGNOSTIC_SOURCE = EMFStandardModelValidator.class.getName();

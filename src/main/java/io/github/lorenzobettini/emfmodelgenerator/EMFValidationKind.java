@@ -2,6 +2,8 @@ package io.github.lorenzobettini.emfmodelgenerator;
 
 /**
  * Describes the outcome of model validation.
+ *
+ * @author Lorenzo Bettini
  */
 public enum EMFValidationKind {
 	/** Validation completed without a diagnostic at the rejection threshold. */

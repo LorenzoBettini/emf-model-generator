@@ -41,6 +41,8 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
  *       authors (opposite) (1):
  *         [0] -> Author (other_Library.xmi > authors[0])
  * }</pre>
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFPrettyPrinter {
 

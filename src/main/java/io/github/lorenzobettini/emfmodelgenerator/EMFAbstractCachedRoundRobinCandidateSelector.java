@@ -20,6 +20,8 @@ import org.eclipse.emf.ecore.EObject;
  * 
  * @param <K> the type of ENamedElement used as key (e.g., EClass, EAttribute)
  * @param <V> the type of EObject to be selected
+ *
+ * @author Lorenzo Bettini
  */
 public abstract class EMFAbstractCachedRoundRobinCandidateSelector<K extends ENamedElement, V extends EObject>
 		extends EMFRoundRobinCandidateSelector<K, V> {

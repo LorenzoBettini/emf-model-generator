@@ -16,6 +16,8 @@ import org.eclipse.emf.ecore.EStructuralFeature;
  * @param <T2> The type of EStructuralFeature (e.g., EAttribute, EReference) used for creating
  * the feature value.
  * @param <V> The type of value returned for the feature
+ *
+ * @author Lorenzo Bettini
  */
 public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature, T2 extends EStructuralFeature, V> {
 

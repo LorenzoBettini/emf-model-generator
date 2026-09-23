@@ -19,6 +19,8 @@ import org.eclipse.emf.ecore.util.ExtendedMetaData;
 
 /**
  * Utility class for EMF models: validation, checks, and other utility methods.
+ *
+ * @author Lorenzo Bettini
  */
 public final class EMFUtils {
 

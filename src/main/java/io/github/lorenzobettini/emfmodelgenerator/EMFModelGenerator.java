@@ -92,6 +92,8 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * @see #unloadEcoreModels()
  * @see #generateFrom(EClass)
  * @see #save()
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFModelGenerator {
 

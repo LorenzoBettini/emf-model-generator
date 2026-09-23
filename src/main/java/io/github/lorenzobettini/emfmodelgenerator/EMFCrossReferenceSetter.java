@@ -12,6 +12,8 @@ import org.eclipse.emf.ecore.EReference;
  * while required references may then fail structural validation. Call
  * {@link EMFModelGenerator#validate()} or enable validation before saving when structural
  * conformance is required.
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<EReference, EReference, EObject> {
 

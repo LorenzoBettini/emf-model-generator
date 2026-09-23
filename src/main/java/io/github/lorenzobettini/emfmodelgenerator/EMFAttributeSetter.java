@@ -21,6 +21,8 @@ import org.eclipse.emf.ecore.EcorePackage;
  * Responsible for setting attribute values on EMF EObjects. This class handles
  * both single-valued and multi-valued attributes, generating appropriate sample
  * values based on the attribute's data type.
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute, EAttribute, Object> {
 

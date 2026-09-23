@@ -10,6 +10,8 @@ import org.eclipse.emf.ecore.EReference;
  * This class handles both single-valued and multi-valued containment references,
  * creating appropriate EObjects based on the reference's type.
  * The created EObjects are returned as a collection.
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFContainmentReferenceSetter extends EMFInstanceCreatorFeatureSetter<EReference> {
 

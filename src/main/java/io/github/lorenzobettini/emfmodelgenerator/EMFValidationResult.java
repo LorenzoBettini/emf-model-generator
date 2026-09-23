@@ -15,6 +15,8 @@ import org.eclipse.emf.common.util.Diagnostic;
  * @param diagnostic the root diagnostic; the original instance is retained
  * @param rejectedSeverity the minimum severity that makes the result invalid
  * @param kind the validation outcome
+ *
+ * @author Lorenzo Bettini
  */
 public record EMFValidationResult(
 		Diagnostic diagnostic,

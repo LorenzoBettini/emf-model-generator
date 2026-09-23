@@ -5,6 +5,8 @@ import java.util.Objects;
 
 /**
  * Indicates that model validation produced a non-valid result.
+ *
+ * @author Lorenzo Bettini
  */
 public final class EMFValidationException extends RuntimeException {
 

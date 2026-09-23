@@ -13,6 +13,8 @@ import org.eclipse.emf.ecore.util.FeatureMapUtil;
  * Responsible for populating EMF feature maps.
  * Feature maps allow heterogeneous collections where different types can be mixed.
  * This class creates entries in the feature map for each group member defined via ExtendedMetaData.
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFFeatureMapSetter extends EMFInstanceCreatorFeatureSetter<EAttribute> {
 

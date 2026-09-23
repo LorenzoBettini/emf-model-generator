@@ -19,6 +19,8 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
  * The created EObjects are tracked and can be retrieved after setting the reference.
  * 
  * @see EMFConfigurableFeatureSetter
+ *
+ * @author Lorenzo Bettini
  */
 public abstract class EMFInstanceCreatorFeatureSetter<T extends EStructuralFeature> extends EMFConfigurableFeatureSetter<T, EReference, EObject> {
 

@@ -14,6 +14,8 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 /**
  * Helper class for managing EMF resources in a given ResourceSet,
  * including resource creation with proper naming schemes and output directory management.
+ *
+ * @author Lorenzo Bettini
  */
 public final class EMFResourceHelper {
 

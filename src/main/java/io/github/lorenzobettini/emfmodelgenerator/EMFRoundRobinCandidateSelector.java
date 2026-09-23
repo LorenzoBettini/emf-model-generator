@@ -12,6 +12,8 @@ import org.eclipse.emf.ecore.EObject;
  * 
  * @param <K> the type of ENamedElement used as key (e.g., EClassifier, EAttribute)
  * @param <V> the type of EObject to be selected
+ *
+ * @author Lorenzo Bettini
  */
 public abstract class EMFRoundRobinCandidateSelector<K extends ENamedElement, V extends EObject> implements EMFCandidateSelectorStrategy<K, V> {
 

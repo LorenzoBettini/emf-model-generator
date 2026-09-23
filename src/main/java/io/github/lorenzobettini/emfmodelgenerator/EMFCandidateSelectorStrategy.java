@@ -7,6 +7,8 @@ import org.eclipse.emf.ecore.EObject;
  * Strategy interface for selecting EMF EObject candidates of a specified type.
  * @param <K> the type of ENamedElement used as key (e.g., EClassifier, EAttribute)
  * @param <V> the type of EObject to be selected
+ *
+ * @author Lorenzo Bettini
  */
 public interface EMFCandidateSelectorStrategy<K extends ENamedElement, V extends EObject> {
 

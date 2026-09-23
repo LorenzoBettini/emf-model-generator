@@ -12,6 +12,8 @@ import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
  * Helper class for creating and configuring EMF ResourceSets.
  * This class centralizes the logic for setting up ResourceSets with proper
  * resource factories and save options.
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFResourceSetHelper {
 

@@ -26,6 +26,8 @@ import org.eclipse.emf.ecore.EObject;
  * // If no candidates available, returns null
  * EClass noCandidate = selector.getNextCandidate(context, unknownClass); // returns null
  * }</pre>
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFRoundRobinEClassCandidateSelector extends EMFAbstractCachedRoundRobinCandidateSelector<EClass, EClass> {
 

@@ -31,6 +31,8 @@ import org.eclipse.emf.ecore.EReference;
  * // If no group members available, returns null
  * EReference noMember = selector.getNextCandidate(context, emptyFeatureMap); // returns null
  * }</pre>
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFRoundRobinFeatureMapGroupMemberSelector extends EMFAbstractCachedRoundRobinCandidateSelector<EAttribute, EReference> {
 

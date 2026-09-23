@@ -8,6 +8,8 @@ import org.eclipse.emf.ecore.EObject;
 
 /**
  * Round-robin selector for EEnumLiteral instances within a given EEnum type.
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFRoundRobinEEnumLiteralCandidateSelector extends EMFRoundRobinCandidateSelector<EEnum, EEnumLiteral> {
 
