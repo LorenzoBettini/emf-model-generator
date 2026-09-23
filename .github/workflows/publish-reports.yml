@@ -48,6 +48,18 @@ jobs:
           org.pitest:pitest-maven:mutationCoverage
           -Dpit-timeout-const=1000
 
+      - name: Generate dependency information
+        run: |
+          mkdir -p target/dependency-report
+
+          ./mvnw dependency:list \
+            -DincludeScope=runtime \
+            -DoutputFile=target/dependency-report/dependency-list.txt
+
+          ./mvnw dependency:tree \
+            -Dscope=runtime \
+            -DoutputFile=target/dependency-report/dependency-tree.txt
+
       - name: Checkout site repository
         uses: actions/checkout@v7
         with:
@@ -58,16 +70,259 @@ jobs:
 
       - name: Copy reports
         run: |
-          rm -rf site/tests site/jacoco site/pit site/javadoc
+          rm -rf \
+            site/tests \
+            site/jacoco \
+            site/pit \
+            site/javadoc \
+            site/dependencies
 
-          mkdir -p site/tests site/jacoco site/pit site/javadoc
+          mkdir -p \
+            site/tests \
+            site/jacoco \
+            site/pit \
+            site/javadoc \
+            site/dependencies
 
           cp -a target/surefire-report/. site/tests/
           cp -a target/site/jacoco/. site/jacoco/
           cp -a target/pit-reports/. site/pit/
           cp -a target/javadoc-report/apidocs/. site/javadoc/
 
+          cp target/dependency-report/dependency-list.txt \
+            site/dependencies/
+          cp target/dependency-report/dependency-tree.txt \
+            site/dependencies/
+
           touch site/.nojekyll
+
+      - name: Create dependency page
+        run: |
+          DEPENDENCY_LIST="$(
+            sed \
+              -e 's/&/\&amp;/g' \
+              -e 's/</\&lt;/g' \
+              -e 's/>/\&gt;/g' \
+              target/dependency-report/dependency-list.txt
+          )"
+
+          DEPENDENCY_TREE="$(
+            sed \
+              -e 's/&/\&amp;/g' \
+              -e 's/</\&lt;/g' \
+              -e 's/>/\&gt;/g' \
+              target/dependency-report/dependency-tree.txt
+          )"
+
+          cat > site/dependencies/index.html <<EOF
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>EMF Model Generator Dependencies</title>
+
+            <style>
+              :root {
+                color-scheme: light dark;
+                font-family:
+                  -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                  Helvetica, Arial, sans-serif;
+              }
+
+              body {
+                margin: 0;
+                background: #f6f8fa;
+                color: #1f2328;
+              }
+
+              main {
+                max-width: 1000px;
+                margin: 60px auto;
+                padding: 0 24px 60px;
+              }
+
+              h1 {
+                margin-bottom: 8px;
+              }
+
+              h2 {
+                margin-top: 40px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #d8dee4;
+              }
+
+              .subtitle {
+                margin-top: 0;
+                color: #656d76;
+                font-size: 1.1rem;
+              }
+
+              .note {
+                margin: 24px 0;
+                padding: 16px 20px;
+                border-left: 4px solid #0969da;
+                background: #ddf4ff;
+                line-height: 1.5;
+              }
+
+              pre {
+                padding: 16px;
+                overflow: auto;
+                border: 1px solid #d0d7de;
+                border-radius: 8px;
+                background: #ffffff;
+                line-height: 1.45;
+              }
+
+              code {
+                font-family:
+                  ui-monospace, SFMono-Regular, Consolas, monospace;
+              }
+
+              a {
+                color: #0969da;
+                text-decoration: none;
+              }
+
+              a:hover {
+                text-decoration: underline;
+              }
+
+              .downloads {
+                display: flex;
+                gap: 20px;
+                flex-wrap: wrap;
+              }
+
+              footer {
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 1px solid #d8dee4;
+                color: #656d76;
+                font-size: 0.9rem;
+              }
+
+              @media (prefers-color-scheme: dark) {
+                body {
+                  background: #0d1117;
+                  color: #e6edf3;
+                }
+
+                .subtitle,
+                footer {
+                  color: #8b949e;
+                }
+
+                h2,
+                footer {
+                  border-color: #30363d;
+                }
+
+                pre {
+                  background: #161b22;
+                  border-color: #30363d;
+                }
+
+                .note {
+                  background: #12243a;
+                  border-color: #58a6ff;
+                }
+
+                a {
+                  color: #58a6ff;
+                }
+              }
+            </style>
+          </head>
+
+          <body>
+            <main>
+              <p><a href="../">&larr; EMF Model Generator reports</a></p>
+
+              <h1>Dependencies and Runtime Requirements</h1>
+
+              <p class="subtitle">
+                Runtime dependencies and OSGi requirements for EMF Model Generator.
+              </p>
+
+              <p class="note">
+                EMF Model Generator introduces no runtime library dependency
+                beyond EMF itself. The resolved Maven runtime dependency set
+                below is generated from the exact project revision shown at
+                the bottom of this page.
+              </p>
+
+              <h2>OSGi Requirements</h2>
+
+              <p>
+                The EMF Model Generator bundle imports only the following
+                EMF packages:
+              </p>
+
+              <pre><code>org.eclipse.emf.common.util
+          org.eclipse.emf.ecore
+          org.eclipse.emf.ecore.resource
+          org.eclipse.emf.ecore.resource.impl
+          org.eclipse.emf.ecore.util
+          org.eclipse.emf.ecore.xmi.impl</code></pre>
+
+              <p>
+                Required execution environment:
+                <code>JavaSE-21</code>.
+              </p>
+
+              <p>
+                No additional non-EMF packages are imported by the
+                EMF Model Generator bundle.
+              </p>
+
+              <h2>Resolved Runtime Dependencies</h2>
+
+              <p>
+                This is the exact Maven runtime dependency set resolved for
+                this build. The version of the EMF dependency declared by
+                the project, together with all of its transitive
+                dependencies, is therefore recorded here.
+              </p>
+
+              <pre><code>${DEPENDENCY_LIST}</code></pre>
+
+              <h2>Runtime Dependency Tree</h2>
+
+              <p>
+                The same dependency set shown with its transitive
+                relationships:
+              </p>
+
+              <pre><code>${DEPENDENCY_TREE}</code></pre>
+
+              <h2>Raw Data</h2>
+
+              <p class="downloads">
+                <a href="dependency-list.txt">
+                  Runtime dependency list
+                </a>
+
+                <a href="dependency-tree.txt">
+                  Runtime dependency tree
+                </a>
+
+                <a href="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${SOURCE_SHA}/pom.xml">
+                  POM for this revision
+                </a>
+              </p>
+
+              <footer>
+                Generated from
+                <a href="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${SOURCE_SHA}">
+                  <code>${SOURCE_SHORT_SHA}</code>
+                </a>
+              </footer>
+            </main>
+          </body>
+          </html>
+          EOF
 
       - name: Create site index
         run: |
@@ -230,6 +485,11 @@ jobs:
                 <a class="report" href="javadoc/">
                   <h2>Javadoc</h2>
                   <p>API documentation</p>
+                </a>
+
+                <a class="report" href="dependencies/">
+                  <h2>Dependencies</h2>
+                  <p>Runtime dependencies and OSGi requirements</p>
                 </a>
               </div>
 
