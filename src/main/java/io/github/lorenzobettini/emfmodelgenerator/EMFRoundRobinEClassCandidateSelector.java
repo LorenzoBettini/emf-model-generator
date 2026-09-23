@@ -14,7 +14,7 @@ import org.eclipse.emf.ecore.EObject;
  * available EClasses.</p>
  * 
  * <p>Example:
- * <pre>{@code
+ * {@snippet :
  * EMFRoundRobinEClassCandidateSelector selector = new EMFRoundRobinEClassCandidateSelector();
  * 
  * // First call for BaseClass returns SubClass1
@@ -25,7 +25,7 @@ import org.eclipse.emf.ecore.EObject;
  * 
  * // If no candidates available, returns null
  * EClass noCandidate = selector.getNextCandidate(context, unknownClass); // returns null
- * }</pre>
+ * }
  *
  * @author Lorenzo Bettini
  */

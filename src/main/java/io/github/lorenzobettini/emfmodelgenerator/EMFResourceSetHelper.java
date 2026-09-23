@@ -13,6 +13,19 @@ import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
  * This class centralizes the logic for setting up ResourceSets with proper
  * resource factories and save options.
  *
+ * <p>The returned resource set can be used with {@link EMFInstancePopulator} when applications
+ * manage model resources directly:</p>
+ * {@snippet :
+ * ResourceSet resourceSet = EMFResourceSetHelper.createResourceSet(80);
+ * Resource resource = resourceSet.createResource(
+ *     URI.createFileURI("output/library.xmi"));
+ * EObject library = EcoreUtil.create(libraryClass);
+ * resource.getContents().add(library);
+ *
+ * new EMFInstancePopulator().populateEObjects(library);
+ * resource.save(null);
+ * }
+ *
  * @author Lorenzo Bettini
  */
 public class EMFResourceSetHelper {

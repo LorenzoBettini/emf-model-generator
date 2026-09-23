@@ -16,11 +16,43 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter.EMFCro
 import io.github.lorenzobettini.emfmodelgenerator.EMFFeatureMapSetter.EMFFeatureMapValueFunction;
 
 /**
- * Responsible for populating EMF EObjects with sample data.
+ * Populates existing EMF {@link EObject EObjects} with sample data.
  * This includes setting attribute values and populating both containment
  * and cross references, with support for configurable multi-valued
  * counts and maximum depth for recursive population.
- * Also handles feature maps, which allow heterogeneous collections.
+ * It also handles feature maps, which allow heterogeneous collections.
+ *
+ * <p>This class performs only the population step: callers create the root objects and, when
+ * required, put them in resources and save those resources themselves. For example, an object
+ * whose metamodel has already been loaded can be populated directly:</p>
+ * {@snippet :
+ * EClass libraryClass = (EClass) ePackage.getEClassifier("Library");
+ * EObject library = EcoreUtil.create(libraryClass);
+ *
+ * EMFInstancePopulator populator = new EMFInstancePopulator();
+ * populator.populateEObjects(library);
+ * }
+ *
+ * <p>Population can be tailored globally and for individual structural features. Per-feature
+ * functions are useful when deterministic domain-shaped sample values are needed:</p>
+ * {@snippet :
+ * EAttribute name = (EAttribute) libraryClass.getEStructuralFeature("name");
+ * EReference books = (EReference) libraryClass.getEStructuralFeature("books");
+ *
+ * EMFInstancePopulator populator = new EMFInstancePopulator();
+ * populator.functionForAttribute(name,
+ *     owner -> "Sample " + owner.eClass().getName());
+ * populator.setContainmentReferenceMaxCountFor(books, 3);
+ * populator.setMaxDepth(2);
+ * populator.populateEObjects(library);
+ * }
+ *
+ * <p>When roots may refer to one another, attach them to resources in the same resource set and
+ * pass them to one {@link #populateEObjects(EObject...)} call. This lets cross-reference selection
+ * see the complete population before references are assigned.</p>
+ *
+ * @see EMFModelGenerator
+ * @see EMFResourceSetHelper
  *
  * @author Lorenzo Bettini
  */
@@ -123,6 +155,11 @@ public class EMFInstancePopulator {
 
 	/**
 	 * Set a custom function for generating values for the given EAttribute.
+	 * For example, a name can be derived from the owning object's class:
+	 * {@snippet :
+	 * populator.functionForAttribute(nameAttribute,
+	 *     owner -> "Sample " + owner.eClass().getName());
+	 * }
 	 * 
 	 * @param attribute the EAttribute for which to set the function
 	 * @param function  the function to generate values for the attribute
@@ -134,6 +171,13 @@ public class EMFInstancePopulator {
 
 	/**
 	 * Set a custom function for generating values for the given cross EReference.
+	 * Returning {@code null} delegates that invocation to the default candidate selection:
+	 * {@snippet :
+	 * populator.functionForCrossReference(authorReference, book -> {
+	 *     EObject preferredAuthor = findPreferredAuthor(book);
+	 *     return preferredAuthor; // null means: use the default candidate
+	 * });
+	 * }
 	 * 
 	 * @param reference the cross EReference for which to set the function
 	 * @param function  the function to generate values for the cross reference
@@ -214,6 +258,9 @@ public class EMFInstancePopulator {
 	/**
 	 * Set the maximum recursion depth for populating containment references.
 	 * Attributes are always populated regardless of depth.
+	 * A root is at depth {@code 0}; with a maximum depth of {@code 1}, its direct
+	 * contained objects are created and have their attributes populated, but their
+	 * containment references are not expanded.
 	 *
 	 * @param maxDepth the maximum depth
 	 */
@@ -301,6 +348,20 @@ public class EMFInstancePopulator {
 	 * Populate the given EObjects with sample data.
 	 * This includes setting attribute values and populating both containment
 	 * and cross references, up to the configured maximum depth.
+	 *
+	 * <p>All roots are populated before cross-references are assigned. Supply related roots together
+	 * so that each one can be selected as a cross-reference candidate for the others:</p>
+	 * {@snippet :
+	 * EObject book = EcoreUtil.create(bookClass);
+	 * EObject author = EcoreUtil.create(authorClass);
+	 * bookResource.getContents().add(book);
+	 * authorResource.getContents().add(author);
+	 *
+	 * EMFInstancePopulator populator = new EMFInstancePopulator();
+	 * populator.populateEObjects(book, author);
+	 * }
+	 * The resources in this example must belong to the same {@code ResourceSet}. Objects created
+	 * through containment during the call are recursively populated as well.
 	 *
 	 * @param rootInstances the EObjects to populate
 	 */

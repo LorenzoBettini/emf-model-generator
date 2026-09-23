@@ -14,7 +14,7 @@ import org.eclipse.emf.ecore.EObject;
  * available instances.</p>
  * 
  * <p>Example:
- * <pre>{@code
+ * {@snippet :
  * EMFRoundRobinEObjectCandidateSelector selector = new EMFRoundRobinEObjectCandidateSelector();
  * 
  * // First call for PersonClass returns person1
@@ -25,7 +25,7 @@ import org.eclipse.emf.ecore.EObject;
  * 
  * // If no candidates available, returns null
  * EObject noCandidate = selector.getNextCandidate(context, unknownClass); // returns null
- * }</pre>
+ * }
  *
  * @author Lorenzo Bettini
  */

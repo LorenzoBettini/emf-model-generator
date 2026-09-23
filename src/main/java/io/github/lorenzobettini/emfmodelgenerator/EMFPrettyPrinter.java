@@ -18,7 +18,7 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
  * while cross-references to objects in different resources include the resource name.
  * 
  * <p>Example output for same-resource reference:
- * <pre>{@code
+ * {@snippet :
  * Library
  *   name: "City Library"
  *   books (1):
@@ -29,10 +29,10 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
  *   authors (1):
  *     [0] Author
  *       name: "Orwell"
- * }</pre>
+ * }
  * 
  * <p>Example output for cross-resource reference:
- * <pre>{@code
+ * {@snippet :
  * Library
  *   name: "Central Library"
  *   books (1):
@@ -40,7 +40,7 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
  *       title: "Brave New World"
  *       authors (opposite) (1):
  *         [0] -> Author (other_Library.xmi > authors[0])
- * }</pre>
+ * }
  *
  * @author Lorenzo Bettini
  */
