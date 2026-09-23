@@ -53,6 +53,15 @@ You'll also get the transitive dependencies, e.g., EMF dependencies:
 </dependency>
 ```
 
+## Runtime Dependencies
+
+EMF Model Generator introduces no runtime library dependencies beyond EMF itself.
+
+The exact runtime dependency set resolved for the current published revision, together with the Maven dependency tree and the OSGi package requirements of the bundle, is available on the
+[Dependencies and Runtime Requirements](https://lorenzobettini.github.io/emf-model-generator-site/dependencies/) page.
+
+The page is generated from the same source revision as the published test, coverage, mutation-testing, and Javadoc reports, and links to the corresponding project POM and Git commit.
+
 ## Usage in an Eclipse Plug-in Project
 
 Use this update site https://lorenzobettini.github.io/emf-model-generator-update-site/ to either install the "EMF Model Generator" feature in your Eclipse or in your Target Platform.
@@ -138,6 +147,7 @@ The latest reports generated from the `master` branch are available on the
 * [JaCoCo code coverage report](https://lorenzobettini.github.io/emf-model-generator-site/jacoco/)
 * [PIT mutation testing report](https://lorenzobettini.github.io/emf-model-generator-site/pit/)
 * [Javadoc](https://lorenzobettini.github.io/emf-model-generator-site/javadoc/)
+* [Dependencies and runtime requirements](https://lorenzobettini.github.io/emf-model-generator-site/dependencies/)
 
 ### Run Performance Tests
 
@@ -745,4 +755,4 @@ This project is licensed under the Eclipse Public License 2.0.
 - **Eclipse Modeling Framework (EMF)**: <https://www.eclipse.org/modeling/emf/>
 - **GitHub Repository**: <https://github.com/LorenzoBettini/emf-model-generator>
 - **Issues**: <https://github.com/LorenzoBettini/emf-model-generator/issues>
-- **Reports and Javadoc**: <https://lorenzobettini.github.io/emf-model-generator-site/>
+* **Reports, Javadoc, and Runtime Dependencies**: https://lorenzobettini.github.io/emf-model-generator-site/
