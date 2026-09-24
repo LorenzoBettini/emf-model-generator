@@ -38,7 +38,7 @@ Add the dependency to your `pom.xml` (take the latest version from the Maven Cen
 <dependency>
     <groupId>io.github.lorenzobettini</groupId>
     <artifactId>emf-model-generator</artifactId>
-    <version>1.0.0</version>
+    <version>...</version>
 </dependency>
 ```
 
