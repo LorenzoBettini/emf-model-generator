@@ -19,8 +19,7 @@ post-generation validation API.
   interfaces, and configured multiplicities where suitable values are available
 - **Post-Generation Validation**: validate candidates with standard EMF validation immediately or
   opt in to validation before saving
-- **Flexible Configuration**: customize depth, multiplicities, per-feature functions,
-  direct self-reference policy, candidate selectors, and setter implementations
+- **Flexible Configuration**: customize depth, multiplicities, per-feature functions, cycle policy, candidate selectors, and setter implementations
 - **Resource Management**: load Ecore files, register packages, create resources, save generated XMI, and unload metamodels
 - **File Naming Customization**: configure file prefixes and extensions globally, per package, or per class
 - **Feature Map Support**: populate EMF feature maps using ExtendedMetaData group members

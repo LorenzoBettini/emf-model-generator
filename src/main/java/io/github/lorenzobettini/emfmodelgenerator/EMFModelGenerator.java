@@ -53,7 +53,7 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * </ul>
  * 
  * <p><b>Customization:</b> For population-related customization (custom setters, per-feature
- * functions, multiplicities, depth, self-reference policies, etc.), obtain the
+ * functions, multiplicities, depth, cycle policies, etc.), obtain the
  * {@link EMFInstancePopulator} via {@link #getInstancePopulator()} and configure it directly.
  *
  * <p><b>Post-generation validation:</b> Generation fills features where suitable values are
@@ -215,7 +215,7 @@ public class EMFModelGenerator {
 	/**
 	 * Get the {@link EMFInstancePopulator} used to populate generated instances.
 	 * Use this to configure population behavior such as custom setters, functions,
-	 * multiplicities, depth limits, and self-reference policies.
+	 * multiplicities, depth limits, and cycle policies.
 	 *
 	 * <p>Example:
 	 * {@snippet :
