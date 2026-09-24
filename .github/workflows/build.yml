@@ -30,6 +30,13 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
+    - name: Cache Sonar
+      uses: actions/cache@v6
+      with:
+        path: |
+          ~/.sonar/cache
+        key: ${{ runner.os }}-sonar-${{ hashFiles('**/pom.xml') }}
+
     # execute sonar:sonar only for internal PRs
     - name: Set Maven Additional Goals
       run: |
