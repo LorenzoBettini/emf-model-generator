@@ -3710,7 +3710,8 @@ class EMFModelGeneratorTest {
 		assertThat(packages.get(0).getESubpackages().getFirst()).isSameAs(packages.get(1));
 		assertThat(packages.get(2).getEClassifiers().getFirst().getEPackage())
 				.isSameAs(packages.get(2));
-		assertThatThrownBy(() -> packages.add(EcoreFactory.eINSTANCE.createEPackage()))
+		var additionalPackage = EcoreFactory.eINSTANCE.createEPackage();
+		assertThatThrownBy(() -> packages.add(additionalPackage))
 				.isInstanceOf(UnsupportedOperationException.class);
 	}
 
@@ -3734,7 +3735,7 @@ class EMFModelGeneratorTest {
 		for (var ePackage : packages) {
 			assertThat(generator.getResourceSet().getPackageRegistry())
 					.doesNotContainKey(ePackage.getNsURI());
-			assertThat(EPackage.Registry.INSTANCE).doesNotContainKey(ePackage.getNsURI());
+			assertThat(EPackage.Registry.INSTANCE.containsKey(ePackage.getNsURI())).isFalse();
 		}
 		// Repeated cleanup is part of the public contract and must remain harmless.
 		generator.unloadEcoreModels();

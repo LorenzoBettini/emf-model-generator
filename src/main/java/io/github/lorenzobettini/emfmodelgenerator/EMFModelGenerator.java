@@ -114,9 +114,7 @@ public class EMFModelGenerator {
 	private record PackageRegistration(
 			EPackage.Registry registry, String nsURI, EPackage ePackage) {
 		void removeIfOwned() {
-			synchronized (registry) {
-				registry.remove(nsURI, ePackage);
-			}
+			registry.remove(nsURI, ePackage);
 		}
 	}
 
@@ -263,13 +261,10 @@ public class EMFModelGenerator {
 
 	private void registerLoadedPackage(final EPackage.Registry registry, final String nsURI,
 			final EPackage ePackage) {
-		synchronized (registry) {
-			if (!registry.containsKey(nsURI)) {
-				registry.put(nsURI, ePackage);
-				loadedEcoreRegistrations.add(
-						new PackageRegistration(registry, nsURI, ePackage));
-			}
-		}
+		registry.computeIfAbsent(nsURI, ignored -> {
+			loadedEcoreRegistrations.add(new PackageRegistration(registry, nsURI, ePackage));
+			return ePackage;
+		});
 	}
 
 	public String getOutputDirectory() {
