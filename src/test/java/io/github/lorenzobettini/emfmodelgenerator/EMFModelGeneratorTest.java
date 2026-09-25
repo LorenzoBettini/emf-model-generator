@@ -3702,8 +3702,9 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
-	void testLoadEcorePackagesReturnsTopLevelAndNestedPackagesInOrder() throws Exception {
-		var packages = generator.loadEcorePackages(TEST_INPUTS_DIR + "/multiple-packages.ecore");
+	void testLoadEcoreModelPackagesReturnsTopLevelAndNestedPackagesInOrder() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				TEST_INPUTS_DIR + "/multiple-packages.ecore");
 
 		assertThat(packages).extracting(EPackage::getName)
 				.containsExactly("packageA", "subPackageA", "packageB");
@@ -3716,8 +3717,9 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
-	void testLoadEcorePackagesRegistersAndCleansUpEveryPackage() throws Exception {
-		var packages = generator.loadEcorePackages(TEST_INPUTS_DIR + "/multiple-packages.ecore");
+	void testLoadEcoreModelPackagesRegistersAndCleansUpEveryPackage() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				TEST_INPUTS_DIR + "/multiple-packages.ecore");
 		var resource = packages.getFirst().eResource();
 
 		assertThat(resource.isLoaded()).isTrue();
@@ -3742,14 +3744,14 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
-	void testLoadEcorePackagesPreservesExistingRegistryMappings() throws Exception {
+	void testLoadEcoreModelPackagesPreservesExistingRegistryMappings() throws Exception {
 		var resourceSetSentinel = EcoreFactory.eINSTANCE.createEPackage();
 		var globalSentinel = EcoreFactory.eINSTANCE.createEPackage();
 		var nsURI = "http://www.example.org/multiple/a";
 		generator.getResourceSet().getPackageRegistry().put(nsURI, resourceSetSentinel);
 		EPackage.Registry.INSTANCE.put(nsURI, globalSentinel);
 		try {
-			var packages = generator.loadEcorePackages(
+			var packages = generator.loadEcoreModelPackages(
 					TEST_INPUTS_DIR + "/multiple-packages.ecore");
 
 			assertThat(packages.getFirst()).isNotSameAs(resourceSetSentinel)
@@ -3771,7 +3773,8 @@ class EMFModelGeneratorTest {
 
 	@Test
 	void testUnloadDoesNotRemoveOwnedRegistrationThatWasExternallyReplaced() throws Exception {
-		var packages = generator.loadEcorePackages(TEST_INPUTS_DIR + "/multiple-packages.ecore");
+		var packages = generator.loadEcoreModelPackages(
+				TEST_INPUTS_DIR + "/multiple-packages.ecore");
 		var replacement = EcoreFactory.eINSTANCE.createEPackage();
 		var nsURI = packages.getFirst().getNsURI();
 		generator.getResourceSet().getPackageRegistry().put(nsURI, replacement);
@@ -3787,9 +3790,9 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
-	void testLoadEcorePackagesReturnsPackagesWithoutNamespaceUrisWithoutRegisteringThem()
+	void testLoadEcoreModelPackagesReturnsPackagesWithoutNamespaceUrisWithoutRegisteringThem()
 			throws Exception {
-		var packages = generator.loadEcorePackages(
+		var packages = generator.loadEcoreModelPackages(
 				TEST_INPUTS_DIR + "/packages-without-nsuri.ecore");
 
 		assertThat(packages).extracting(EPackage::getName)
@@ -3801,7 +3804,7 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
-	void testLoadEcorePackagesRejectsResourceWithoutTopLevelPackage() {
+	void testLoadEcoreModelPackagesRejectsResourceWithoutTopLevelPackage() {
 		var path = TEST_INPUTS_DIR + "/no-package.ecore";
 		var createdResource = new AtomicReference<Resource>();
 		var delegateFactory = new EcoreResourceFactoryImpl();
@@ -3812,7 +3815,7 @@ class EMFModelGeneratorTest {
 					return resource;
 				});
 
-		assertThatThrownBy(() -> generator.loadEcorePackages(path))
+		assertThatThrownBy(() -> generator.loadEcoreModelPackages(path))
 				.isInstanceOf(IOException.class)
 				.hasMessageContaining("contains no top-level EPackage")
 				.hasMessageContaining(path);
@@ -3826,7 +3829,7 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
-	void testLoadEcorePackagesDoesNotTakeOwnershipOfExistingResources() throws Exception {
+	void testLoadEcoreModelPackagesDoesNotTakeOwnershipOfExistingResources() throws Exception {
 		var resourceSet = generator.getResourceSet();
 		resourceSet.getResourceFactoryRegistry().getExtensionToFactoryMap()
 				.put("ecore", new EcoreResourceFactoryImpl());
@@ -3837,9 +3840,9 @@ class EMFModelGeneratorTest {
 		var validResource = resourceSet.getResource(validUri, true);
 		var invalidResource = resourceSet.getResource(invalidUri, true);
 
-		var packages = generator.loadEcorePackages(validUri.toFileString());
+		var packages = generator.loadEcoreModelPackages(validUri.toFileString());
 		assertThat(packages.getFirst().eResource()).isSameAs(validResource);
-		assertThatThrownBy(() -> generator.loadEcorePackages(invalidUri.toFileString()))
+		assertThatThrownBy(() -> generator.loadEcoreModelPackages(invalidUri.toFileString()))
 				.isInstanceOf(IOException.class)
 				.hasMessageContaining("contains no top-level EPackage");
 
@@ -3852,7 +3855,8 @@ class EMFModelGeneratorTest {
 
 	@Test
 	void testAllSiblingPackagesAreAvailableForSubtypeDiscovery() throws Exception {
-		var packages = generator.loadEcorePackages(TEST_INPUTS_DIR + "/multiple-packages.ecore");
+		var packages = generator.loadEcoreModelPackages(
+				TEST_INPUTS_DIR + "/multiple-packages.ecore");
 		var abstractBase = (EClass) packages.getFirst().getEClassifier("AbstractBase");
 		var concreteSubtype = (EClass) packages.get(2).getEClassifier("ConcreteSubtype");
 

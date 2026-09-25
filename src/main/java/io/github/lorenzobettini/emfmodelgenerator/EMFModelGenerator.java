@@ -40,8 +40,9 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * }
  * 
  * <p><b>Loading Ecore Models:</b> Use {@link #loadEcoreModel(String)} to load the first package
- * from an Ecore file, or {@link #loadEcorePackages(String)} to access every top-level and nested
- * package. These methods automatically register the resource factory and package registry entries.
+ * from an Ecore file, or {@link #loadEcoreModelPackages(String)} to access every top-level and
+ * nested package. These methods automatically register the resource factory and package registry
+ * entries.
  * Call {@link #unloadEcoreModels()} when done to clean up resources and registry entries.
  * 
  * <p><b>Generation Methods:</b>
@@ -90,7 +91,7 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * }
  * 
  * @see #loadEcoreModel(String)
- * @see #loadEcorePackages(String)
+ * @see #loadEcoreModelPackages(String)
  * @see #unloadEcoreModels()
  * @see #generateFrom(EClass)
  * @see #save()
@@ -133,7 +134,7 @@ public class EMFModelGenerator {
 	 * and state (generated instances, counters) will be preserved between calls.
 	 * 
 	 * <p>Note: When using this constructor, you may still use {@link #loadEcoreModel(String)} or
-	 * {@link #loadEcorePackages(String)}, which automatically register the
+	 * {@link #loadEcoreModelPackages(String)}, which automatically register the
 	 * EcoreResourceFactoryImpl if needed.
 	 * 
 	 * <p>Example usage:
@@ -293,7 +294,7 @@ public class EMFModelGenerator {
 	 * </ul>
 	 * 
 	 * <p>The first package in resource and depth-first subpackage traversal order is returned.
-	 * Use {@link #loadEcorePackages(String)} when access to all packages is required.
+	 * Use {@link #loadEcoreModelPackages(String)} when access to all packages is required.
 	 * 
 	 * <p>Example usage:
 	 * {@snippet :
@@ -310,7 +311,7 @@ public class EMFModelGenerator {
 	 * @throws IOException if the file cannot be loaded or has no top-level EPackage
 	 */
 	public EPackage loadEcoreModel(String ecoreFilePath) throws IOException {
-		return loadEcorePackages(ecoreFilePath).getFirst();
+		return loadEcoreModelPackages(ecoreFilePath).getFirst();
 	}
 
 	/**
@@ -325,7 +326,7 @@ public class EMFModelGenerator {
 	 * @return all loaded top-level and nested EPackages in deterministic traversal order
 	 * @throws IOException if the file cannot be loaded or has no top-level EPackage
 	 */
-	public List<EPackage> loadEcorePackages(final String ecoreFilePath) throws IOException {
+	public List<EPackage> loadEcoreModelPackages(final String ecoreFilePath) throws IOException {
 		// Register EcoreResourceFactoryImpl if not already registered
 		if (!sharedResourceSet.getResourceFactoryRegistry()
 				.getExtensionToFactoryMap().containsKey("ecore")) {
@@ -376,7 +377,7 @@ public class EMFModelGenerator {
 
 	/**
 	 * Unload all Ecore models loaded via {@link #loadEcoreModel(String)} or
-	 * {@link #loadEcorePackages(String)}.
+	 * {@link #loadEcoreModelPackages(String)}.
 	 * This method:
 	 * <ul>
 	 * <li>Unloads the Ecore resources from the shared ResourceSet</li>

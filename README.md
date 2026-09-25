@@ -308,7 +308,7 @@ generator.unloadEcoreModels();
 Ecore resources with multiple sibling or nested packages are supported:
 
 ```java
-List<EPackage> packages = generator.loadEcorePackages("models/multimodel.ecore");
+List<EPackage> packages = generator.loadEcoreModelPackages("models/multimodel.ecore");
 EPackage first = packages.getFirst();
 ```
 
