@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.emf.common.util.BasicDiagnostic;
 import org.eclipse.emf.common.util.Diagnostic;
@@ -3688,5 +3689,181 @@ class EMFModelGeneratorTest {
 		// Clean up
 		EPackage.Registry.INSTANCE.remove(nsURIA);
 		resourceSet.getResources().remove(resourceA);
+	}
+
+	@Test
+	void testLoadEcoreModelRemainsCompatibleForSinglePackage() throws Exception {
+		var ePackage = generator.loadEcoreModel(TEST_INPUTS_DIR + "/simple.ecore");
+
+		assertThat(ePackage.getName()).isEqualTo("simple");
+		assertThat(generator.getResourceSet().getPackageRegistry().get(ePackage.getNsURI()))
+				.isSameAs(ePackage);
+		assertThat(EPackage.Registry.INSTANCE.get(ePackage.getNsURI())).isSameAs(ePackage);
+	}
+
+	@Test
+	void testLoadEcoreModelPackagesReturnsTopLevelAndNestedPackagesInOrder() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				TEST_INPUTS_DIR + "/multiple-packages.ecore");
+
+		assertThat(packages).extracting(EPackage::getName)
+				.containsExactly("packageA", "subPackageA", "packageB");
+		assertThat(packages.get(0).getESubpackages().getFirst()).isSameAs(packages.get(1));
+		assertThat(packages.get(2).getEClassifiers().getFirst().getEPackage())
+				.isSameAs(packages.get(2));
+		var additionalPackage = EcoreFactory.eINSTANCE.createEPackage();
+		assertThatThrownBy(() -> packages.add(additionalPackage))
+				.isInstanceOf(UnsupportedOperationException.class);
+	}
+
+	@Test
+	void testLoadEcoreModelPackagesRegistersAndCleansUpEveryPackage() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				TEST_INPUTS_DIR + "/multiple-packages.ecore");
+		var resource = packages.getFirst().eResource();
+
+		assertThat(resource.isLoaded()).isTrue();
+		assertThat(generator.getResourceSet().getResources()).contains(resource);
+		for (var ePackage : packages) {
+			assertThat(generator.getResourceSet().getPackageRegistry().get(ePackage.getNsURI()))
+					.isSameAs(ePackage);
+			assertThat(EPackage.Registry.INSTANCE.get(ePackage.getNsURI())).isSameAs(ePackage);
+		}
+
+		generator.unloadEcoreModels();
+
+		assertThat(resource.isLoaded()).isFalse();
+		assertThat(generator.getResourceSet().getResources()).doesNotContain(resource);
+		for (var ePackage : packages) {
+			assertThat(generator.getResourceSet().getPackageRegistry())
+					.doesNotContainKey(ePackage.getNsURI());
+			assertThat(EPackage.Registry.INSTANCE.containsKey(ePackage.getNsURI())).isFalse();
+		}
+		// Repeated cleanup is part of the public contract and must remain harmless.
+		generator.unloadEcoreModels();
+	}
+
+	@Test
+	void testLoadEcoreModelPackagesPreservesExistingRegistryMappings() throws Exception {
+		var resourceSetSentinel = EcoreFactory.eINSTANCE.createEPackage();
+		var globalSentinel = EcoreFactory.eINSTANCE.createEPackage();
+		var nsURI = "http://www.example.org/multiple/a";
+		generator.getResourceSet().getPackageRegistry().put(nsURI, resourceSetSentinel);
+		EPackage.Registry.INSTANCE.put(nsURI, globalSentinel);
+		try {
+			var packages = generator.loadEcoreModelPackages(
+					TEST_INPUTS_DIR + "/multiple-packages.ecore");
+
+			assertThat(packages.getFirst()).isNotSameAs(resourceSetSentinel)
+					.isNotSameAs(globalSentinel);
+			assertThat(generator.getResourceSet().getPackageRegistry().get(nsURI))
+					.isSameAs(resourceSetSentinel);
+			assertThat(EPackage.Registry.INSTANCE.get(nsURI)).isSameAs(globalSentinel);
+
+			generator.unloadEcoreModels();
+
+			assertThat(generator.getResourceSet().getPackageRegistry().get(nsURI))
+					.isSameAs(resourceSetSentinel);
+			assertThat(EPackage.Registry.INSTANCE.get(nsURI)).isSameAs(globalSentinel);
+		} finally {
+			generator.getResourceSet().getPackageRegistry().remove(nsURI);
+			EPackage.Registry.INSTANCE.remove(nsURI);
+		}
+	}
+
+	@Test
+	void testUnloadDoesNotRemoveOwnedRegistrationThatWasExternallyReplaced() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				TEST_INPUTS_DIR + "/multiple-packages.ecore");
+		var replacement = EcoreFactory.eINSTANCE.createEPackage();
+		var nsURI = packages.getFirst().getNsURI();
+		generator.getResourceSet().getPackageRegistry().put(nsURI, replacement);
+		EPackage.Registry.INSTANCE.put(nsURI, replacement);
+
+		generator.unloadEcoreModels();
+
+		assertThat(generator.getResourceSet().getPackageRegistry().get(nsURI))
+				.isSameAs(replacement);
+		assertThat(EPackage.Registry.INSTANCE.get(nsURI)).isSameAs(replacement);
+		generator.getResourceSet().getPackageRegistry().remove(nsURI);
+		EPackage.Registry.INSTANCE.remove(nsURI);
+	}
+
+	@Test
+	void testLoadEcoreModelPackagesReturnsPackagesWithoutNamespaceUrisWithoutRegisteringThem()
+			throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				TEST_INPUTS_DIR + "/packages-without-nsuri.ecore");
+
+		assertThat(packages).extracting(EPackage::getName)
+				.containsExactly("noNamespace", "blankNamespace");
+		assertThat(packages).extracting(EPackage::getNsURI).containsExactly(null, "   ");
+		assertThat(generator.getResourceSet().getPackageRegistry())
+				.doesNotContainKeys(null, "   ");
+		assertThat(EPackage.Registry.INSTANCE).doesNotContainKeys(null, "   ");
+	}
+
+	@Test
+	void testLoadEcoreModelPackagesRejectsResourceWithoutTopLevelPackage() {
+		var path = TEST_INPUTS_DIR + "/no-package.ecore";
+		var createdResource = new AtomicReference<Resource>();
+		var delegateFactory = new EcoreResourceFactoryImpl();
+		generator.getResourceSet().getResourceFactoryRegistry().getExtensionToFactoryMap()
+				.put("ecore", (Resource.Factory) uri -> {
+					var resource = delegateFactory.createResource(uri);
+					createdResource.set(resource);
+					return resource;
+				});
+
+		assertThatThrownBy(() -> generator.loadEcoreModelPackages(path))
+				.isInstanceOf(IOException.class)
+				.hasMessageContaining("contains no top-level EPackage")
+				.hasMessageContaining(path);
+		assertThat(createdResource.get().isLoaded()).isFalse();
+		assertThat(generator.getResourceSet().getResources()).isEmpty();
+		assertThatThrownBy(() -> generator.loadEcoreModel(path))
+				.isInstanceOf(IOException.class)
+				.hasMessageContaining("contains no top-level EPackage");
+		assertThat(createdResource.get().isLoaded()).isFalse();
+		assertThat(generator.getResourceSet().getResources()).isEmpty();
+	}
+
+	@Test
+	void testLoadEcoreModelPackagesDoesNotTakeOwnershipOfExistingResources() throws Exception {
+		var resourceSet = generator.getResourceSet();
+		resourceSet.getResourceFactoryRegistry().getExtensionToFactoryMap()
+				.put("ecore", new EcoreResourceFactoryImpl());
+		var validUri = URI.createFileURI(
+				new File(TEST_INPUTS_DIR, "multiple-packages.ecore").getAbsolutePath());
+		var invalidUri = URI.createFileURI(
+				new File(TEST_INPUTS_DIR, "no-package.ecore").getAbsolutePath());
+		var validResource = resourceSet.getResource(validUri, true);
+		var invalidResource = resourceSet.getResource(invalidUri, true);
+
+		var packages = generator.loadEcoreModelPackages(validUri.toFileString());
+		assertThat(packages.getFirst().eResource()).isSameAs(validResource);
+		assertThatThrownBy(() -> generator.loadEcoreModelPackages(invalidUri.toFileString()))
+				.isInstanceOf(IOException.class)
+				.hasMessageContaining("contains no top-level EPackage");
+
+		generator.unloadEcoreModels();
+
+		assertThat(validResource.isLoaded()).isTrue();
+		assertThat(invalidResource.isLoaded()).isTrue();
+		assertThat(resourceSet.getResources()).contains(validResource, invalidResource);
+	}
+
+	@Test
+	void testAllSiblingPackagesAreAvailableForSubtypeDiscovery() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				TEST_INPUTS_DIR + "/multiple-packages.ecore");
+		var abstractBase = (EClass) packages.getFirst().getEClassifier("AbstractBase");
+		var concreteSubtype = (EClass) packages.get(2).getEClassifier("ConcreteSubtype");
+
+		var generated = generator.generateAllFrom(abstractBase);
+
+		assertThat(generated).singleElement()
+				.extracting(EObject::eClass)
+				.isSameAs(concreteSubtype);
 	}
 }

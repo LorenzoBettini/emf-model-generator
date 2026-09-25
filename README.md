@@ -293,7 +293,7 @@ The `EMFModelGenerator` provides a convenient method to load Ecore models withou
 ```java
 EMFModelGenerator generator = new EMFModelGenerator();
 
-// Load Ecore model - automatically registers resource factory and package
+// Load the first package - automatically registers the resource factory and all packages
 EPackage ePackage = generator.loadEcoreModel("models/mymodel.ecore");
 
 // Use the loaded package
@@ -305,16 +305,25 @@ generator.save();
 generator.unloadEcoreModels();
 ```
 
-The `loadEcoreModel` method:
+Ecore resources with multiple sibling or nested packages are supported:
+
+```java
+List<EPackage> packages = generator.loadEcoreModelPackages("models/multimodel.ecore");
+EPackage first = packages.getFirst();
+```
+
+Use `loadEcoreModel` as the convenience API when only the first package in resource/traversal
+order is needed. The loading methods:
 - Automatically registers `EcoreResourceFactoryImpl` if not already registered
 - Loads the Ecore file into the generator's ResourceSet
-- Registers the EPackage in the EMF global registry
-- Tracks the resource and nsURI for cleanup
+- Register every top-level and nested EPackage with a valid namespace URI
+- Preserve pre-existing entries in both the ResourceSet and global package registries
+- Track the resource and registrations owned by the generator for cleanup
 
 Call `unloadEcoreModels()` when finished to:
 - Unload all loaded Ecore resources
 - Remove resources from the ResourceSet
-- Unregister packages from the global registry
+- Remove only package registrations inserted by the generator
 - Clear internal tracking lists for reuse
 
 This simplifies Ecore model handling compared to manual ResourceSet configuration.

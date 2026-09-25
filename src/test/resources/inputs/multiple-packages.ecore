@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore">
+  <ecore:EPackage name="packageA" nsURI="http://www.example.org/multiple/a" nsPrefix="a">
+    <eClassifiers xsi:type="ecore:EClass" name="AbstractBase" abstract="true"/>
+    <eSubpackages name="subPackageA" nsURI="http://www.example.org/multiple/a/sub"
+        nsPrefix="asub">
+      <eClassifiers xsi:type="ecore:EClass" name="NestedType"/>
+    </eSubpackages>
+  </ecore:EPackage>
+  <ecore:EPackage name="packageB" nsURI="http://www.example.org/multiple/b" nsPrefix="b">
+    <eClassifiers xsi:type="ecore:EClass" name="ConcreteSubtype"
+        eSuperTypes="#/0/AbstractBase"/>
+  </ecore:EPackage>
+</xmi:XMI>
