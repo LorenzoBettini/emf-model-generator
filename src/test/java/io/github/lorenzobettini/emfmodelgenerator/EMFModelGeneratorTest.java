@@ -3736,6 +3736,7 @@ class EMFModelGeneratorTest {
 					.doesNotContainKey(ePackage.getNsURI());
 			assertThat(EPackage.Registry.INSTANCE).doesNotContainKey(ePackage.getNsURI());
 		}
+		// Repeated cleanup is part of the public contract and must remain harmless.
 		generator.unloadEcoreModels();
 	}
 
