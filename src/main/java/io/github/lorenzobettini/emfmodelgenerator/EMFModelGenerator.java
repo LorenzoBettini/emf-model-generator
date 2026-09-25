@@ -39,8 +39,9 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * generator.unloadEcoreModels(); // Clean up
  * }
  * 
- * <p><b>Loading Ecore Models:</b> Use {@link #loadEcoreModel(String)} to load Ecore files.
- * This automatically registers the resource factory and package registry entries.
+ * <p><b>Loading Ecore Models:</b> Use {@link #loadEcoreModel(String)} to load the first package
+ * from an Ecore file, or {@link #loadEcorePackages(String)} to access every top-level and nested
+ * package. These methods automatically register the resource factory and package registry entries.
  * Call {@link #unloadEcoreModels()} when done to clean up resources and registry entries.
  * 
  * <p><b>Generation Methods:</b>
@@ -89,6 +90,7 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * }
  * 
  * @see #loadEcoreModel(String)
+ * @see #loadEcorePackages(String)
  * @see #unloadEcoreModels()
  * @see #generateFrom(EClass)
  * @see #save()
@@ -106,8 +108,17 @@ public class EMFModelGenerator {
 	private EMFInstancePopulator instancePopulator = new EMFInstancePopulator();
 	private int numberOfInstances = 1;
 	private final List<Resource> loadedEcoreResources = new ArrayList<>();
-	private final List<String> loadedEcoreNsURIs = new ArrayList<>();
+	private final List<PackageRegistration> loadedEcoreRegistrations = new ArrayList<>();
 	private EMFModelValidator.Factory validationBeforeSaveFactory;
+
+	private record PackageRegistration(
+			EPackage.Registry registry, String nsURI, EPackage ePackage) {
+		void removeIfOwned() {
+			synchronized (registry) {
+				registry.remove(nsURI, ePackage);
+			}
+		}
+	}
 
 	/**
 	 * Create a new EMFModelGenerator with default settings.
@@ -123,8 +134,9 @@ public class EMFModelGenerator {
 	 * The provided ResourceSet will be reused across multiple generation calls,
 	 * and state (generated instances, counters) will be preserved between calls.
 	 * 
-	 * <p>Note: When using this constructor, you may still use {@link #loadEcoreModel(String)}
-	 * which will automatically register the EcoreResourceFactoryImpl if needed.
+	 * <p>Note: When using this constructor, you may still use {@link #loadEcoreModel(String)} or
+	 * {@link #loadEcorePackages(String)}, which automatically register the
+	 * EcoreResourceFactoryImpl if needed.
 	 * 
 	 * <p>Example usage:
 	 * {@snippet :
@@ -240,6 +252,26 @@ public class EMFModelGenerator {
 		EPackage.Registry.INSTANCE.computeIfAbsent(nsURI, k -> pkg);
 	}
 
+	private void registerLoadedPackage(final EPackage ePackage) {
+		final var nsURI = ePackage.getNsURI();
+		if (nsURI == null || nsURI.isBlank()) {
+			return;
+		}
+		registerLoadedPackage(sharedResourceSet.getPackageRegistry(), nsURI, ePackage);
+		registerLoadedPackage(EPackage.Registry.INSTANCE, nsURI, ePackage);
+	}
+
+	private void registerLoadedPackage(final EPackage.Registry registry, final String nsURI,
+			final EPackage ePackage) {
+		synchronized (registry) {
+			if (!registry.containsKey(nsURI)) {
+				registry.put(nsURI, ePackage);
+				loadedEcoreRegistrations.add(
+						new PackageRegistration(registry, nsURI, ePackage));
+			}
+		}
+	}
+
 	public String getOutputDirectory() {
 		return outputDirectory;
 	}
@@ -255,17 +287,18 @@ public class EMFModelGenerator {
 	}
 
 	/**
-	 * Load an Ecore model from a file path.
+	 * Load the first package from an Ecore model at the given file path.
 	 * This method:
 	 * <ul>
 	 * <li>Registers the EcoreResourceFactoryImpl if not already registered</li>
 	 * <li>Loads the Ecore file into the shared ResourceSet</li>
-	 * <li>Registers the EPackage in the EMF global registry</li>
-	 * <li>Tracks the loaded resource and nsURI for cleanup via {@link #unloadEcoreModels()}</li>
+	 * <li>Registers all discovered EPackages in the shared and global registries</li>
+	 * <li>Tracks the loaded resource and owned registrations for cleanup via
+	 * {@link #unloadEcoreModels()}</li>
 	 * </ul>
 	 * 
-	 * The Ecore file is assumed to contain a single EPackage as its root element and
-	 * is a valid Ecore model.
+	 * <p>The first package in resource and depth-first subpackage traversal order is returned.
+	 * Use {@link #loadEcorePackages(String)} when access to all packages is required.
 	 * 
 	 * <p>Example usage:
 	 * {@snippet :
@@ -278,10 +311,26 @@ public class EMFModelGenerator {
 	 * }
 	 * 
 	 * @param ecoreFilePath the path to the Ecore file (absolute or relative)
-	 * @return the loaded EPackage
-	 * @throws IOException if the file cannot be read
+	 * @return the first loaded EPackage
+	 * @throws IOException if the file cannot be loaded or has no top-level EPackage
 	 */
 	public EPackage loadEcoreModel(String ecoreFilePath) throws IOException {
+		return loadEcorePackages(ecoreFilePath).getFirst();
+	}
+
+	/**
+	 * Load all packages contained in one Ecore resource.
+	 *
+	 * <p>Top-level packages are inspected in resource order. Each package is followed by its
+	 * subpackages recursively in their natural order. Every package with a nonblank namespace URI
+	 * is registered without replacing existing entries in either the shared ResourceSet registry or
+	 * the global registry. The returned list is immutable.
+	 *
+	 * @param ecoreFilePath the path to the Ecore file (absolute or relative)
+	 * @return all loaded top-level and nested EPackages in deterministic traversal order
+	 * @throws IOException if the file cannot be loaded or has no top-level EPackage
+	 */
+	public List<EPackage> loadEcorePackages(final String ecoreFilePath) throws IOException {
 		// Register EcoreResourceFactoryImpl if not already registered
 		if (!sharedResourceSet.getResourceFactoryRegistry()
 				.getExtensionToFactoryMap().containsKey("ecore")) {
@@ -293,36 +342,55 @@ public class EMFModelGenerator {
 		// Load the Ecore file
 		File ecoreFile = new File(ecoreFilePath);
 		URI uri = URI.createFileURI(ecoreFile.getAbsolutePath());
-		Resource resource;
+		final Resource existingResource = sharedResourceSet.getResource(uri, false);
+		final Resource resource;
 		try {
 			resource = sharedResourceSet.getResource(uri, true);
 		} catch (Exception e) {
 			throw new IOException("Failed to load Ecore file: " + ecoreFilePath, e);
 		}
 
-		final EPackage ePackage = (EPackage) resource.getContents().get(0);
-		
-		// Register the package in both the ResourceSet and global registry
-		registerPackage(sharedResourceSet, ePackage);
-		
-		// Track for cleanup
-		loadedEcoreResources.add(resource);
-		loadedEcoreNsURIs.add(ePackage.getNsURI());
-		
-		return ePackage;
+		final var packages = new ArrayList<EPackage>();
+		for (var root : resource.getContents()) {
+			if (root instanceof EPackage ePackage) {
+				collectPackages(ePackage, packages);
+			}
+		}
+
+		if (packages.isEmpty()) {
+			if (existingResource == null) {
+				resource.unload();
+				sharedResourceSet.getResources().remove(resource);
+			}
+			throw new IOException("Ecore file contains no top-level EPackage: " + ecoreFilePath);
+		}
+
+		packages.forEach(this::registerLoadedPackage);
+		if (existingResource == null) {
+			loadedEcoreResources.add(resource);
+		}
+		return List.copyOf(packages);
+	}
+
+	private void collectPackages(final EPackage ePackage, final List<EPackage> packages) {
+		packages.add(ePackage);
+		for (var subpackage : ePackage.getESubpackages()) {
+			collectPackages(subpackage, packages);
+		}
 	}
 
 	/**
-	 * Unload all Ecore models loaded via {@link #loadEcoreModel(String)}.
+	 * Unload all Ecore models loaded via {@link #loadEcoreModel(String)} or
+	 * {@link #loadEcorePackages(String)}.
 	 * This method:
 	 * <ul>
 	 * <li>Unloads the Ecore resources from the shared ResourceSet</li>
-	 * <li>Unregisters the EPackages from the EMF global registry</li>
+	 * <li>Removes only package registrations inserted by this generator</li>
 	 * <li>Clears the tracking lists</li>
 	 * </ul>
 	 * 
 	 * <p>This method is safe to call multiple times. It only affects Ecore models
-	 * loaded through {@link #loadEcoreModel(String)}, not other packages or resources.
+	 * loaded through these loading methods, not other packages or resources.
 	 */
 	public void unloadEcoreModels() {
 		// Unload resources from the ResourceSet
@@ -331,14 +399,14 @@ public class EMFModelGenerator {
 			sharedResourceSet.getResources().remove(resource);
 		}
 		
-		// Unregister packages from the global registry
-		for (String nsURI : loadedEcoreNsURIs) {
-			EPackage.Registry.INSTANCE.remove(nsURI);
+		// Remove only entries that still contain the packages registered by this generator
+		for (PackageRegistration registration : loadedEcoreRegistrations) {
+			registration.removeIfOwned();
 		}
 		
 		// Clear tracking lists
 		loadedEcoreResources.clear();
-		loadedEcoreNsURIs.clear();
+		loadedEcoreRegistrations.clear();
 	}
 
 	public EObject generateFrom(EPackage ePackage) {
