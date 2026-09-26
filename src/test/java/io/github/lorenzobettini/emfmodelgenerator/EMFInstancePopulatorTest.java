@@ -139,6 +139,52 @@ class EMFInstancePopulatorTest {
 	}
 
 	@Test
+	void shouldPopulateLibraryGeneratedFromXsd() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "libraryxsd.ecore");
+		final var library = createInstance(ePackage, "Library");
+		createInstanceInResource(library, "libraryxsd.xmi");
+
+		populator.populateEObjects(library);
+
+		assertThat(library.eGet(library.eClass().getEStructuralFeature("name")))
+				.isEqualTo("Library_name_1");
+
+		final var writers = EMFUtils.getAsEObjectsList(library,
+				library.eClass().getEStructuralFeature("writers"));
+		assertThat(writers).hasSize(2);
+		assertThat(writers.get(0).eGet(
+				writers.get(0).eClass().getEStructuralFeature("name")))
+				.isEqualTo("Writer_name_1");
+
+		final var books = EMFUtils.getAsEObjectsList(library,
+				library.eClass().getEStructuralFeature("books"));
+		assertThat(books).hasSize(2);
+		final var firstBook = books.get(0);
+		assertThat(firstBook.eGet(firstBook.eClass().getEStructuralFeature("title")))
+				.isEqualTo("Book_title_1");
+
+		final var category = (EAttribute) firstBook.eClass()
+				.getEStructuralFeature("category");
+		assertThat(ePackage.getEFactoryInstance().convertToString(
+				category.getEAttributeType(), firstBook.eGet(category)))
+				.isEqualTo("Mystery");
+
+		final var author = (EObject) firstBook.eGet(
+				firstBook.eClass().getEStructuralFeature("author"));
+		assertThat(author).isIn(writers);
+		assertThat(EMFUtils.getAsEObjectsList(author,
+				author.eClass().getEStructuralFeature("books")))
+				.contains(firstBook);
+		var attribute = (EAttribute) firstBook.eClass().getEStructuralFeature("pages");
+		System.out.println("pages type: " + attribute.getEAttributeType().getName());
+		System.out.println("pages instance type name: " + attribute.getEAttributeType().getInstanceClassName());
+		assertThat(firstBook.eGet(attribute))
+				.isEqualTo(20);
+
+		validateModel(library);
+	}
+
+	@Test
 	void shouldPopulateLibraryWithCrossReferences() {
 		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "library.ecore");
 		final var library = createInstance(ePackage, "Library");
