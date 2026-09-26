@@ -176,8 +176,8 @@ class EMFAttributeSetterTest {
 	void testGenerateAttributeValue_CustomIntType() {
 		// Create a custom int data type
 		final EDataType intType = EcoreFactory.eINSTANCE.createEDataType();
-		intType.setName("int");
-		intType.setInstanceClassName("java.lang.Integer");
+		intType.setName("WholeNumberPrimitive");
+		intType.setInstanceClassName("int");
 		
 		final EAttribute attribute = createEAttribute(testClass, "customInt", intType);
 		
@@ -229,8 +229,8 @@ class EMFAttributeSetterTest {
 	void testGenerateAttributeValue_CustomBooleanType() {
 		// Create a custom boolean data type
 		final EDataType boolType = EcoreFactory.eINSTANCE.createEDataType();
-		boolType.setName("boolean");
-		boolType.setInstanceClassName("java.lang.Boolean");
+		boolType.setName("TruthValuePrimitive");
+		boolType.setInstanceClassName("boolean");
 		
 		final EAttribute attribute = createEAttribute(testClass, "customBool", boolType);
 		
@@ -268,8 +268,8 @@ class EMFAttributeSetterTest {
 	void testGenerateAttributeValue_CustomDoubleType() {
 		// Create a custom double data type
 		final EDataType doubleType = EcoreFactory.eINSTANCE.createEDataType();
-		doubleType.setName("double");
-		doubleType.setInstanceClassName("java.lang.Double");
+		doubleType.setName("RealNumberPrimitive");
+		doubleType.setInstanceClassName("double");
 		
 		final EAttribute attribute = createEAttribute(testClass, "customDouble", doubleType);
 		
@@ -321,8 +321,8 @@ class EMFAttributeSetterTest {
 	void testGenerateAttributeValue_CustomFloatType() {
 		// Create a custom float data type
 		final EDataType floatType = EcoreFactory.eINSTANCE.createEDataType();
-		floatType.setName("float");
-		floatType.setInstanceClassName("java.lang.Float");
+		floatType.setName("DecimalNumberPrimitive");
+		floatType.setInstanceClassName("float");
 		
 		final EAttribute attribute = createEAttribute(testClass, "customFloat", floatType);
 		
@@ -360,8 +360,8 @@ class EMFAttributeSetterTest {
 	void testGenerateAttributeValue_CustomLongType() {
 		// Create a custom long data type
 		final EDataType longType = EcoreFactory.eINSTANCE.createEDataType();
-		longType.setName("long");
-		longType.setInstanceClassName("java.lang.Long");
+		longType.setName("LargeNumberPrimitive");
+		longType.setInstanceClassName("long");
 		
 		final EAttribute attribute = createEAttribute(testClass, "customLong", longType);
 		
@@ -400,8 +400,8 @@ class EMFAttributeSetterTest {
 	void testGenerateAttributeValue_CustomShortType() {
 		// Create a custom short data type
 		final EDataType shortType = EcoreFactory.eINSTANCE.createEDataType();
-		shortType.setName("short");
-		shortType.setInstanceClassName("java.lang.Short");
+		shortType.setName("SmallNumberPrimitive");
+		shortType.setInstanceClassName("short");
 		
 		final EAttribute attribute = createEAttribute(testClass, "customShort", shortType);
 		
@@ -439,8 +439,8 @@ class EMFAttributeSetterTest {
 	void testGenerateAttributeValue_CustomByteType() {
 		// Create a custom byte data type
 		final EDataType byteType = EcoreFactory.eINSTANCE.createEDataType();
-		byteType.setName("byte");
-		byteType.setInstanceClassName("java.lang.Byte");
+		byteType.setName("TinyNumberPrimitive");
+		byteType.setInstanceClassName("byte");
 		
 		final EAttribute attribute = createEAttribute(testClass, "customByte", byteType);
 		
@@ -482,8 +482,8 @@ class EMFAttributeSetterTest {
 	void testGenerateAttributeValue_CustomCharType() {
 		// Create a custom char data type
 		final EDataType charType = EcoreFactory.eINSTANCE.createEDataType();
-		charType.setName("char");
-		charType.setInstanceClassName("java.lang.Character");
+		charType.setName("InitialPrimitive");
+		charType.setInstanceClassName("char");
 		
 		final EAttribute attribute = createEAttribute(testClass, "customChar", charType);
 		
@@ -522,6 +522,18 @@ class EMFAttributeSetterTest {
 	}
 
 	@Test
+	void testGenerateAttributeValue_CustomDateType() {
+		final EDataType dateType = EcoreFactory.eINSTANCE.createEDataType();
+		dateType.setName("Birthday");
+		dateType.setInstanceClassName("java.util.Date");
+
+		final EAttribute attribute = createEAttribute(testClass, "customDate", dateType);
+
+		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		assertThat(value).isInstanceOf(java.util.Date.class);
+	}
+
+	@Test
 	void testGenerateAttributeValue_UnknownTypeReturnsDefaultValue() {
 		// Create a custom unknown data type
 		final EDataType unknownType = EcoreFactory.eINSTANCE.createEDataType();
@@ -538,25 +550,18 @@ class EMFAttributeSetterTest {
 
 	@Test
 	void testGenerateAttributeValue_UnknownTypeWithNonNullDefaultValue() {
-		// Create a custom EDataType (not in Ecore Literals) with a default value
-		// This tests the else branch that returns attribute.getDefaultValue(), which is not null
-		final EDataType customType = EcoreFactory.eINSTANCE.createEDataType();
-		customType.setName("CustomStringType");
-		// Set instanceClassName so EMF knows how to convert the defaultValueLiteral
-		customType.setInstanceClassName("java.lang.String");
-		testPackage.getEClassifiers().add(customType);
-		
+		// EJavaClass is deliberately unsupported, so its configured default is returned.
 		final EAttribute attribute = EcoreFactory.eINSTANCE.createEAttribute();
 		attribute.setName("customAttr");
-		attribute.setEType(customType);
-		attribute.setDefaultValueLiteral("defaultStringValue");
+		attribute.setEType(EcorePackage.Literals.EJAVA_CLASS);
+		attribute.setDefaultValueLiteral("java.lang.String");
 		testClass.getEStructuralFeatures().add(attribute);
 		
 		// This should return the non-null default value
 		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
 		assertThat(value).isNotNull()
-			.isInstanceOf(String.class)
-			.isEqualTo("defaultStringValue");
+			.isInstanceOf(Class.class)
+			.isEqualTo(String.class);
 	}
 
 	@Test
@@ -892,6 +897,32 @@ class EMFAttributeSetterTest {
 		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
 		assertThat(value).isInstanceOf(byte[].class);
 		assertThat((byte[]) value).containsExactly((byte) 20, (byte) 21);
+	}
+
+	@Test
+	void testGenerateAttributeValue_CustomTypesMatchedByInstanceClassName() {
+		final EDataType moneyType = EcoreFactory.eINSTANCE.createEDataType();
+		moneyType.setName("Money");
+		moneyType.setInstanceClassName("java.math.BigDecimal");
+		final EAttribute money = createEAttribute(testClass, "money", moneyType);
+
+		final EDataType identifierType = EcoreFactory.eINSTANCE.createEDataType();
+		identifierType.setName("LargeIdentifier");
+		identifierType.setInstanceClassName("java.math.BigInteger");
+		final EAttribute identifier = createEAttribute(testClass, "identifier", identifierType);
+
+		final EDataType binaryDataType = EcoreFactory.eINSTANCE.createEDataType();
+		binaryDataType.setName("BinaryData");
+		binaryDataType.setInstanceClassName("byte[]");
+		final EAttribute binaryData = createEAttribute(testClass, "binaryData", binaryDataType);
+
+		final EObject instance = createInstance(testClass);
+		assertThat(setter.generateAttributeValue(instance, money))
+			.isEqualTo(java.math.BigDecimal.valueOf(20.5));
+		assertThat(setter.generateAttributeValue(instance, identifier))
+			.isEqualTo(java.math.BigInteger.valueOf(20));
+		assertThat((byte[]) setter.generateAttributeValue(instance, binaryData))
+			.containsExactly((byte) 20, (byte) 21);
 	}
 
 	@Test
