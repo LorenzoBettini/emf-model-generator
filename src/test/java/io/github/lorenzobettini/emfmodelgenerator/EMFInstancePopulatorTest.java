@@ -25,8 +25,9 @@ import org.eclipse.emf.ecore.EcorePackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.EcoreUtil;
-import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
+import org.eclipse.emf.ecore.util.FeatureMap;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
+import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -184,6 +185,64 @@ class EMFInstancePopulatorTest {
 		assertThat(pages.getEAttributeType()).isSameAs(XMLTypePackage.Literals.INT);
 		assertThat(firstBook.eGet(pages))
 				.isEqualTo(20);
+
+		validateModel(library);
+	}
+
+	@Test
+	void shouldPopulateExtendedLibraryGeneratedFromXsd() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "libraryxsdext.ecore");
+		final var library = createInstance(ePackage, "Library");
+		createInstanceInResource(library, "libraryxsdext.xmi");
+		populator.setFeatureMapDefaultMaxCount(4);
+
+		populator.populateEObjects(library);
+
+		var libraryClass = library.eClass();
+		assertThat(library.eGet(libraryClass.getEStructuralFeature("name")))
+				.isEqualTo("Library_name_1");
+
+		final var writers = EMFUtils.getAsEObjectsList(library,
+				libraryClass.getEStructuralFeature("writer"));
+		assertThat(writers).hasSize(2);
+		assertThat(writers.get(0).eGet(
+				writers.get(0).eClass().getEStructuralFeature("name")))
+				.isEqualTo("Writer_name_1");
+
+		final var books = EMFUtils.getAsEObjectsList(library,
+				libraryClass.getEStructuralFeature("book"));
+		assertThat(books).hasSize(2);
+		final var firstBook = books.get(0);
+		assertThat(firstBook.eGet(firstBook.eClass().getEStructuralFeature("title")))
+				.isEqualTo("Book_title_1");
+
+		final var category = (EAttribute) firstBook.eClass()
+				.getEStructuralFeature("category");
+		assertThat(ePackage.getEFactoryInstance().convertToString(
+				category.getEAttributeType(), firstBook.eGet(category)))
+				.isEqualTo("Mystery");
+
+		final var author = (EObject) firstBook.eGet(
+				firstBook.eClass().getEStructuralFeature("author"));
+		assertThat(author).isIn(writers);
+		assertThat(EMFUtils.getAsEObjectsList(author,
+				author.eClass().getEStructuralFeature("books")))
+				.contains(firstBook);
+
+		final var title = (EAttribute) firstBook.eClass().getEStructuralFeature("title");
+		assertThat(title.getEAttributeType()).isSameAs(XMLTypePackage.Literals.STRING);
+		assertThat(firstBook.eGet(title)).isEqualTo("Book_title_1");
+
+		final var pages = (EAttribute) firstBook.eClass().getEStructuralFeature("pages");
+		assertThat(pages.getEAttributeType()).isSameAs(XMLTypePackage.Literals.INT);
+		assertThat(firstBook.eGet(pages)).isEqualTo(20);
+
+		final var groupFeature = libraryClass.getEStructuralFeature("group");
+		final var group = (FeatureMap) library.eGet(groupFeature);
+
+		assertThat(group).
+			extracting(entry -> entry.getEStructuralFeature().getName())
+			.containsExactly("writer", "book", "writer", "book");
 
 		validateModel(library);
 	}
