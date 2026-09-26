@@ -203,7 +203,7 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 			return (byte) (defaultIntValue + counter);
 		} else if (isCharType(dataType)) {
 			return (char) ('A' + counter);
-		} else if (dataType == EcorePackage.Literals.EDATE) {
+		} else if (isDateType(dataType)) {
 			return generateDateValue(counter);
 		} else if (isBigDecimalType(dataType)) {
 			return BigDecimal.valueOf(defaultDoubleValue + counter);
@@ -236,58 +236,83 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	}
 
 	private boolean isStringType(final EDataType dataType) {
-		return dataType == EcorePackage.Literals.ESTRING || "String".equals(dataType.getName());
+		return dataType == EcorePackage.Literals.ESTRING || "String".equals(dataType.getName())
+				|| String.class.getName().equals(dataType.getInstanceClassName());
 	}
 
 	private boolean isIntegerType(final EDataType dataType) {
 		return dataType == EcorePackage.Literals.EINT || dataType == EcorePackage.Literals.EINTEGER_OBJECT
-				|| "int".equals(dataType.getName()) || "Integer".equals(dataType.getName());
+				|| "int".equals(dataType.getName()) || "Integer".equals(dataType.getName())
+				|| "int".equals(dataType.getInstanceClassName())
+				|| Integer.class.getName().equals(dataType.getInstanceClassName());
 	}
 
 	private boolean isBooleanType(final EDataType dataType) {
 		return dataType == EcorePackage.Literals.EBOOLEAN || dataType == EcorePackage.Literals.EBOOLEAN_OBJECT
-				|| "boolean".equals(dataType.getName()) || "Boolean".equals(dataType.getName());
+				|| "boolean".equals(dataType.getName()) || "Boolean".equals(dataType.getName())
+				|| "boolean".equals(dataType.getInstanceClassName())
+				|| Boolean.class.getName().equals(dataType.getInstanceClassName());
 	}
 
 	private boolean isDoubleType(final EDataType dataType) {
 		return dataType == EcorePackage.Literals.EDOUBLE || dataType == EcorePackage.Literals.EDOUBLE_OBJECT
-				|| "double".equals(dataType.getName()) || "Double".equals(dataType.getName());
+				|| "double".equals(dataType.getName()) || "Double".equals(dataType.getName())
+				|| "double".equals(dataType.getInstanceClassName())
+				|| Double.class.getName().equals(dataType.getInstanceClassName());
 	}
 
 	private boolean isFloatType(final EDataType dataType) {
 		return dataType == EcorePackage.Literals.EFLOAT || dataType == EcorePackage.Literals.EFLOAT_OBJECT
-				|| "float".equals(dataType.getName()) || "Float".equals(dataType.getName());
+				|| "float".equals(dataType.getName()) || "Float".equals(dataType.getName())
+				|| "float".equals(dataType.getInstanceClassName())
+				|| Float.class.getName().equals(dataType.getInstanceClassName());
 	}
 
 	private boolean isLongType(final EDataType dataType) {
 		return dataType == EcorePackage.Literals.ELONG || dataType == EcorePackage.Literals.ELONG_OBJECT
-				|| "long".equals(dataType.getName()) || "Long".equals(dataType.getName());
+				|| "long".equals(dataType.getName()) || "Long".equals(dataType.getName())
+				|| "long".equals(dataType.getInstanceClassName())
+				|| Long.class.getName().equals(dataType.getInstanceClassName());
 	}
 
 	private boolean isShortType(final EDataType dataType) {
 		return dataType == EcorePackage.Literals.ESHORT || dataType == EcorePackage.Literals.ESHORT_OBJECT
-				|| "short".equals(dataType.getName()) || "Short".equals(dataType.getName());
+				|| "short".equals(dataType.getName()) || "Short".equals(dataType.getName())
+				|| "short".equals(dataType.getInstanceClassName())
+				|| Short.class.getName().equals(dataType.getInstanceClassName());
 	}
 
 	private boolean isByteType(final EDataType dataType) {
 		return dataType == EcorePackage.Literals.EBYTE || dataType == EcorePackage.Literals.EBYTE_OBJECT
-				|| "byte".equals(dataType.getName()) || "Byte".equals(dataType.getName());
+				|| "byte".equals(dataType.getName()) || "Byte".equals(dataType.getName())
+				|| "byte".equals(dataType.getInstanceClassName())
+				|| Byte.class.getName().equals(dataType.getInstanceClassName());
 	}
 
 	private boolean isCharType(final EDataType dataType) {
 		return dataType == EcorePackage.Literals.ECHAR || dataType == EcorePackage.Literals.ECHARACTER_OBJECT
-				|| "char".equals(dataType.getName()) || "Character".equals(dataType.getName());
+				|| "char".equals(dataType.getName()) || "Character".equals(dataType.getName())
+				|| "char".equals(dataType.getInstanceClassName())
+				|| Character.class.getName().equals(dataType.getInstanceClassName());
+	}
+
+	private boolean isDateType(final EDataType dataType) {
+		return dataType == EcorePackage.Literals.EDATE
+				|| Date.class.getName().equals(dataType.getInstanceClassName());
 	}
 
 	private boolean isBigDecimalType(final EDataType dataType) {
-		return dataType == EcorePackage.Literals.EBIG_DECIMAL || "BigDecimal".equals(dataType.getName());
+		return dataType == EcorePackage.Literals.EBIG_DECIMAL || "BigDecimal".equals(dataType.getName())
+				|| BigDecimal.class.getName().equals(dataType.getInstanceClassName());
 	}
 
 	private boolean isBigIntegerType(final EDataType dataType) {
-		return dataType == EcorePackage.Literals.EBIG_INTEGER || "BigInteger".equals(dataType.getName());
+		return dataType == EcorePackage.Literals.EBIG_INTEGER || "BigInteger".equals(dataType.getName())
+				|| BigInteger.class.getName().equals(dataType.getInstanceClassName());
 	}
 
 	private boolean isByteArrayType(final EDataType dataType) {
-		return dataType == EcorePackage.Literals.EBYTE_ARRAY || "byte[]".equals(dataType.getName());
+		return dataType == EcorePackage.Literals.EBYTE_ARRAY || "byte[]".equals(dataType.getName())
+				|| "byte[]".equals(dataType.getInstanceClassName());
 	}
 }

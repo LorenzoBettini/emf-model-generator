@@ -2,7 +2,7 @@
 <ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="alltypes" nsURI="http://www.example.org/alltypes" nsPrefix="at">
   <!-- Custom data types with string names for testing alternate branches -->
-  <eClassifiers xsi:type="ecore:EDataType" name="String" instanceClassName="java.lang.String"/>
+  <eClassifiers xsi:type="ecore:EDataType" name="Text" instanceClassName="java.lang.String"/>
   <eClassifiers xsi:type="ecore:EDataType" name="int" instanceClassName="java.lang.Integer"/>
   <eClassifiers xsi:type="ecore:EDataType" name="boolean" instanceClassName="java.lang.Boolean"/>
   <eClassifiers xsi:type="ecore:EDataType" name="double" instanceClassName="java.lang.Double"/>
@@ -11,15 +11,15 @@
   <eClassifiers xsi:type="ecore:EDataType" name="short" instanceClassName="java.lang.Short"/>
   <eClassifiers xsi:type="ecore:EDataType" name="byte" instanceClassName="java.lang.Byte"/>
   <eClassifiers xsi:type="ecore:EDataType" name="char" instanceClassName="java.lang.Character"/>
-  <!-- Boxed types for testing the third branch -->
-  <eClassifiers xsi:type="ecore:EDataType" name="Integer" instanceClassName="java.lang.Integer"/>
-  <eClassifiers xsi:type="ecore:EDataType" name="Boolean" instanceClassName="java.lang.Boolean"/>
-  <eClassifiers xsi:type="ecore:EDataType" name="Double" instanceClassName="java.lang.Double"/>
-  <eClassifiers xsi:type="ecore:EDataType" name="Float" instanceClassName="java.lang.Float"/>
-  <eClassifiers xsi:type="ecore:EDataType" name="Long" instanceClassName="java.lang.Long"/>
-  <eClassifiers xsi:type="ecore:EDataType" name="Short" instanceClassName="java.lang.Short"/>
-  <eClassifiers xsi:type="ecore:EDataType" name="Byte" instanceClassName="java.lang.Byte"/>
-  <eClassifiers xsi:type="ecore:EDataType" name="Character" instanceClassName="java.lang.Character"/>
+  <!-- Domain-named types for testing instanceClassName matching -->
+  <eClassifiers xsi:type="ecore:EDataType" name="WholeNumber" instanceClassName="java.lang.Integer"/>
+  <eClassifiers xsi:type="ecore:EDataType" name="TruthValue" instanceClassName="java.lang.Boolean"/>
+  <eClassifiers xsi:type="ecore:EDataType" name="RealNumber" instanceClassName="java.lang.Double"/>
+  <eClassifiers xsi:type="ecore:EDataType" name="DecimalNumber" instanceClassName="java.lang.Float"/>
+  <eClassifiers xsi:type="ecore:EDataType" name="LargeNumber" instanceClassName="java.lang.Long"/>
+  <eClassifiers xsi:type="ecore:EDataType" name="SmallNumber" instanceClassName="java.lang.Short"/>
+  <eClassifiers xsi:type="ecore:EDataType" name="TinyNumber" instanceClassName="java.lang.Byte"/>
+  <eClassifiers xsi:type="ecore:EDataType" name="Initial" instanceClassName="java.lang.Character"/>
   <!-- Unknown type to test the default value branch (line 292) -->
   <eClassifiers xsi:type="ecore:EDataType" name="UnknownType" instanceClassName="java.lang.Object"/>
   
@@ -36,16 +36,16 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="charAttr" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EChar"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="dateAttr" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
     
-    <!-- Custom type attributes (using string name matching path) -->
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="stringCustomAttr" eType="#//String"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="intCustomAttr" eType="#//Integer"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="boolCustomAttr" eType="#//Boolean"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="doubleCustomAttr" eType="#//Double"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="floatCustomAttr" eType="#//Float"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="longCustomAttr" eType="#//Long"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="shortCustomAttr" eType="#//Short"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="byteCustomAttr" eType="#//Byte"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="charCustomAttr" eType="#//Character"/>
+    <!-- Custom type attributes (using instanceClassName matching) -->
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="stringCustomAttr" eType="#//Text"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="intCustomAttr" eType="#//WholeNumber"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="boolCustomAttr" eType="#//TruthValue"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="doubleCustomAttr" eType="#//RealNumber"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="floatCustomAttr" eType="#//DecimalNumber"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="longCustomAttr" eType="#//LargeNumber"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="shortCustomAttr" eType="#//SmallNumber"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="byteCustomAttr" eType="#//TinyNumber"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="charCustomAttr" eType="#//Initial"/>
     
     <!-- Primitive-named type attributes (for testing second string path) -->
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="intPrimitiveAttr" eType="#//int"/>
@@ -80,15 +80,15 @@
         eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
     
     <!-- Multi-valued custom type attributes to test alternate branches -->
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiString2" upperBound="-1" eType="#//String"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiInteger" upperBound="-1" eType="#//Integer"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiBoolean" upperBound="-1" eType="#//Boolean"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiDoubleType" upperBound="-1" eType="#//Double"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiFloatType" upperBound="-1" eType="#//Float"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiLongType" upperBound="-1" eType="#//Long"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiShortType" upperBound="-1" eType="#//Short"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiByteType" upperBound="-1" eType="#//Byte"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiCharacter" upperBound="-1" eType="#//Character"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiString2" upperBound="-1" eType="#//Text"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiInteger" upperBound="-1" eType="#//WholeNumber"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiBoolean" upperBound="-1" eType="#//TruthValue"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiDoubleType" upperBound="-1" eType="#//RealNumber"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiFloatType" upperBound="-1" eType="#//DecimalNumber"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiLongType" upperBound="-1" eType="#//LargeNumber"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiShortType" upperBound="-1" eType="#//SmallNumber"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiByteType" upperBound="-1" eType="#//TinyNumber"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiCharacter" upperBound="-1" eType="#//Initial"/>
     
     <!-- Multi-valued primitive-named type attributes -->
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="multiIntPrim" upperBound="-1" eType="#//int"/>
