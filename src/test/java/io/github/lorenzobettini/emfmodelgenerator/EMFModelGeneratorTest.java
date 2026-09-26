@@ -1997,6 +1997,26 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
+	void testLibraryGeneratedFromXsdWithSchemaLocation() throws Exception {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "libraryxsdext.ecore");
+		final var libraryClass = assertEClassExists(ePackage, "Library");
+		generator.setFilePrefix("libraryxsdext_");
+		generator.getInstancePopulator().setFeatureMapDefaultMaxCount(4);
+
+		final var generatedObject = generator.generateFrom(libraryClass);
+		assertNotNull(generatedObject);
+		validateModel(generatedObject);
+
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		final var xmiFile = new File(TEST_OUTPUT_DIR, "libraryxsdext_library_Library_1.xmi");
+		assertThat(xmiFile).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
+				"libraryxsdext_library_Library_1.xmi",
+				"libraryxsdext_library_Library_1.xmi");
+	}
+
+	@Test
 	void testSimpleLibraryWithSchemaLocation() throws Exception {
 		// Load the simplelibrary.ecore model
 		EPackage ePackage = loadEcoreModel(TEST_INPUTS_DIR, "simplelibrary.ecore");
