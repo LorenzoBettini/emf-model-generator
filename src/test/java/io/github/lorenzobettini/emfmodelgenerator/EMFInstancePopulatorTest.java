@@ -25,6 +25,7 @@ import org.eclipse.emf.ecore.EcorePackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -175,10 +176,13 @@ class EMFInstancePopulatorTest {
 		assertThat(EMFUtils.getAsEObjectsList(author,
 				author.eClass().getEStructuralFeature("books")))
 				.contains(firstBook);
-		var attribute = (EAttribute) firstBook.eClass().getEStructuralFeature("pages");
-		System.out.println("pages type: " + attribute.getEAttributeType().getName());
-		System.out.println("pages instance type name: " + attribute.getEAttributeType().getInstanceClassName());
-		assertThat(firstBook.eGet(attribute))
+		final var title = (EAttribute) firstBook.eClass().getEStructuralFeature("title");
+		assertThat(title.getEAttributeType()).isSameAs(XMLTypePackage.Literals.STRING);
+		assertThat(firstBook.eGet(title)).isEqualTo("Book_title_1");
+
+		final var pages = (EAttribute) firstBook.eClass().getEStructuralFeature("pages");
+		assertThat(pages.getEAttributeType()).isSameAs(XMLTypePackage.Literals.INT);
+		assertThat(firstBook.eGet(pages))
 				.isEqualTo(20);
 
 		validateModel(library);
