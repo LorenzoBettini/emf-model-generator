@@ -395,7 +395,7 @@ class EMFModelGeneratorTest {
 				.extracting(EAttribute::getEAttributeType)
 				.containsExactlyElementsOf(xmlTypes);
 
-		final var generatedObject = generator.generateFrom(holderClass);
+		generator.generateFrom(holderClass);
 		generator.save();
 
 		final var outputFile = new File(

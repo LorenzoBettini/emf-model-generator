@@ -99,10 +99,11 @@ class EMFAttributeSetterXMLTypeTest {
 				XMLTypePackage.Literals.UNSIGNED_BYTE,
 				XMLTypePackage.Literals.UNSIGNED_BYTE_OBJECT);
 
-		assertThat(unsignedTypes)
-				.allSatisfy(dataType -> assertThat(asBigInteger(generate(dataType).value()))
-						.as(dataType.getName())
-						.isNotNegative());
+		assertThat(unsignedTypes).isNotEmpty();
+		for (final var dataType : unsignedTypes) {
+			final var value = generate(dataType).value();
+			assertThat(asBigInteger(value)).as(dataType.getName()).isNotNegative();
+		}
 	}
 
 	@Test
@@ -126,11 +127,12 @@ class EMFAttributeSetterXMLTypeTest {
 				XMLTypePackage.Literals.NMTOKENS,
 				XMLTypePackage.Literals.NMTOKENS_BASE);
 
-		assertThat(listTypes).allSatisfy(dataType -> {
+		assertThat(listTypes).isNotEmpty();
+		for (final var dataType : listTypes) {
 			final var generated = generate(dataType);
 			assertThat((List<?>) generated.value()).as(dataType.getName()).isNotEmpty();
 			assertValidDatatypeValue(dataType, generated.value());
-		});
+		}
 	}
 
 	@Test
@@ -145,11 +147,14 @@ class EMFAttributeSetterXMLTypeTest {
 				XMLTypePackage.Literals.GYEAR, DatatypeConstants.GYEAR,
 				XMLTypePackage.Literals.GYEAR_MONTH, DatatypeConstants.GYEARMONTH);
 
-		assertThat(expectedCalendarKinds).allSatisfy((dataType, expectedKind) -> {
+		for (final var entry : expectedCalendarKinds.entrySet()) {
+			final var dataType = entry.getKey();
 			final var value = (XMLGregorianCalendar) generate(dataType).value();
-			assertThat(value.getXMLSchemaType()).as(dataType.getName()).isEqualTo(expectedKind);
+			assertThat(value.getXMLSchemaType())
+					.as(dataType.getName())
+					.isEqualTo(entry.getValue());
 			assertValidDatatypeValue(dataType, value);
-		});
+		}
 	}
 
 	@Test
@@ -223,9 +228,12 @@ class EMFAttributeSetterXMLTypeTest {
 		unsupported.setName("Unsupported");
 		unsupportedPackage.getEClassifiers().add(unsupported);
 		final var fixture = createFixture(unsupportedPackage, unsupported);
+		final var setter = new EMFAttributeSetter();
+		final var owner = fixture.owner();
+		final var attribute = fixture.attribute();
 
-		assertThatThrownBy(() -> new EMFAttributeSetter().generateXMLTypeLexicalValue(
-				fixture.owner(), fixture.attribute(), unsupported, 0))
+		assertThatThrownBy(() -> setter.generateXMLTypeLexicalValue(
+				owner, attribute, unsupported, 0))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("Unsupported XMLType EDataType: Unsupported");
 	}
