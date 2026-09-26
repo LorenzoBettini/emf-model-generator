@@ -35,6 +35,7 @@ import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
+import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
@@ -46,6 +47,7 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.util.Diagnostician;
 import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
 import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
@@ -378,6 +380,34 @@ class EMFModelGeneratorTest {
 		
 		// Compare with expected output - this is the main verification
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "alltypes_AllTypesHolder_1.xmi", "alltypes_AllTypesHolder_1.xmi");
+	}
+
+	@Test
+	void shouldGenerateAndSerializeEveryXMLTypeFromEcore() throws Exception {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "xmltypes.ecore");
+		final var holderClass = assertEClassExists(ePackage, "XMLTypesHolder");
+		final var xmlTypes = XMLTypePackage.eINSTANCE.getEClassifiers().stream()
+				.filter(EDataType.class::isInstance)
+				.map(EDataType.class::cast)
+				.toList();
+
+		assertThat(holderClass.getEAllAttributes())
+				.extracting(EAttribute::getEAttributeType)
+				.containsExactlyElementsOf(xmlTypes);
+
+		final var generatedObject = generator.generateFrom(holderClass);
+		generator.save();
+
+		final var outputFile = new File(
+				TEST_OUTPUT_DIR, "xmltypes_XMLTypesHolder_1.xmi");
+		assertThat(outputFile).exists();
+		final var loadedObject = loadGeneratedModel(outputFile, ePackage);
+		validateModel(loadedObject);
+		assertXMIMatchesExpected(
+				TEST_OUTPUT_DIR,
+				EXPECTED_OUTPUTS_DIR,
+				"xmltypes_XMLTypesHolder_1.xmi",
+				"xmltypes_XMLTypesHolder_1.xmi");
 	}
 
 	/**
