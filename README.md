@@ -723,6 +723,8 @@ The generator uses predictable patterns for sample data:
 - **Doubles and floats**: start at `20.5` and increase with the per-class/attribute counter
 - **Booleans**: alternate between `true` and `false`
 - **Dates**: start from `2025-01-01` and advance by one day per generated value
+- **XML Schema datatypes**: every built-in EMF `XMLTypePackage` datatype receives a
+  deterministic value satisfying its datatype constraints
 - **Enums**: selected with a deterministic round-robin selector
 - **References**: selected with deterministic round-robin strategies from available assignable instances
 

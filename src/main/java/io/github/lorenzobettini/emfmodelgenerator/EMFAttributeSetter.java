@@ -16,11 +16,14 @@ import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EcorePackage;
+import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
 
 /**
  * Responsible for setting attribute values on EMF EObjects. This class handles
  * both single-valued and multi-valued attributes, generating appropriate sample
- * values based on the attribute's data type.
+ * values based on the attribute's data type. Built-in XML Schema datatypes from
+ * {@link XMLTypePackage} are generated from valid lexical values and converted
+ * through EMF's XMLType factory.
  *
  * @author Lorenzo Bettini
  */
@@ -185,6 +188,11 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	}
 
 	private Object generateValueForDataType(final EObject owner, final EAttribute attribute, final EDataType dataType, final int counter) {
+		final var xmlType = getCanonicalXMLType(dataType);
+		if (xmlType != null) {
+			return generateXMLTypeValue(owner, attribute, xmlType, counter);
+		}
+
 		if (isStringType(dataType)) {
 			return generateStringValue(owner, attribute, counter);
 		} else if (isIntegerType(dataType)) {
@@ -214,6 +222,81 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 		} else {
 			return attribute.getDefaultValue();
 		}
+	}
+
+	private EDataType getCanonicalXMLType(final EDataType dataType) {
+		final var ePackage = dataType.getEPackage();
+		if (ePackage == null || !XMLTypePackage.eNS_URI.equals(ePackage.getNsURI())) {
+			return null;
+		}
+
+		final var classifier = XMLTypePackage.eINSTANCE.getEClassifier(dataType.getName());
+		return classifier instanceof EDataType canonicalType ? canonicalType : null;
+	}
+
+	private Object generateXMLTypeValue(final EObject owner, final EAttribute attribute,
+			final EDataType dataType, final int counter) {
+		final var lexicalValue = generateXMLTypeLexicalValue(owner, attribute, dataType, counter);
+		return XMLTypePackage.eINSTANCE.getEFactoryInstance()
+				.createFromString(dataType, lexicalValue);
+	}
+
+	String generateXMLTypeLexicalValue(final EObject owner, final EAttribute attribute,
+			final EDataType dataType, final int counter) {
+		return switch (dataType.getClassifierID()) {
+			case XMLTypePackage.ANY_SIMPLE_TYPE, XMLTypePackage.STRING ->
+				generateStringValue(owner, attribute, counter);
+			case XMLTypePackage.ANY_URI -> "https://example.org/resource/" + (counter + 1);
+			case XMLTypePackage.BASE64_BINARY -> "AQI=";
+			case XMLTypePackage.BOOLEAN, XMLTypePackage.BOOLEAN_OBJECT ->
+				Boolean.toString(counter % 2 == 0);
+			case XMLTypePackage.DECIMAL, XMLTypePackage.DOUBLE,
+					XMLTypePackage.DOUBLE_OBJECT, XMLTypePackage.FLOAT,
+					XMLTypePackage.FLOAT_OBJECT ->
+				Double.toString(defaultDoubleValue + counter);
+			case XMLTypePackage.INTEGER, XMLTypePackage.INT,
+					XMLTypePackage.INT_OBJECT, XMLTypePackage.LONG,
+					XMLTypePackage.LONG_OBJECT ->
+				Integer.toString(defaultIntValue + counter);
+			case XMLTypePackage.SHORT, XMLTypePackage.SHORT_OBJECT ->
+				Short.toString((short) (defaultIntValue + counter));
+			case XMLTypePackage.BYTE, XMLTypePackage.BYTE_OBJECT ->
+				Byte.toString((byte) (defaultIntValue + counter));
+			case XMLTypePackage.DATE -> BASE_DATE.plusDays(counter).toString();
+			case XMLTypePackage.DATE_TIME ->
+				BASE_DATE.plusDays(counter) + "T00:00:00Z";
+			case XMLTypePackage.TIME -> "00:00:00Z";
+			case XMLTypePackage.DURATION -> "P1D";
+			case XMLTypePackage.ENTITIES, XMLTypePackage.ENTITIES_BASE ->
+				"entity1 entity2";
+			case XMLTypePackage.NORMALIZED_STRING, XMLTypePackage.TOKEN,
+					XMLTypePackage.NAME, XMLTypePackage.NC_NAME, XMLTypePackage.ENTITY,
+					XMLTypePackage.ID, XMLTypePackage.IDREF ->
+				"name" + (counter + 1);
+			case XMLTypePackage.GDAY -> "---01";
+			case XMLTypePackage.GMONTH -> "--01";
+			case XMLTypePackage.GMONTH_DAY -> "--01-01";
+			case XMLTypePackage.GYEAR -> "2025";
+			case XMLTypePackage.GYEAR_MONTH -> "2025-01";
+			case XMLTypePackage.HEX_BINARY -> "0102";
+			case XMLTypePackage.IDREFS, XMLTypePackage.IDREFS_BASE -> "id1 id2";
+			case XMLTypePackage.LANGUAGE -> "en";
+			case XMLTypePackage.NON_POSITIVE_INTEGER -> Integer.toString(-counter);
+			case XMLTypePackage.NEGATIVE_INTEGER -> Integer.toString(-(counter + 1));
+			case XMLTypePackage.NMTOKEN -> "token" + (counter + 1);
+			case XMLTypePackage.NMTOKENS, XMLTypePackage.NMTOKENS_BASE ->
+				"token1 token2";
+			case XMLTypePackage.NON_NEGATIVE_INTEGER, XMLTypePackage.UNSIGNED_LONG,
+					XMLTypePackage.UNSIGNED_INT, XMLTypePackage.UNSIGNED_INT_OBJECT,
+					XMLTypePackage.UNSIGNED_SHORT, XMLTypePackage.UNSIGNED_SHORT_OBJECT,
+					XMLTypePackage.UNSIGNED_BYTE, XMLTypePackage.UNSIGNED_BYTE_OBJECT ->
+				Integer.toString(counter + 1);
+			case XMLTypePackage.NOTATION, XMLTypePackage.QNAME ->
+				"name" + (counter + 1);
+			case XMLTypePackage.POSITIVE_INTEGER -> Integer.toString(counter + 1);
+			default -> throw new IllegalArgumentException(
+				"Unsupported XMLType EDataType: " + dataType.getName());
+		};
 	}
 
 	private String generateStringValue(final EObject owner, final EAttribute attribute, final int counter) {
