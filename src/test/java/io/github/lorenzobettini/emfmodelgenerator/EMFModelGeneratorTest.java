@@ -70,6 +70,28 @@ class EMFModelGeneratorTest {
 		diagnostic.getChildren().forEach(child -> diagnostics.addAll(flattenDiagnostics(child)));
 		return diagnostics;
 	}
+
+	private void assertGeneratedQNameRoundTrips(final EAttribute attribute,
+			final EObject owner) {
+		assertThat(attribute.getEAttributeType().getInstanceClassName())
+				.isEqualTo("javax.xml.namespace.QName");
+		var value = owner.eGet(attribute);
+		assertThat(value).isInstanceOf(QName.class);
+		var factory = attribute.getEAttributeType().getEPackage().getEFactoryInstance();
+		var lexicalValue = factory.convertToString(attribute.getEAttributeType(), value);
+		assertThat(factory.createFromString(attribute.getEAttributeType(), lexicalValue))
+				.isEqualTo(value);
+	}
+
+	private void assertGenerationIsValid(final String failureMessage) {
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage(failureMessage,
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+	}
 	
 	@BeforeEach
 	void setUp() throws IOException {
@@ -4178,11 +4200,6 @@ class EMFModelGeneratorTest {
 		var targetNamespaceAttribute = assertEAttributeExists(
 				definitionClass, "targetNamespace");
 		var qNameAttribute = assertEAttributeExists(definitionClass, "qName");
-		var qNameFactory = qNameAttribute.getEAttributeType().getEPackage()
-				.getEFactoryInstance();
-		assertThat(qNameFactory.createFromString(
-				qNameAttribute.getEAttributeType(), "name1"))
-				.isInstanceOf(QName.class);
 
 		// The default depth enters optional extensibility elements and recursively creates
 		// copied XSD semantic structures. One level retains every direct WSDL component
@@ -4210,23 +4227,8 @@ class EMFModelGeneratorTest {
 						.isIn(portTypes));
 		assertThat(EMFUtils.getAsEObjectsList(generatedDefinition, servicesReference))
 				.hasSize(2);
-		assertThat(qNameAttribute.getEAttributeType().getInstanceClassName())
-				.isEqualTo("javax.xml.namespace.QName");
-		var qName = generatedDefinition.eGet(qNameAttribute);
-		assertThat(qName).isInstanceOf(QName.class);
-		var lexicalQName = qNameFactory.convertToString(
-				qNameAttribute.getEAttributeType(), qName);
-		assertThat(qNameFactory.createFromString(
-				qNameAttribute.getEAttributeType(), lexicalQName))
-				.isEqualTo(qName);
-
-		var validation = generator.validate();
-		assertThat(validation.isValid())
-				.withFailMessage("WSDL Definition validation failed: %s",
-						validation.rejectedDiagnostics().stream()
-								.map(Diagnostic::getMessage)
-								.toList())
-				.isTrue();
+		assertGeneratedQNameRoundTrips(qNameAttribute, generatedDefinition);
+		assertGenerationIsValid("WSDL Definition validation failed: %s");
 
 		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 		var generatedFileName = "wsdl_wsdl_Definition_1.xmi";
@@ -4276,7 +4278,7 @@ class EMFModelGeneratorTest {
 		populator.functionForCrossReference(messageReference, owner -> {
 			var definition = EcoreUtil.getRootContainer(owner);
 			var messages = EMFUtils.getAsEObjectsList(definition, messagesReference);
-			return owner.eClass() == outputClass ? messages.get(1) : messages.get(0);
+			return messages.get(owner.eClass() == outputClass ? 1 : 0);
 		});
 		populator.setMaxDepth(3);
 		generator.setFilePrefix("wsdl_connected_");
@@ -4302,13 +4304,7 @@ class EMFModelGeneratorTest {
 			});
 		});
 
-		var validation = generator.validate();
-		assertThat(validation.isValid())
-				.withFailMessage("Connected WSDL Definition validation failed: %s",
-						validation.rejectedDiagnostics().stream()
-								.map(Diagnostic::getMessage)
-								.toList())
-				.isTrue();
+		assertGenerationIsValid("Connected WSDL Definition validation failed: %s");
 
 		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 		var generatedFileName = "wsdl_connected_wsdl_Definition_1.xmi";
