@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="ASCII"?>
+<bpmn:BpmnDiagram
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bpmn="http://stp.eclipse.org/bpmn"
+    xsi:schemaLocation="http://stp.eclipse.org/bpmn ../inputs/BPMN.ecore#/0"
+    iD="name1"
+    documentation="BpmnDiagram_documentation_1"
+    name="BpmnDiagram_name_1"
+    ncname="BpmnDiagram_ncname_1"
+    author="BpmnDiagram_author_1"
+    title="BpmnDiagram_title_1">
+  <eAnnotations
+      source="EAnnotation_source_1"
+      references="name1 //@eAnnotations.1"/>
+  <eAnnotations
+      source="EAnnotation_source_2"
+      references="name2 name3"/>
+  <artifacts
+      iD="name2"
+      documentation="Artifact_documentation_1"
+      name="Artifact_name_1"
+      ncname="Artifact_ncname_1"/>
+  <artifacts
+      xsi:type="bpmn:DataObject"
+      iD="name3"
+      documentation="DataObject_documentation_1"
+      name="DataObject_name_1"
+      ncname="DataObject_ncname_1"/>
+  <pools iD="name4"
+      documentation="Pool_documentation_1"
+      name="Pool_name_1"
+      ncname="Pool_ncname_1"/>
+  <pools iD="name5"
+      documentation="Pool_documentation_2"
+      name="Pool_name_2"
+      ncname="Pool_ncname_2"/>
+  <messages
+      iD="name6"
+      documentation="MessagingEdge_documentation_1"
+      name="MessagingEdge_name_1"
+      ncname="MessagingEdge_ncname_1"
+      source="name4"
+      target="name5"/>
+  <messages
+      iD="name7"
+      documentation="MessagingEdge_documentation_2"
+      name="MessagingEdge_name_2"
+      ncname="MessagingEdge_ncname_2"
+      source="name4"
+      target="name5"/>
+</bpmn:BpmnDiagram>

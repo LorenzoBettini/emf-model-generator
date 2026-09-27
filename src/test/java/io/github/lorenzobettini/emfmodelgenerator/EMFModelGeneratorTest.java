@@ -4036,4 +4036,123 @@ class EMFModelGeneratorTest {
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
 				generatedFileName, generatedFileName);
 	}
+
+	@Test
+	void testGenerateBpmnDiagramWithSchemaLocation() throws Exception {
+		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/BPMN.ecore");
+
+		assertThat(packages).extracting(EPackage::getName)
+				.containsExactly("bpmn", "ecore", "type");
+		var bpmnPackage = packages.stream()
+				.filter(ePackage -> "bpmn".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var bpmnDiagramClass = assertEClassExists(bpmnPackage, "BpmnDiagram");
+		var poolsReference = assertEReferenceExists(bpmnDiagramClass, "pools");
+		var messagesReference = assertEReferenceExists(bpmnDiagramClass, "messages");
+
+		// The default depth expands recursively through optional Pool/Graph containments.
+		// One level retains the diagram's pools, messages, and artifacts without growing
+		// unrelated nested subprocess graphs.
+		generator.getInstancePopulator().setMaxDepth(1);
+		generator.setFilePrefix("bpmn_");
+		var generatedDiagram = generator.generateFrom(bpmnDiagramClass);
+
+		assertThat(generatedDiagram.eClass()).isSameAs(bpmnDiagramClass);
+		var pools = EMFUtils.getAsEObjectsList(generatedDiagram, poolsReference);
+		var messages = EMFUtils.getAsEObjectsList(generatedDiagram, messagesReference);
+		assertThat(pools).hasSize(2);
+		assertThat(messages).hasSize(2);
+		var messagingEdgeClass = assertEClassExists(bpmnPackage, "MessagingEdge");
+		var messageSource = assertEReferenceExists(messagingEdgeClass, "source");
+		var messageTarget = assertEReferenceExists(messagingEdgeClass, "target");
+		assertThat(messages).allSatisfy(message -> {
+			assertThat(message.eGet(messageSource)).isIn(pools);
+			assertThat(message.eGet(messageTarget)).isIn(pools);
+		});
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BPMN validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+		var generatedFileName = "bpmn_bpmn_BpmnDiagram_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGenerateCustomizedBpmnGraph() throws Exception {
+		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/BPMN.ecore");
+		var bpmnPackage = packages.stream()
+				.filter(ePackage -> "bpmn".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var graphClass = assertEClassExists(bpmnPackage, "Graph");
+		var activityClass = assertEClassExists(bpmnPackage, "Activity");
+		var verticesReference = assertEReferenceExists(graphClass, "vertices");
+		var sequenceEdgesReference = assertEReferenceExists(graphClass, "sequenceEdges");
+		var sourceReference = assertEReferenceExists(
+				assertEClassExists(bpmnPackage, "SequenceEdge"), "source");
+		var targetReference = assertEReferenceExists(
+				assertEClassExists(bpmnPackage, "SequenceEdge"), "target");
+		var outgoingEdgesReference = assertEReferenceExists(
+				assertEClassExists(bpmnPackage, "Vertex"), "outgoingEdges");
+		var incomingEdgesReference = assertEReferenceExists(
+				assertEClassExists(bpmnPackage, "Vertex"), "incomingEdges");
+
+		var populator = generator.getInstancePopulator();
+		// Populate connectivity from the edge ends. Their opposites maintain the vertex
+		// collections; assigning both directions independently could select different edges.
+		populator.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+			@Override
+			public void setCrossReference(final EObject owner, final EReference reference) {
+				if (reference != outgoingEdgesReference && reference != incomingEdgesReference) {
+					super.setCrossReference(owner, reference);
+				}
+			}
+		});
+		populator.functionForContainmentReference(verticesReference,
+				owner -> EcoreUtil.create(activityClass));
+		populator.setContainmentReferenceMaxCountFor(verticesReference, 2);
+		populator.setContainmentReferenceMaxCountFor(sequenceEdgesReference, 1);
+		populator.functionForCrossReference(sourceReference,
+				owner -> EMFUtils.getAsEObjectsList(owner.eContainer(), verticesReference).get(0));
+		populator.functionForCrossReference(targetReference,
+				owner -> EMFUtils.getAsEObjectsList(owner.eContainer(), verticesReference).get(1));
+		populator.setMaxDepth(1);
+		generator.setFilePrefix("bpmn_graph_");
+		var generatedGraph = generator.generateFrom(graphClass);
+
+		var vertices = EMFUtils.getAsEObjectsList(generatedGraph, verticesReference);
+		var edges = EMFUtils.getAsEObjectsList(generatedGraph, sequenceEdgesReference);
+		assertThat(vertices).hasSize(2).allMatch(vertex -> vertex.eClass() == activityClass);
+		assertThat(edges).singleElement().satisfies(edge -> {
+			assertThat(edge.eGet(sourceReference)).isIn(vertices);
+			assertThat(edge.eGet(targetReference)).isIn(vertices);
+			assertThat(EMFUtils.getAsEObjectsList(vertices.get(0), outgoingEdgesReference))
+					.containsExactly(edge);
+			assertThat(EMFUtils.getAsEObjectsList(vertices.get(1), incomingEdgesReference))
+					.containsExactly(edge);
+		});
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BPMN Graph validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+		var generatedFileName = "bpmn_graph_bpmn_Graph_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
 }
