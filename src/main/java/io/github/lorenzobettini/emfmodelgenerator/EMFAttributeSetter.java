@@ -144,9 +144,10 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 
 	/**
 	 * Generate a sample value for an attribute based on its data type. Uses a
-	 * per-attribute counter to generate unique incremental values. For enum types,
-	 * uses the configured enum literal selector strategy to select enum literals
-	 * (by default, round-robin).
+	 * per-attribute counter to generate unique incremental values. ID attributes
+	 * instead use a counter shared across all EClasses to avoid duplicate IDs. For
+	 * enum types, uses the configured enum literal selector strategy to select
+	 * enum literals (by default, round-robin).
 	 * 
 	 * @param owner The EObject owning the attribute. By default, this parameter is not used in value generation but may be useful for extensions.
 	 * @param attribute the attribute to generate a value for
