@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="ASCII"?>
+<bpws:Process
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bpws="http://docs.oasis-open.org/wsbpel/2.0/process/executable"
+    xsi:schemaLocation="http://docs.oasis-open.org/wsbpel/2.0/process/executable ../inputs/BPEL.ecore#/0"
+    name="Process_name_1"
+    targetNamespace="Process_targetNamespace_1"
+    queryLanguage="Process_queryLanguage_1"
+    expressionLanguage="Process_expressionLanguage_1"
+    suppressJoinFailure="true"
+    variableAccessSerializable="true"
+    abstractProcessProfile="Process_abstractProcessProfile_1">
+  <activity
+      xsi:type="bpws:Sequence"
+      name="Sequence_name_1"
+      suppressJoinFailure="true">
+    <activities
+        xsi:type="bpws:Empty"
+        name="Empty_name_1"
+        suppressJoinFailure="true"/>
+    <activities
+        xsi:type="bpws:While"
+        name="While_name_1"
+        suppressJoinFailure="true">
+      <activity
+          name="Activity_name_1"
+          suppressJoinFailure="true"/>
+      <condition
+          required="true"
+          expressionLanguage="Condition_expressionLanguage_1"
+          opaque="true"/>
+    </activities>
+    <activities
+        xsi:type="bpws:Exit"
+        name="Exit_name_1"
+        suppressJoinFailure="true"/>
+  </activity>
+</bpws:Process>

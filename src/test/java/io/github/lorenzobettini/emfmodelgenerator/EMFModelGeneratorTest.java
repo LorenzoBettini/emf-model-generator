@@ -3961,4 +3961,79 @@ class EMFModelGeneratorTest {
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
 				generatedFileName, generatedFileName);
 	}
+
+	@Test
+	void testGenerateCustomizedBpelProcessWithStructuredActivities() throws Exception {
+		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/BPEL.ecore");
+		var modelPackage = packages.stream()
+				.filter(ePackage -> "model".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var processClass = assertEClassExists(modelPackage, "Process");
+		var sequenceClass = assertEClassExists(modelPackage, "Sequence");
+		var emptyClass = assertEClassExists(modelPackage, "Empty");
+		var whileClass = assertEClassExists(modelPackage, "While");
+		var exitClass = assertEClassExists(modelPackage, "Exit");
+		var activityClass = assertEClassExists(modelPackage, "Activity");
+		var conditionClass = assertEClassExists(modelPackage, "Condition");
+		var processActivity = assertEReferenceExists(processClass, "activity");
+		var sequenceActivities = assertEReferenceExists(sequenceClass, "activities");
+		var whileActivity = assertEReferenceExists(whileClass, "activity");
+		var whileCondition = assertEReferenceExists(whileClass, "condition");
+
+		var populator = generator.getInstancePopulator();
+		// At depth 3, optional BPEL extensions and handlers introduce WSDL cross-references
+		// with no candidates. Keep this example focused on required structured activities.
+		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public Collection<EObject> setContainmentReference(final EObject owner,
+					final EReference reference) {
+				if (reference.getLowerBound() == 0) {
+					return List.of();
+				}
+				return super.setContainmentReference(owner, reference);
+			}
+		});
+		populator.functionForContainmentReference(processActivity,
+				owner -> EcoreUtil.create(sequenceClass));
+		var selectedActivityClasses = List.of(emptyClass, whileClass, exitClass);
+		var activityIndex = new AtomicInteger();
+		populator.functionForContainmentReference(sequenceActivities,
+				owner -> EcoreUtil.create(selectedActivityClasses.get(
+						activityIndex.getAndIncrement() % selectedActivityClasses.size())));
+		populator.setContainmentReferenceMaxCountFor(sequenceActivities, 3);
+		populator.setContainmentReferenceDefaultMaxCount(1);
+		populator.setMaxDepth(3);
+
+		generator.setFilePrefix("bpel_structured_");
+		var generatedProcess = generator.generateFrom(processClass);
+
+		assertThat(generatedProcess.eClass()).isSameAs(processClass);
+		var sequence = (EObject) generatedProcess.eGet(processActivity);
+		assertThat(sequence.eClass()).isSameAs(sequenceClass);
+		var activities = EMFUtils.getAsEObjectsList(sequence, sequenceActivities);
+		assertThat(activities).extracting(activity -> activity.eClass().getName())
+				.containsExactly("Empty", "While", "Exit");
+		var generatedWhile = activities.get(1);
+		var generatedWhileActivity = (EObject) generatedWhile.eGet(whileActivity);
+		var generatedWhileCondition = (EObject) generatedWhile.eGet(whileCondition);
+		assertThat(generatedWhileActivity).isNotNull();
+		assertThat(activityClass.isSuperTypeOf(generatedWhileActivity.eClass())).isTrue();
+		assertThat(generatedWhileCondition).isNotNull();
+		assertThat(conditionClass.isSuperTypeOf(generatedWhileCondition.eClass())).isTrue();
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BPEL Process validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+		var generatedFileName = "bpel_structured_model_Process_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
 }
