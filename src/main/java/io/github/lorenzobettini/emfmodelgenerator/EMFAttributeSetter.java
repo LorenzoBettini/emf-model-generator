@@ -46,6 +46,7 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 
 	// Map to track counters for each EClass/EAttribute combination
 	private final Map<CounterKey, Integer> attributeCounters = new HashMap<>();
+	private int idAttributeCounter;
 
 	// Selector for enum literal candidate selection
 	private EMFCandidateSelectorStrategy<EEnum, EEnumLiteral> enumLiteralSelectorStrategy = new EMFRoundRobinEEnumLiteralCandidateSelector();
@@ -178,6 +179,9 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	}
 
 	private int getAndIncrementCounter(final EObject owner, final EAttribute attribute) {
+		if (attribute.isID()) {
+			return idAttributeCounter++;
+		}
 		final var key = new CounterKey(owner.eClass(), attribute);
 		final int counter = attributeCounters.getOrDefault(key, 0);
 		attributeCounters.put(key, counter + 1);
