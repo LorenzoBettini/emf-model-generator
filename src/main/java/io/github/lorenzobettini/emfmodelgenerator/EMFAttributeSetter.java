@@ -9,6 +9,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.xml.namespace.QName;
+
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EDataType;
@@ -23,7 +25,8 @@ import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
  * both single-valued and multi-valued attributes, generating appropriate sample
  * values based on the attribute's data type. Built-in XML Schema datatypes from
  * {@link XMLTypePackage} are generated from valid lexical values and converted
- * through EMF's XMLType factory.
+ * through EMF's XMLType factory. QName-backed datatypes declared by external
+ * packages are converted through their owning package factory.
  *
  * @author Lorenzo Bettini
  */
@@ -224,6 +227,9 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 			return BigInteger.valueOf((long)defaultIntValue + counter);
 		} else if (isByteArrayType(dataType)) {
 			return generateByteArrayValue(counter);
+		} else if (isQNameType(dataType)) {
+			return dataType.getEPackage().getEFactoryInstance()
+					.createFromString(dataType, "name" + (counter + 1));
 		} else {
 			return attribute.getDefaultValue();
 		}
@@ -402,5 +408,9 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	private boolean isByteArrayType(final EDataType dataType) {
 		return dataType == EcorePackage.Literals.EBYTE_ARRAY || "byte[]".equals(dataType.getName())
 				|| "byte[]".equals(dataType.getInstanceClassName());
+	}
+
+	private boolean isQNameType(final EDataType dataType) {
+		return QName.class.getName().equals(dataType.getInstanceClassName());
 	}
 }

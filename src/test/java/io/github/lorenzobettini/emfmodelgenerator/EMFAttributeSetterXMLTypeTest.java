@@ -192,6 +192,24 @@ class EMFAttributeSetterXMLTypeTest {
 	}
 
 	@Test
+	void shouldGenerateQNameForDatatypeOutsideXMLTypePackage() {
+		final var dynamicPackage = createEPackage(
+				"external", "http://example.org/external", "external");
+		final var dynamicQName = EcoreFactory.eINSTANCE.createEDataType();
+		dynamicQName.setName("QualifiedName");
+		dynamicQName.setInstanceClassName(QName.class.getName());
+		dynamicPackage.getEClassifiers().add(dynamicQName);
+
+		final var generated = generate(dynamicPackage, dynamicQName);
+
+		assertThat(generated.value()).isEqualTo(new QName("name1"));
+		final var factory = dynamicPackage.getEFactoryInstance();
+		final var lexicalValue = factory.convertToString(dynamicQName, generated.value());
+		assertThat(factory.createFromString(dynamicQName, lexicalValue))
+				.isEqualTo(generated.value());
+	}
+
+	@Test
 	void shouldNotTreatNamesFromOtherPackagesAsXMLTypes() {
 		final var customPackage = createEPackage("custom", "http://example.org/custom", "custom");
 		final var customLanguage = EcoreFactory.eINSTANCE.createEDataType();
