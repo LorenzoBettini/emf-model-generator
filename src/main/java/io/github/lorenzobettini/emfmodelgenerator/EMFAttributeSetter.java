@@ -227,12 +227,18 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 			return BigInteger.valueOf((long)defaultIntValue + counter);
 		} else if (isByteArrayType(dataType)) {
 			return generateByteArrayValue(counter);
-		} else if (isQNameType(dataType)) {
+		} else {
+			return generateOtherDataTypeValue(attribute, dataType, counter);
+		}
+	}
+
+	private Object generateOtherDataTypeValue(final EAttribute attribute,
+			final EDataType dataType, final int counter) {
+		if (isQNameType(dataType)) {
 			return dataType.getEPackage().getEFactoryInstance()
 					.createFromString(dataType, "name" + (counter + 1));
-		} else {
-			return attribute.getDefaultValue();
 		}
+		return attribute.getDefaultValue();
 	}
 
 	private EDataType getCanonicalXMLType(final EDataType dataType) {
