@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="ASCII"?>
+<wsdl:Definition
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:wsdl="http://www.eclipse.org/wsdl/2003/WSDL"
+    xsi:schemaLocation="http://www.eclipse.org/wsdl/2003/WSDL ../inputs/WSDL.ecore#/0"
+    targetNamespace="Definition_targetNamespace_1"
+    location="Definition_location_1"
+    qName="name1"
+    encoding="Definition_encoding_1">
+  <eExtensibilityElements
+      required="true"/>
+  <eExtensibilityElements
+      xsi:type="wsdl:UnknownExtensibilityElement"
+      required="true"/>
+  <eImports
+      namespaceURI="Import_namespaceURI_1"
+      locationURI="Import_locationURI_1"
+      eDefinition="/"/>
+  <eImports
+      namespaceURI="Import_namespaceURI_2"
+      locationURI="Import_locationURI_2"
+      eDefinition="/"/>
+  <eTypes/>
+  <eMessages
+      qName="name1"
+      undefined="true"/>
+  <eMessages
+      qName="name2"/>
+  <ePortTypes
+      qName="name1"
+      undefined="true"/>
+  <ePortTypes
+      qName="name2"/>
+  <eBindings
+      qName="name1"
+      undefined="true"
+      ePortType="//@ePortTypes.0"/>
+  <eBindings
+      qName="name2"
+      ePortType="//@ePortTypes.1"/>
+  <eServices
+      qName="name1"
+      undefined="true"/>
+  <eServices
+      qName="name2"/>
+  <eNamespaces
+      URI="Namespace_URI_1"
+      prefix="Namespace_prefix_1"/>
+  <eNamespaces
+      URI="Namespace_URI_2"
+      prefix="Namespace_prefix_2"/>
+</wsdl:Definition>

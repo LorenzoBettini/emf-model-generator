@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.xml.namespace.QName;
+
 import org.eclipse.emf.common.util.BasicDiagnostic;
 import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.common.util.URI;
@@ -4151,6 +4153,165 @@ class EMFModelGeneratorTest {
 
 		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 		var generatedFileName = "bpmn_graph_bpmn_Graph_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGenerateWsdlDefinitionWithSchemaLocation() throws Exception {
+		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/WSDL.ecore");
+
+		assertThat(packages).extracting(EPackage::getName)
+				.containsExactly("wsdl", "ecore", "xsd");
+		var wsdlPackage = packages.stream()
+				.filter(ePackage -> "wsdl".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var definitionClass = assertEClassExists(wsdlPackage, "Definition");
+		var messagesReference = assertEReferenceExists(definitionClass, "eMessages");
+		var portTypesReference = assertEReferenceExists(definitionClass, "ePortTypes");
+		var bindingsReference = assertEReferenceExists(definitionClass, "eBindings");
+		var servicesReference = assertEReferenceExists(definitionClass, "eServices");
+		var importsReference = assertEReferenceExists(definitionClass, "eImports");
+		var typesReference = assertEReferenceExists(definitionClass, "eTypes");
+		var targetNamespaceAttribute = assertEAttributeExists(
+				definitionClass, "targetNamespace");
+		var qNameAttribute = assertEAttributeExists(definitionClass, "qName");
+		var qNameFactory = qNameAttribute.getEAttributeType().getEPackage()
+				.getEFactoryInstance();
+		assertThat(qNameFactory.createFromString(
+				qNameAttribute.getEAttributeType(), "name1"))
+				.isInstanceOf(QName.class);
+
+		// The default depth enters optional extensibility elements and recursively creates
+		// copied XSD semantic structures. One level retains every direct WSDL component
+		// while avoiding those unrelated optional extensions.
+		generator.getInstancePopulator().setMaxDepth(1);
+		generator.setFilePrefix("wsdl_");
+		var generatedDefinition = generator.generateFrom(definitionClass);
+
+		assertThat(generatedDefinition.eClass()).isSameAs(definitionClass);
+		assertThat(generatedDefinition.eGet(targetNamespaceAttribute))
+				.isEqualTo("Definition_targetNamespace_1");
+		assertThat(EMFUtils.getAsEObjectsList(generatedDefinition, importsReference))
+				.hasSize(2);
+		assertThat(generatedDefinition.eGet(typesReference)).isNotNull();
+		assertThat(EMFUtils.getAsEObjectsList(generatedDefinition, messagesReference))
+				.hasSize(2);
+		assertThat(EMFUtils.getAsEObjectsList(generatedDefinition, portTypesReference))
+				.hasSize(2);
+		var portTypes = EMFUtils.getAsEObjectsList(generatedDefinition, portTypesReference);
+		var bindingPortTypeReference = assertEReferenceExists(
+				assertEClassExists(wsdlPackage, "Binding"), "ePortType");
+		assertThat(EMFUtils.getAsEObjectsList(generatedDefinition, bindingsReference))
+				.hasSize(2)
+				.allSatisfy(binding -> assertThat(binding.eGet(bindingPortTypeReference))
+						.isIn(portTypes));
+		assertThat(EMFUtils.getAsEObjectsList(generatedDefinition, servicesReference))
+				.hasSize(2);
+		assertThat(qNameAttribute.getEAttributeType().getInstanceClassName())
+				.isEqualTo("javax.xml.namespace.QName");
+		var qName = generatedDefinition.eGet(qNameAttribute);
+		assertThat(qName).isInstanceOf(QName.class);
+		var lexicalQName = qNameFactory.convertToString(
+				qNameAttribute.getEAttributeType(), qName);
+		assertThat(qNameFactory.createFromString(
+				qNameAttribute.getEAttributeType(), lexicalQName))
+				.isEqualTo(qName);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("WSDL Definition validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+		var generatedFileName = "wsdl_wsdl_Definition_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGenerateConnectedWsdlDefinition() throws Exception {
+		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/WSDL.ecore");
+		var wsdlPackage = packages.stream()
+				.filter(ePackage -> "wsdl".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var definitionClass = assertEClassExists(wsdlPackage, "Definition");
+		var portTypeClass = assertEClassExists(wsdlPackage, "PortType");
+		var operationClass = assertEClassExists(wsdlPackage, "Operation");
+		var inputClass = assertEClassExists(wsdlPackage, "Input");
+		var outputClass = assertEClassExists(wsdlPackage, "Output");
+		var messagesReference = assertEReferenceExists(definitionClass, "eMessages");
+		var portTypesReference = assertEReferenceExists(definitionClass, "ePortTypes");
+		var operationsReference = assertEReferenceExists(portTypeClass, "eOperations");
+		var inputReference = assertEReferenceExists(operationClass, "eInput");
+		var outputReference = assertEReferenceExists(operationClass, "eOutput");
+		var messageReference = assertEReferenceExists(inputClass, "eMessage");
+
+		var selectedContainments = List.of(
+				messagesReference, portTypesReference, operationsReference,
+				inputReference, outputReference);
+		var populator = generator.getInstancePopulator();
+		// Keep the example on the WSDL message/operation aggregate. In particular, this
+		// excludes optional extensibility elements that would enter the copied XSD model.
+		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public Collection<EObject> setContainmentReference(final EObject owner,
+					final EReference reference) {
+				if (!selectedContainments.contains(reference)) {
+					return List.of();
+				}
+				return super.setContainmentReference(owner, reference);
+			}
+		});
+		populator.setContainmentReferenceMaxCountFor(messagesReference, 2);
+		populator.setContainmentReferenceMaxCountFor(portTypesReference, 1);
+		populator.setContainmentReferenceMaxCountFor(operationsReference, 1);
+		populator.functionForCrossReference(messageReference, owner -> {
+			var definition = EcoreUtil.getRootContainer(owner);
+			var messages = EMFUtils.getAsEObjectsList(definition, messagesReference);
+			return owner.eClass() == outputClass ? messages.get(1) : messages.get(0);
+		});
+		populator.setMaxDepth(3);
+		generator.setFilePrefix("wsdl_connected_");
+
+		var generatedDefinition = generator.generateFrom(definitionClass);
+
+		var messages = EMFUtils.getAsEObjectsList(generatedDefinition, messagesReference);
+		assertThat(messages).hasSize(2);
+		assertThat(messages)
+				.extracting(message -> message.eGet(
+						assertEAttributeExists(message.eClass(), "qName")))
+				.containsExactly(new QName("name1"), new QName("name2"));
+		var portTypes = EMFUtils.getAsEObjectsList(generatedDefinition, portTypesReference);
+		assertThat(portTypes).singleElement().satisfies(portType -> {
+			var operations = EMFUtils.getAsEObjectsList(portType, operationsReference);
+			assertThat(operations).singleElement().satisfies(operation -> {
+				var input = (EObject) operation.eGet(inputReference);
+				var output = (EObject) operation.eGet(outputReference);
+				assertThat(input.eClass()).isSameAs(inputClass);
+				assertThat(output.eClass()).isSameAs(outputClass);
+				assertThat(input.eGet(messageReference)).isSameAs(messages.get(0));
+				assertThat(output.eGet(messageReference)).isSameAs(messages.get(1));
+			});
+		});
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("Connected WSDL Definition validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+		var generatedFileName = "wsdl_connected_wsdl_Definition_1.xmi";
 		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
 				generatedFileName, generatedFileName);

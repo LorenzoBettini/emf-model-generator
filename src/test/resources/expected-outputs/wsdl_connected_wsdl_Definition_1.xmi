@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="ASCII"?>
+<wsdl:Definition
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:wsdl="http://www.eclipse.org/wsdl/2003/WSDL"
+    xsi:schemaLocation="http://www.eclipse.org/wsdl/2003/WSDL ../inputs/WSDL.ecore#/0"
+    targetNamespace="Definition_targetNamespace_1"
+    location="Definition_location_1"
+    qName="name1"
+    encoding="Definition_encoding_1">
+  <eMessages
+      qName="name1"
+      undefined="true"/>
+  <eMessages
+      qName="name2"/>
+  <ePortTypes
+      qName="name1"
+      undefined="true">
+    <eOperations
+        name="Operation_name_1"
+        undefined="true">
+      <eInput
+          name="Input_name_1"
+          eMessage="//@eMessages.0"/>
+      <eOutput
+          name="Output_name_1"
+          eMessage="//@eMessages.1"/>
+    </eOperations>
+  </ePortTypes>
+</wsdl:Definition>
