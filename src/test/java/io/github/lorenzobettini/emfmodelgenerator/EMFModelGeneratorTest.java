@@ -3916,4 +3916,49 @@ class EMFModelGeneratorTest {
 				.extracting(EObject::eClass)
 				.isSameAs(concreteSubtype);
 	}
+
+	@Test
+	void testGenerateBpelProcessWithSchemaLocation() throws Exception {
+		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/BPEL.ecore");
+
+		assertThat(packages).extracting(EPackage::getName)
+				.containsExactly("model", "ecore", "wsdl", "partnerlinktype",
+						"messageproperties", "xsd");
+		var modelPackage = packages.stream()
+				.filter(ePackage -> "model".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var processClass = assertEClassExists(modelPackage, "Process");
+
+		// The default depth expands a large optional BPEL/WSDL/XSD object graph. One level
+		// keeps this integration test focused while still generating the required activity.
+		generator.getInstancePopulator().setMaxDepth(1);
+		generator.setFilePrefix("bpel_");
+		var generatedProcess = generator.generateFrom(processClass);
+
+		assertThat(generatedProcess).isNotNull();
+		assertThat(generatedProcess.eClass()).isSameAs(processClass);
+		var nameAttribute = assertEAttributeExists(processClass, "name");
+		assertThat(nameAttribute.getEAttributeType().getInstanceClassName())
+				.isEqualTo("java.lang.String");
+		assertThat(generatedProcess.eGet(nameAttribute)).isEqualTo("Process_name_1");
+		var activityReference = assertEReferenceExists(processClass, "activity");
+		var activity = (EObject) generatedProcess.eGet(activityReference);
+		assertThat(activity).isNotNull();
+		assertThat(activityReference.getEReferenceType().isSuperTypeOf(activity.eClass())).isTrue();
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BPEL Process validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+		var generatedFileName = "bpel_model_Process_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
 }
