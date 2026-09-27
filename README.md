@@ -719,6 +719,8 @@ Examples:
 The generator uses predictable patterns for sample data:
 
 - **Strings**: `<EClassName>_<AttributeName>_<Counter>` (e.g., `Person_name_1`)
+- **ID attributes**: use one counter shared by all ID attributes in an `EMFAttributeSetter`,
+  so generated IDs are unique across EClasses (e.g., `Person_id_1`, `Address_id_2`)
 - **Integers and integer-like values**: start at `20` and increase with the per-class/attribute counter
 - **Doubles and floats**: start at `20.5` and increase with the per-class/attribute counter
 - **Booleans**: alternate between `true` and `false`

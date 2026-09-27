@@ -46,6 +46,7 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 
 	// Map to track counters for each EClass/EAttribute combination
 	private final Map<CounterKey, Integer> attributeCounters = new HashMap<>();
+	private int idAttributeCounter;
 
 	// Selector for enum literal candidate selection
 	private EMFCandidateSelectorStrategy<EEnum, EEnumLiteral> enumLiteralSelectorStrategy = new EMFRoundRobinEEnumLiteralCandidateSelector();
@@ -143,9 +144,10 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 
 	/**
 	 * Generate a sample value for an attribute based on its data type. Uses a
-	 * per-attribute counter to generate unique incremental values. For enum types,
-	 * uses the configured enum literal selector strategy to select enum literals
-	 * (by default, round-robin).
+	 * per-attribute counter to generate unique incremental values. ID attributes
+	 * instead use a counter shared across all EClasses to avoid duplicate IDs. For
+	 * enum types, uses the configured enum literal selector strategy to select
+	 * enum literals (by default, round-robin).
 	 * 
 	 * @param owner The EObject owning the attribute. By default, this parameter is not used in value generation but may be useful for extensions.
 	 * @param attribute the attribute to generate a value for
@@ -178,6 +180,9 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	}
 
 	private int getAndIncrementCounter(final EObject owner, final EAttribute attribute) {
+		if (attribute.isID()) {
+			return idAttributeCounter++;
+		}
 		final var key = new CounterKey(owner.eClass(), attribute);
 		final int counter = attributeCounters.getOrDefault(key, 0);
 		attributeCounters.put(key, counter + 1);

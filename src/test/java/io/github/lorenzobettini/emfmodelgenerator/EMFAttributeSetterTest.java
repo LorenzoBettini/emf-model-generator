@@ -129,6 +129,24 @@ class EMFAttributeSetterTest {
 	}
 
 	@Test
+	void testIDAttributeValuesAreUniqueAcrossClasses() {
+		var firstClass = createEClass(testPackage, "First");
+		var secondClass = createEClass(testPackage, "Second");
+		var firstID = createEAttribute(firstClass, "id", EcorePackage.Literals.ESTRING);
+		var secondID = createEAttribute(secondClass, "id", EcorePackage.Literals.ESTRING);
+		firstID.setID(true);
+		secondID.setID(true);
+		var first = createInstance(firstClass);
+		var second = createInstance(secondClass);
+
+		setter.setAttribute(first, firstID);
+		setter.setAttribute(second, secondID);
+
+		assertThat(first.eGet(firstID)).isEqualTo("First_id_1");
+		assertThat(second.eGet(secondID)).isEqualTo("Second_id_2");
+	}
+
+	@Test
 	void testGenerateAttributeValue_UsesOwnerClassName() {
 		// Test that the generated string value uses the owner's EClass name,
 		// not the attribute's declaring class
