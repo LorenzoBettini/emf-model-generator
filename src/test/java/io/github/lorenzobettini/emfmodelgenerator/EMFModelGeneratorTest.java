@@ -4145,6 +4145,63 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
+	void testGenerateBpmnDiagramWithDefaultConfigurationIsValid() throws Exception {
+		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/BPMN.ecore");
+
+		assertThat(packages).extracting(EPackage::getName)
+				.containsExactly("bpmn", "ecore", "type");
+		var bpmnPackage = packages.stream()
+				.filter(ePackage -> "bpmn".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var bpmnDiagramClass = assertEClassExists(bpmnPackage, "BpmnDiagram");
+		// The default depth 5 expands recursively enough to generate a valid model.
+		// keep it explicit here to make it clear.
+		generator.getInstancePopulator().setMaxDepth(5);
+		generator.generateFrom(bpmnDiagramClass);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BPMN validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+	}
+
+	@Test
+	void testGenerateDeepBpmnDiagramWithSchemaLocation() throws Exception {
+		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/BPMN.ecore");
+
+		assertThat(packages).extracting(EPackage::getName)
+				.containsExactly("bpmn", "ecore", "type");
+		var bpmnPackage = packages.stream()
+				.filter(ePackage -> "bpmn".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var bpmnDiagramClass = assertEClassExists(bpmnPackage, "BpmnDiagram");
+		// The default depth expands recursively enough to generate a valid model.
+		// but it gets about 640K!
+		generator.getInstancePopulator().setMaxDepth(3);
+		generator.setFilePrefix("bpmn_deep_");
+		generator.generateFrom(bpmnDiagramClass);
+
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BPMN validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "bpmn_deep_bpmn_BpmnDiagram_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		// avoid asserting against expected output because the generated model is large
+	}
+
+	@Test
 	void testGenerateBpmnDiagramWithSchemaLocation() throws Exception {
 		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/BPMN.ecore");
 
