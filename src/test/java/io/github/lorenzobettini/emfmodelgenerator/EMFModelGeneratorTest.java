@@ -3372,9 +3372,10 @@ class EMFModelGeneratorTest {
 		
 		var customSetter = new EMFFeatureMapSetter() {
 			@Override
-			public java.util.Collection<EObject> setFeatureMap(EObject owner, EAttribute featureMapAttribute) {
+			public EMFFeatureMapSetter.FeatureMapPlan createPlan(
+					EObject owner, EAttribute featureMapAttribute) {
 				counter.incrementAndGet();
-				return super.setFeatureMap(owner, featureMapAttribute);
+				return super.createPlan(owner, featureMapAttribute);
 			}
 		};
 		

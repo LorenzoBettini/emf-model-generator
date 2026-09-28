@@ -3,6 +3,7 @@ package io.github.lorenzobettini.emfmodelgenerator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EObject;
@@ -14,17 +15,83 @@ import org.eclipse.emf.ecore.util.FeatureMapUtil;
 /**
  * Coordinates population of EMF FeatureMaps. FeatureMaps allow heterogeneous
  * collections where different structural-feature types can be mixed. This
- * coordinator owns group-level count and member-selection configuration and
- * delegates value semantics to the ordinary attribute, containment-reference,
- * and cross-reference setters.
+ * coordinator owns group-level count, member-selection, planning, ordering,
+ * and entry insertion while delegating value semantics to the ordinary
+ * attribute, containment-reference, and cross-reference setters.
  *
- * <p>The current population phase handles containment-reference members only.
- * Attribute and non-containment-reference members will be materialized by later
- * population phases.</p>
+ * <p>Each physical FeatureMap is represented by a per-population-call
+ * {@link FeatureMapPlan}. Planning freezes the complete heterogeneous member
+ * sequence without generating values. Structural materialization then handles
+ * attribute and containment-reference members; non-containment-reference
+ * members remain pending for the later cross-reference phase.</p>
  *
  * @author Lorenzo Bettini
  */
 public class EMFFeatureMapSetter extends EMFCountConfigurableFeatureSetter<EAttribute> {
+
+	/**
+	 * An ordered plan for one physical FeatureMap. The plan records which selected
+	 * members have been materialized so entries produced in different phases can
+	 * retain their original relative order.
+	 */
+	public static final class FeatureMapPlan {
+		private final EObject owner;
+		private final EAttribute featureMapAttribute;
+		private final List<EStructuralFeature> groupMembers;
+		private final boolean[] materialized;
+
+		/**
+		 * Creates an ordered plan. The selected member list is copied so later caller
+		 * changes cannot alter the frozen sequence.
+		 *
+		 * @param owner the EObject owning the physical FeatureMap
+		 * @param featureMapAttribute the physical FeatureMap attribute
+		 * @param groupMembers the selected member sequence in ordinal order
+		 */
+		public FeatureMapPlan(final EObject owner, final EAttribute featureMapAttribute,
+				final List<? extends EStructuralFeature> groupMembers) {
+			this.owner = owner;
+			this.featureMapAttribute = featureMapAttribute;
+			this.groupMembers = List.copyOf(groupMembers);
+			this.materialized = new boolean[groupMembers.size()];
+		}
+
+		/**
+		 * @return the EObject owning the physical FeatureMap
+		 */
+		public EObject owner() {
+			return owner;
+		}
+
+		/**
+		 * @return the physical FeatureMap attribute
+		 */
+		public EAttribute featureMapAttribute() {
+			return featureMapAttribute;
+		}
+
+		/**
+		 * @return the immutable selected member sequence
+		 */
+		public List<EStructuralFeature> groupMembers() {
+			return groupMembers;
+		}
+
+		/**
+		 * Reports whether the selected member at the given ordinal has produced a
+		 * physical FeatureMap entry.
+		 *
+		 * @param ordinal the zero-based planned ordinal
+		 * @return whether that ordinal has been materialized
+		 */
+		public boolean isMaterialized(final int ordinal) {
+			return materialized[ordinal];
+		}
+
+		private void markMaterialized(final int ordinal) {
+			materialized[ordinal] = true;
+		}
+	}
 
 	private static final int DEFAULT_MULTI_VALUED_COUNT = 2;
 	private EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> groupMemberSelector =
@@ -69,11 +136,11 @@ public class EMFFeatureMapSetter extends EMFCountConfigurableFeatureSetter<EAttr
 
 	/**
 	 * Set the group member selector strategy for selecting feature map group members.
-	 * 
+	 *
 	 * @param strategy the heterogeneous structural-feature selector strategy to use
 	 */
 	public void setGroupMemberSelectorStrategy(
-			EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> strategy) {
+			final EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> strategy) {
 		this.groupMemberSelector = strategy;
 	}
 
@@ -86,54 +153,106 @@ public class EMFFeatureMapSetter extends EMFCountConfigurableFeatureSetter<EAttr
 	}
 
 	/**
-	 * Set the feature map on the given owner.
-	 * This method populates the feature map with entries for each group member.
+	 * Creates an ordered plan for the given physical FeatureMap without generating
+	 * values or changing the owner. An already-set map or a map with no members
+	 * produces an empty plan.
 	 *
-	 * @param owner the EObject to set the feature map on
-	 * @param featureMapAttribute the feature map attribute
-	 * @return collection of created EObjects
+	 * @param owner the EObject owning the FeatureMap
+	 * @param featureMapAttribute the physical FeatureMap attribute
+	 * @return the frozen plan for this map
 	 */
-	public Collection<EObject> setFeatureMap(final EObject owner,
+	public FeatureMapPlan createPlan(final EObject owner,
 			final EAttribute featureMapAttribute) {
-		if (owner.eIsSet(featureMapAttribute)) {
-			return List.of();
+		if (owner.eIsSet(featureMapAttribute)
+				|| EMFUtils.findFeatureMapGroupMembers(featureMapAttribute).isEmpty()) {
+			return new FeatureMapPlan(owner, featureMapAttribute, List.of());
 		}
-		return setMultiFeature(owner, featureMapAttribute);
+
+		final int count = EMFUtils.getEffectiveCount(featureMapAttribute,
+				getMaxCountFor(owner, featureMapAttribute));
+		final var selectedMembers = new ArrayList<EStructuralFeature>(count);
+		for (int i = 0; i < count; i++) {
+			if (!groupMemberSelector.hasCandidates(owner, featureMapAttribute)) {
+				break;
+			}
+			final var groupMember =
+					groupMemberSelector.getNextCandidate(owner, featureMapAttribute);
+			if (groupMember == null) {
+				break;
+			}
+			selectedMembers.add(groupMember);
+		}
+		return new FeatureMapPlan(owner, featureMapAttribute, selectedMembers);
 	}
 
 	/**
-	 * Populate the feature map by finding all group members and creating instances for each.
-	 * This population phase currently supports containment-reference members only.
+	 * Materializes the structural portions of a plan. Attribute members are always
+	 * attempted first. Containment-reference members are attempted only when
+	 * {@code containmentAllowed} is {@code true}; non-containment references remain
+	 * pending. Null delegated values do not produce placeholder entries.
+	 *
+	 * @param plan the ordered FeatureMap plan
+	 * @param containmentAllowed whether containment expansion is permitted at the
+	 *                           current depth
+	 * @return contained EObjects inserted into the FeatureMap
 	 */
-	private Collection<EObject> setMultiFeature(final EObject owner,
-			final EAttribute featureMapAttribute) {
+	public Collection<EObject> materializeStructuralFeatures(final FeatureMapPlan plan,
+			final boolean containmentAllowed) {
 		final var createdEObjects = new ArrayList<EObject>();
-		final FeatureMap featureMap = (FeatureMap) owner.eGet(featureMapAttribute);
-		
-		// Find all features that are part of this feature map group
-		final List<EStructuralFeature> groupMembers =
-			EMFUtils.findFeatureMapGroupMembers(featureMapAttribute);
-		
-		if (groupMembers.isEmpty()) {
-			return List.of();
+		for (int i = 0; i < plan.groupMembers().size(); i++) {
+			final var member = plan.groupMembers().get(i);
+			if (!plan.isMaterialized(i) && member instanceof EAttribute attribute) {
+				final var value = attributeSetter.generateValue(plan.owner(), attribute);
+				insertIfNotNull(plan, i, member, value);
+			}
 		}
-		
-		// For each group member, create instances and add them to the feature map
-		final int count = EMFUtils.getEffectiveCount(featureMapAttribute,
-				getMaxCountFor(owner, featureMapAttribute));
-		
-		for (int i = 0; i < count; i++) {
-			// Select the next group member using the selector strategy
-			final EReference groupMember =
-				(EReference) groupMemberSelector.getNextCandidate(owner, featureMapAttribute);
-
-			// Create a single instance directly (pass owner as context for selector)
-			final EObject instance = containmentReferenceSetter.createValue(owner, groupMember);
-			featureMap.add(FeatureMapUtil.createEntry(groupMember, instance));
-			if (instance != null) {
-				createdEObjects.add(instance);
+		if (containmentAllowed) {
+			for (int i = 0; i < plan.groupMembers().size(); i++) {
+				final var member = plan.groupMembers().get(i);
+				if (!plan.isMaterialized(i) && member instanceof EReference reference
+						&& reference.isContainment()) {
+					final var value = containmentReferenceSetter.createValue(plan.owner(), reference);
+					if (insertIfNotNull(plan, i, member, value)) {
+						createdEObjects.add(value);
+					}
+				}
 			}
 		}
 		return createdEObjects;
+	}
+
+	private boolean insertIfNotNull(final FeatureMapPlan plan, final int ordinal,
+			final EStructuralFeature member, final Object value) {
+		if (value == null) {
+			return false;
+		}
+		final FeatureMap featureMap =
+				(FeatureMap) plan.owner().eGet(plan.featureMapAttribute());
+		featureMap.add(insertionIndex(plan, ordinal),
+				FeatureMapUtil.createEntry(member, value));
+		plan.markMaterialized(ordinal);
+		return true;
+	}
+
+	private int insertionIndex(final FeatureMapPlan plan, final int ordinal) {
+		return (int) IntStream.range(0, ordinal)
+				.filter(plan::isMaterialized)
+				.count();
+	}
+
+	/**
+	 * Convenience operation that plans and structurally materializes a FeatureMap
+	 * with containment enabled. Population orchestration should use
+	 * {@link #createPlan(EObject, EAttribute)} and
+	 * {@link #materializeStructuralFeatures(FeatureMapPlan, boolean)} separately so
+	 * planning occurs before ordinary attribute population.
+	 *
+	 * @param owner the EObject to set the feature map on
+	 * @param featureMapAttribute the feature map attribute
+	 * @return contained EObjects inserted into the FeatureMap
+	 */
+	public Collection<EObject> setFeatureMap(final EObject owner,
+			final EAttribute featureMapAttribute) {
+		return materializeStructuralFeatures(createPlan(owner, featureMapAttribute), true);
 	}
 }

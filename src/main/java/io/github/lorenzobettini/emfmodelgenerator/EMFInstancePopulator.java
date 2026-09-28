@@ -14,6 +14,7 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 import io.github.lorenzobettini.emfmodelgenerator.EMFAttributeSetter.EMFAttributeValueFunction;
 import io.github.lorenzobettini.emfmodelgenerator.EMFContainmentReferenceSetter.EMFContainmentReferenceValueFunction;
 import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter.EMFCrossReferenceValueFunction;
+import io.github.lorenzobettini.emfmodelgenerator.EMFFeatureMapSetter.FeatureMapPlan;
 
 /**
  * Populates existing EMF {@link EObject EObjects} with sample data.
@@ -365,9 +366,10 @@ public class EMFInstancePopulator {
 	 * @param rootInstances the EObjects to populate
 	 */
 	public void populateEObjects(EObject... rootInstances) {
-		var createdEObjects = new ArrayList<EObject>();
+		final var createdEObjects = new ArrayList<EObject>();
+		final var featureMapPlans = new ArrayList<FeatureMapPlan>();
 		for (var root : rootInstances) {
-			createdEObjects.addAll(populateEObject(root, 0));
+			createdEObjects.addAll(populateEObject(root, 0, featureMapPlans));
 		}
 
 		// reset cross reference setter state
@@ -392,17 +394,21 @@ public class EMFInstancePopulator {
 	 * @param depth  the current depth of recursion
 	 * @return the list of created EObjects during population
 	 */
-	private Collection<EObject> populateEObject(EObject eObject, int depth) {
-		var createdEObjects = new ArrayList<EObject>();
+	private Collection<EObject> populateEObject(final EObject eObject, final int depth,
+			final Collection<FeatureMapPlan> featureMapPlans) {
+		final var createdEObjects = new ArrayList<EObject>();
+		final var currentFeatureMapPlans = createFeatureMapPlans(eObject);
+		featureMapPlans.addAll(currentFeatureMapPlans);
 		// attributes are populated always
 		populateAttributes(eObject);
+		materializeFeatureMaps(currentFeatureMapPlans, depth < maxDepth, createdEObjects);
 		if (depth < maxDepth) {
-			populateFeatureMaps(eObject, createdEObjects);
 			populateContainmentReferences(eObject, createdEObjects);
 			// recursively populate created EObjects
-			var recursiveCreatedEObjects = new ArrayList<EObject>();
+			final var recursiveCreatedEObjects = new ArrayList<EObject>();
 			for (var createdEObject : createdEObjects) {
-				recursiveCreatedEObjects.addAll(populateEObject(createdEObject, depth + 1));
+				recursiveCreatedEObjects.addAll(
+						populateEObject(createdEObject, depth + 1, featureMapPlans));
 			}
 			createdEObjects.addAll(recursiveCreatedEObjects);
 		}
@@ -417,11 +423,21 @@ public class EMFInstancePopulator {
 		}
 	}
 
-	private void populateFeatureMaps(EObject eObject, Collection<EObject> createdEObjects) {
+	private Collection<FeatureMapPlan> createFeatureMapPlans(final EObject eObject) {
+		final var plans = new ArrayList<FeatureMapPlan>();
 		for (var attribute : eObject.eClass().getEAllAttributes()) {
 			if (EMFUtils.isFeatureMap(attribute)) {
-				createdEObjects.addAll(featureMapSetter.setFeatureMap(eObject, attribute));
+				plans.add(featureMapSetter.createPlan(eObject, attribute));
 			}
+		}
+		return plans;
+	}
+
+	private void materializeFeatureMaps(final Collection<FeatureMapPlan> plans,
+			final boolean containmentAllowed, final Collection<EObject> createdEObjects) {
+		for (var plan : plans) {
+			createdEObjects.addAll(
+					featureMapSetter.materializeStructuralFeatures(plan, containmentAllowed));
 		}
 	}
 

@@ -6,6 +6,9 @@ import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertERef
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.loadEcoreModel;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
@@ -267,7 +270,7 @@ class EMFFeatureMapSetterTest {
 		setter.setMaxCountFor(peopleAttr, 1);
 
 		assertThat(setter.setFeatureMap(library, peopleAttr)).isEmpty();
-		assertThat((FeatureMap) library.eGet(peopleAttr)).hasSize(1);
+		assertThat((FeatureMap) library.eGet(peopleAttr)).isEmpty();
 	}
 
 	@Test
@@ -290,5 +293,261 @@ class EMFFeatureMapSetterTest {
 		assertThat(featureMap)
 			.as("Feature map should be empty when no group members exist")
 			.isEmpty();
+	}
+
+	@Test
+	void planFreezesTheCompleteMixedSequenceWithoutGeneratingValues() {
+		final var fixture = mixedFixture();
+		final var attributeCalls = new AtomicInteger();
+		final var containmentCalls = new AtomicInteger();
+		final var crossReferenceCalls = new AtomicInteger();
+		setter.setAttributeSetter(new EMFAttributeSetter() {
+			@Override
+			public Object generateValue(final EObject owner, final EAttribute attribute) {
+				attributeCalls.incrementAndGet();
+				return super.generateValue(owner, attribute);
+			}
+		});
+		setter.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public EObject createValue(final EObject owner, final EReference reference) {
+				containmentCalls.incrementAndGet();
+				return super.createValue(owner, reference);
+			}
+		});
+		setter.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+			@Override
+			public EObject selectValue(final EObject owner, final EReference reference) {
+				crossReferenceCalls.incrementAndGet();
+				return super.selectValue(owner, reference);
+			}
+		});
+		setter.setMaxCountFor(fixture.group(), 6);
+
+		final var plan = setter.createPlan(fixture.document(), fixture.group());
+
+		assertThat(plan.owner()).isSameAs(fixture.document());
+		assertThat(plan.featureMapAttribute()).isSameAs(fixture.group());
+		assertThat(plan.groupMembers())
+				.extracting(EStructuralFeature::getName)
+				.containsExactly("text", "child", "related", "text", "child", "related");
+		assertThat(attributeCalls).hasValue(0);
+		assertThat(containmentCalls).hasValue(0);
+		assertThat(crossReferenceCalls).hasValue(0);
+		assertThat((FeatureMap) fixture.document().eGet(fixture.group())).isEmpty();
+		assertThat(fixture.document().eContents()).isEmpty();
+	}
+
+	@Test
+	void structuralMaterializationPreservesOrderAroundPendingCrossReferences() {
+		final var fixture = mixedFixture();
+		final var crossReferenceCalls = new AtomicInteger();
+		setter.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+			@Override
+			public EObject selectValue(final EObject owner, final EReference reference) {
+				crossReferenceCalls.incrementAndGet();
+				return super.selectValue(owner, reference);
+			}
+		});
+		setter.setMaxCountFor(fixture.group(), 6);
+		final var plan = setter.createPlan(fixture.document(), fixture.group());
+
+		final var created = setter.materializeStructuralFeatures(plan, true);
+
+		final var featureMap = (FeatureMap) fixture.document().eGet(fixture.group());
+		assertThat(featureMap)
+				.extracting(entry -> entry.getEStructuralFeature().getName())
+				.containsExactly("text", "child", "text", "child");
+		assertThat(featureMap.getValue(0)).isEqualTo("Document_text_1");
+		assertThat(featureMap.getValue(2)).isEqualTo("Document_text_2");
+		assertThat(created).hasSize(2)
+				.allSatisfy(child -> assertThat(child.eContainer()).isSameAs(fixture.document()));
+		assertThat(plan.isMaterialized(0)).isTrue();
+		assertThat(plan.isMaterialized(1)).isTrue();
+		assertThat(plan.isMaterialized(2)).isFalse();
+		assertThat(plan.isMaterialized(3)).isTrue();
+		assertThat(plan.isMaterialized(4)).isTrue();
+		assertThat(plan.isMaterialized(5)).isFalse();
+		assertThat(crossReferenceCalls).hasValue(0);
+		assertThat(setter.materializeStructuralFeatures(plan, true)).isEmpty();
+		assertThat(featureMap).hasSize(4);
+	}
+
+	@Test
+	void containmentCanBeSuppressedWithoutSuppressingAttributes() {
+		final var fixture = mixedFixture();
+		setter.setMaxCountFor(fixture.group(), 3);
+		final var plan = setter.createPlan(fixture.document(), fixture.group());
+
+		assertThat(setter.materializeStructuralFeatures(plan, false)).isEmpty();
+
+		final var featureMap = (FeatureMap) fixture.document().eGet(fixture.group());
+		assertThat(featureMap)
+				.extracting(entry -> entry.getEStructuralFeature().getName())
+				.containsExactly("text");
+		assertThat(plan.isMaterialized(0)).isTrue();
+		assertThat(plan.isMaterialized(1)).isFalse();
+		assertThat(plan.isMaterialized(2)).isFalse();
+		assertThat(fixture.document().eContents()).isEmpty();
+	}
+
+	@Test
+	void nullAttributeValueDoesNotCreateAPlaceholder() {
+		final var fixture = mixedFixture();
+		setter.setAttributeSetter(new EMFAttributeSetter() {
+			@Override
+			public Object generateValue(final EObject owner, final EAttribute attribute) {
+				return null;
+			}
+		});
+		setter.setGroupMemberSelectorStrategy(selectorReturning(fixture.text()));
+		setter.setMaxCountFor(fixture.group(), 1);
+		final var plan = setter.createPlan(fixture.document(), fixture.group());
+
+		assertThat(setter.materializeStructuralFeatures(plan, true)).isEmpty();
+		assertThat((FeatureMap) fixture.document().eGet(fixture.group())).isEmpty();
+		assertThat(plan.isMaterialized(0)).isFalse();
+	}
+
+	@Test
+	void planningStopsWhenTheSelectorHasNoCandidate() {
+		final var fixture = mixedFixture();
+		final var selections = new AtomicInteger();
+		setter.setGroupMemberSelectorStrategy(
+				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+					@Override
+					public EStructuralFeature getNextCandidate(final EObject context,
+							final EAttribute type) {
+						return selections.getAndIncrement() == 0 ? fixture.text() : null;
+					}
+
+					@Override
+					public boolean hasCandidates(final EObject context, final EAttribute type) {
+						return true;
+					}
+				});
+		setter.setMaxCountFor(fixture.group(), 3);
+
+		assertThat(setter.createPlan(fixture.document(), fixture.group()).groupMembers())
+				.containsExactly(fixture.text());
+		assertThat(selections).hasValue(2);
+	}
+
+	@Test
+	void planningDoesNotAskASelectorThatReportsNoCandidates() {
+		final var fixture = mixedFixture();
+		final var selections = new AtomicInteger();
+		setter.setGroupMemberSelectorStrategy(
+				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+					@Override
+					public EStructuralFeature getNextCandidate(final EObject context,
+							final EAttribute type) {
+						selections.incrementAndGet();
+						return fixture.text();
+					}
+
+					@Override
+					public boolean hasCandidates(final EObject context, final EAttribute type) {
+						return false;
+					}
+				});
+
+		assertThat(setter.createPlan(fixture.document(), fixture.group()).groupMembers())
+				.isEmpty();
+		assertThat(selections).hasValue(0);
+	}
+
+	@Test
+	void planningHonorsFeatureMapBoundsAndConfiguredTotalCount() {
+		final var fixture = mixedFixture();
+		fixture.group().setLowerBound(4);
+		fixture.group().setUpperBound(5);
+		setter.setMaxCountFor(fixture.group(), 6);
+
+		assertThat(setter.createPlan(fixture.document(), fixture.group()).groupMembers())
+				.hasSize(5);
+
+		final var anotherDocument = EcoreUtil.create(fixture.document().eClass());
+		setter.setMaxCountFor(fixture.group(), 2);
+		assertThat(setter.createPlan(anotherDocument, fixture.group()).groupMembers())
+				.hasSize(4);
+	}
+
+	@Test
+	void alreadySetAndEmptyFeatureMapsProduceEmptyPlansWithoutSelection() {
+		final var fixture = mixedFixture();
+		final var selections = new AtomicInteger();
+		setter.setGroupMemberSelectorStrategy(new EMFCandidateSelectorStrategy<>() {
+			@Override
+			public EStructuralFeature getNextCandidate(final EObject context,
+					final EAttribute type) {
+				selections.incrementAndGet();
+				return fixture.text();
+			}
+
+			@Override
+			public boolean hasCandidates(final EObject context, final EAttribute type) {
+				return true;
+			}
+		});
+		final var featureMap = (FeatureMap) fixture.document().eGet(fixture.group());
+		featureMap.add(fixture.text(), "existing");
+
+		assertThat(setter.createPlan(fixture.document(), fixture.group()).groupMembers())
+				.isEmpty();
+		assertThat(featureMap.getValue(0)).isEqualTo("existing");
+		assertThat(selections).hasValue(0);
+
+		final var emptyPackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_no_members.ecore");
+		EMFTestUtils.registerPackageForTest(emptyPackage);
+		final var emptyClass = assertEClassExists(emptyPackage, "TestClass");
+		final var emptyMap = assertEAttributeExists(emptyClass, "emptyFeatureMap");
+		assertThat(setter.createPlan(EcoreUtil.create(emptyClass), emptyMap).groupMembers())
+				.isEmpty();
+		assertThat(selections).hasValue(0);
+	}
+
+	@Test
+	void publicPlanCopiesTheSelectedSequence() {
+		final var fixture = mixedFixture();
+		final var selected = new ArrayList<EStructuralFeature>();
+		selected.add(fixture.text());
+
+		final var plan = new EMFFeatureMapSetter.FeatureMapPlan(
+				fixture.document(), fixture.group(), selected);
+		selected.add(fixture.child());
+
+		assertThat(plan.groupMembers()).containsExactly(fixture.text());
+	}
+
+	private EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> selectorReturning(
+			final EStructuralFeature feature) {
+		return new EMFCandidateSelectorStrategy<>() {
+			@Override
+			public EStructuralFeature getNextCandidate(final EObject context,
+					final EAttribute type) {
+				return feature;
+			}
+
+			@Override
+			public boolean hasCandidates(final EObject context, final EAttribute type) {
+				return true;
+			}
+		};
+	}
+
+	private MixedFixture mixedFixture() {
+		final var mixedPackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		EMFTestUtils.registerPackageForTest(mixedPackage);
+		final var documentClass = assertEClassExists(mixedPackage, "Document");
+		return new MixedFixture(
+				EcoreUtil.create(documentClass),
+				assertEAttributeExists(documentClass, "group"),
+				assertEAttributeExists(documentClass, "text"),
+				assertEReferenceExists(documentClass, "child"));
+	}
+
+	private record MixedFixture(EObject document, EAttribute group, EAttribute text,
+			EReference child) {
 	}
 }

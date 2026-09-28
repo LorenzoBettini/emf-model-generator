@@ -9,6 +9,7 @@ import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.validateMo
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +32,8 @@ import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import io.github.lorenzobettini.emfmodelgenerator.EMFFeatureMapSetter.FeatureMapPlan;
 
 class EMFInstancePopulatorTest {
 	private static final class RecordingFeatureMapSetter extends EMFFeatureMapSetter {
@@ -1745,9 +1748,10 @@ class EMFInstancePopulatorTest {
 		
 		populator.setFeatureMapSetter(new EMFFeatureMapSetter() {
 			@Override
-			public Collection<EObject> setFeatureMap(EObject owner, EAttribute featureMapAttribute) {
+			public FeatureMapPlan createPlan(final EObject owner,
+					final EAttribute featureMapAttribute) {
 				counter.incrementAndGet();
-				return super.setFeatureMap(owner, featureMapAttribute);
+				return super.createPlan(owner, featureMapAttribute);
 			}
 		});
 		
@@ -1807,6 +1811,153 @@ class EMFInstancePopulatorTest {
 			.noneMatch(employee -> "CustomWriter".equals(employee.eGet(employee.eClass().getEStructuralFeature("firstName"))));
 		
 		validateModel(library);
+	}
+
+	@Test
+	void shouldPopulateMixedFeatureMapStructuralMembersThroughOrdinaryFunctions() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		final var documentClass = assertEClassExists(ePackage, "Document");
+		final var childClass = assertEClassExists(ePackage, "Child");
+		final var group = assertEAttributeExists(documentClass, "group");
+		final var text = assertEAttributeExists(documentClass, "text");
+		final var child = assertEReferenceExists(documentClass, "child");
+		final var related = assertEReferenceExists(documentClass, "related");
+		final var containmentCalls = new AtomicInteger();
+		final var attributeCalls = new AtomicInteger();
+		final var crossReferenceCalls = new AtomicInteger();
+		populator.setFeatureMapMaxCountFor(group, 6);
+		populator.functionForAttribute(text,
+				owner -> "custom-text-" + attributeCalls.incrementAndGet());
+		populator.functionForContainmentReference(child, owner -> {
+			containmentCalls.incrementAndGet();
+			return EcoreUtil.create(childClass);
+		});
+		populator.functionForCrossReference(related, owner -> {
+			crossReferenceCalls.incrementAndGet();
+			return null;
+		});
+		final var document = createInstance(ePackage, "Document");
+		createInstanceInResource(document, "mixed.xmi");
+
+		populator.populateEObjects(document);
+
+		final var featureMap = (FeatureMap) document.eGet(group);
+		assertThat(featureMap)
+				.extracting(entry -> entry.getEStructuralFeature().getName())
+				.containsExactly("text", "child", "text", "child");
+		assertThat(featureMap.stream()
+				.filter(entry -> entry.getEStructuralFeature() == text)
+				.map(FeatureMap.Entry::getValue))
+				.containsExactly("custom-text-1", "custom-text-2");
+		final var children = EMFUtils.getAsEObjectsList(document, child);
+		assertThat(children).hasSize(2)
+				.allSatisfy(value -> {
+					assertThat(value.eContainer()).isSameAs(document);
+					assertThat(value.eGet(childClass.getEStructuralFeature("name")))
+							.isNotNull();
+				});
+		assertThat(containmentCalls).hasValue(2);
+		assertThat(attributeCalls).hasValue(2);
+		assertThat(crossReferenceCalls).hasValue(0);
+	}
+
+	@Test
+	void maxDepthSuppressesOnlyMixedFeatureMapContainmentCreation() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		final var documentClass = assertEClassExists(ePackage, "Document");
+		final var childClass = assertEClassExists(ePackage, "Child");
+		final var group = assertEAttributeExists(documentClass, "group");
+		final var child = assertEReferenceExists(documentClass, "child");
+		final var targets = assertEReferenceExists(documentClass, "targets");
+		final var childCreations = new AtomicInteger();
+		populator.setFeatureMapMaxCountFor(group, 3);
+		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public EObject createValue(final EObject owner, final EReference reference) {
+				childCreations.incrementAndGet();
+				return super.createValue(owner, reference);
+			}
+		});
+		populator.setMaxDepth(0);
+		final var document = createInstance(ePackage, "Document");
+
+		populator.populateEObjects(document);
+
+		assertThat((FeatureMap) document.eGet(group))
+				.extracting(entry -> entry.getEStructuralFeature().getName())
+				.containsExactly("text");
+		assertThat(EMFUtils.getAsEObjectsList(document, child)).isEmpty();
+		assertThat(EMFUtils.getAsEObjectsList(document, targets)).isEmpty();
+		assertThat(childCreations).hasValue(0);
+
+		final var childRoot = EcoreUtil.create(childClass);
+		populator.populateEObjects(childRoot);
+		assertThat(childRoot.eGet(childClass.getEStructuralFeature("name"))).isNotNull();
+	}
+
+	@Test
+	void containmentOnlyFeatureMapStillHonorsMaximumDepth() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "libraryxsdext.ecore");
+		final var libraryClass = assertEClassExists(ePackage, "Library");
+		final var group = assertEAttributeExists(libraryClass, "group");
+		final var library = createInstance(ePackage, "Library");
+		populator.setMaxDepth(0);
+
+		populator.populateEObjects(library);
+
+		assertThat((FeatureMap) library.eGet(group)).isEmpty();
+		assertThat(library.eGet(libraryClass.getEStructuralFeature("name"))).isNotNull();
+	}
+
+	@Test
+	void featureMapPlanningPrecedesOrdinaryAttributePopulation() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "libraryxsdext.ecore");
+		final var libraryClass = assertEClassExists(ePackage, "Library");
+		final var name = assertEAttributeExists(libraryClass, "name");
+		final var plannedBeforeName = new AtomicInteger();
+		populator.setFeatureMapSetter(new EMFFeatureMapSetter() {
+			@Override
+			public FeatureMapPlan createPlan(final EObject owner,
+					final EAttribute featureMapAttribute) {
+				if (!owner.eIsSet(name)) {
+					plannedBeforeName.incrementAndGet();
+				}
+				return super.createPlan(owner, featureMapAttribute);
+			}
+		});
+		final var library = createInstance(ePackage, "Library");
+
+		populator.populateEObjects(library);
+
+		assertThat(plannedBeforeName).hasValue(1);
+		assertThat(library.eIsSet(name)).isTrue();
+	}
+
+	@Test
+	void consecutivePopulationCallsDoNotRematerializeEarlierPlans() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		final var documentClass = assertEClassExists(ePackage, "Document");
+		final var group = assertEAttributeExists(documentClass, "group");
+		final var materializedOwners = new ArrayList<EObject>();
+		populator.setFeatureMapDefaultMaxCount(3);
+		populator.setFeatureMapSetter(new EMFFeatureMapSetter() {
+			@Override
+			public Collection<EObject> materializeStructuralFeatures(final FeatureMapPlan plan,
+					final boolean containmentAllowed) {
+				materializedOwners.add(plan.owner());
+				return super.materializeStructuralFeatures(plan, containmentAllowed);
+			}
+		});
+		final var first = createInstance(ePackage, "Document");
+		final var second = createInstance(ePackage, "Document");
+
+		populator.populateEObjects(first);
+		final var firstSize = ((FeatureMap) first.eGet(group)).size();
+		populator.populateEObjects(second);
+
+		assertThat(materializedOwners).containsExactly(first, second);
+		assertThat((FeatureMap) first.eGet(group)).hasSize(firstSize);
+		assertThat((FeatureMap) second.eGet(group)).isNotEmpty();
 	}
 
 	// ============= Tests for setXXXDefaultMaxCount and setXXXMaxCountFor methods =============
