@@ -20,8 +20,30 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFFeatureMapSetter.FeatureMap
  * Populates existing EMF {@link EObject EObjects} with sample data.
  * This includes setting attribute values and populating both containment
  * and cross references, with support for configurable multi-valued
- * counts and maximum depth for recursive population.
- * It also handles feature maps, which allow heterogeneous collections.
+ * counts and maximum depth for recursive containment expansion.
+ *
+ * <p>A FeatureMap is an ordered heterogeneous group: its members may be
+ * attributes, containment references, or non-containment references. The
+ * {@link EMFFeatureMapSetter} coordinator owns the total entry count, the
+ * frozen member order, and entry insertion, while one value at a time is
+ * obtained through the ordinary semantic setters
+ * ({@link EMFAttributeSetter#generateValue(EObject, org.eclipse.emf.ecore.EAttribute)},
+ * {@link EMFContainmentReferenceSetter#createValue(EObject, EReference)},
+ * {@link EMFCrossReferenceSetter#selectValue(EObject, EReference)}).</p>
+ *
+ * <p>FeatureMap group members use the same customization as ordinary features:
+ * {@link #functionForAttribute(EAttribute, EMFAttributeValueFunction)},
+ * {@link #functionForContainmentReference(EReference, EMFContainmentReferenceValueFunction)},
+ * and {@link #functionForCrossReference(EReference, EMFCrossReferenceValueFunction)}.
+ * Replacing an ordinary setter also replaces the delegate used for the
+ * corresponding FeatureMap member kind; replacing the FeatureMap setter installs
+ * all three currently configured ordinary setters into it.</p>
+ *
+ * <p>FeatureMap plans are frozen before ordinary attribute population. Attribute
+ * members materialize independently of depth, containment members only when
+ * containment expansion is still allowed, and non-containment members after all
+ * containment expansion, before ordinary cross-references, preserving the frozen
+ * order. Maximum depth therefore limits containment creation only.</p>
  *
  * <p>This class performs only the population step: callers create the root objects and, when
  * required, put them in resources and save those resources themselves. For example, an object
@@ -113,7 +135,7 @@ public class EMFInstancePopulator {
 	}
 
 	/**
-	 * Returns the feature map setter used for populating EMF feature maps.
+	 * Returns the feature map coordinator used for populating EMF feature maps.
 	 *
 	 * @return the feature map setter
 	 */
@@ -122,7 +144,8 @@ public class EMFInstancePopulator {
 	}
 
 	/**
-	 * Replace the attribute setter.
+	 * Replace the attribute setter. The replacement also becomes the delegate
+	 * used for attribute FeatureMap group members.
 	 *
 	 * @param attributeSetter the attribute setter to use
 	 */
@@ -132,7 +155,8 @@ public class EMFInstancePopulator {
 	}
 
 	/**
-	 * Replace the cross-reference setter.
+	 * Replace the cross-reference setter. The replacement also becomes the delegate
+	 * used for non-containment FeatureMap group members.
 	 *
 	 * @param crossReferenceSetter the cross-reference setter to use
 	 */
@@ -142,7 +166,8 @@ public class EMFInstancePopulator {
 	}
 
 	/**
-	 * Replace the containment reference setter.
+	 * Replace the containment reference setter. The replacement also becomes the
+	 * delegate used for containment FeatureMap group members.
 	 *
 	 * @param containmentReferenceSetter the containment reference setter to use
 	 */
@@ -152,7 +177,8 @@ public class EMFInstancePopulator {
 	}
 
 	/**
-	 * Replace the feature map setter.
+	 * Replace the feature map setter. All three currently installed ordinary
+	 * setters are injected into the replacement as its value delegates.
 	 *
 	 * @param featureMapSetter the feature map setter to use
 	 */
@@ -256,8 +282,11 @@ public class EMFInstancePopulator {
 	}
 
 	/**
-	 * Set the maximum recursion depth for populating containment references.
-	 * Attributes are always populated regardless of depth.
+	 * Set the maximum recursion depth for containment expansion.
+	 * Attributes are always populated regardless of depth. FeatureMap attribute
+	 * members are also populated at the depth boundary, and eligible FeatureMap
+	 * cross-references are still populated later; only containment creation,
+	 * ordinary or through a FeatureMap, is suppressed there.
 	 * A root is at depth {@code 0}; with a maximum depth of {@code 1}, its direct
 	 * contained objects are created and have their attributes populated, but their
 	 * containment references are not expanded.
@@ -347,7 +376,10 @@ public class EMFInstancePopulator {
 	/**
 	 * Populate the given EObjects with sample data.
 	 * This includes setting attribute values and populating both containment
-	 * and cross references, up to the configured maximum depth.
+	 * and cross references, up to the configured maximum containment depth.
+	 * FeatureMap attribute and containment members materialize during structural
+	 * population; FeatureMap cross-references materialize after containment
+	 * expansion and before ordinary cross-references.
 	 *
 	 * <p>All roots are populated before cross-references are assigned. Supply related roots together
 	 * so that each one can be selected as a cross-reference candidate for the others:</p>

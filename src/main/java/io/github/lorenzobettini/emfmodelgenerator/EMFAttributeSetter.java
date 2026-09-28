@@ -156,6 +156,7 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	 * enum types, uses the configured enum literal selector strategy to select
 	 * enum literals (by default, round-robin). If a custom function is configured
 	 * for the attribute, its result is returned directly, including {@code null}.
+	 * The FeatureMap coordinator reuses this operation for attribute group members.
 	 * 
 	 * @param owner the EObject owning the attribute; default generation uses it for
 	 *              counters and generated strings, and custom functions receive it

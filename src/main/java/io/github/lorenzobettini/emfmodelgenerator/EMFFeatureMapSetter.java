@@ -13,17 +13,27 @@ import org.eclipse.emf.ecore.util.FeatureMap;
 import org.eclipse.emf.ecore.util.FeatureMapUtil;
 
 /**
- * Coordinates population of EMF FeatureMaps. FeatureMaps allow heterogeneous
- * collections where different structural-feature types can be mixed. This
- * coordinator owns group-level count, member-selection, planning, ordering,
- * and entry insertion while delegating value semantics to the ordinary
- * attribute, containment-reference, and cross-reference setters.
+ * Coordinates population of EMF FeatureMaps. A FeatureMap is an ordered
+ * heterogeneous group whose members may be attributes, containment references,
+ * or non-containment references. This coordinator owns group-level count,
+ * member-selection, planning, ordering, and entry insertion while delegating
+ * value semantics to the ordinary attribute, containment-reference, and
+ * cross-reference setters.
+ *
+ * <p>Group members use the same per-feature customization as ordinary features:
+ * {@code functionForAttribute}, {@code functionForContainmentReference}, and
+ * {@code functionForCrossReference}. There is no FeatureMap-specific value
+ * function. Replacing an ordinary setter in {@code EMFInstancePopulator} also
+ * replaces the corresponding delegate used here.</p>
  *
  * <p>Each physical FeatureMap is represented by a per-population-call
  * {@link FeatureMapPlan}. Planning freezes the complete heterogeneous member
  * sequence without generating values. Structural materialization then handles
- * attribute and containment-reference members. After containment expansion,
- * cross-reference materialization handles non-containment-reference members.</p>
+ * attribute and containment-reference members; containment members are skipped
+ * when containment expansion is not allowed at the current depth. After
+ * containment expansion, cross-reference materialization handles
+ * non-containment-reference members while preserving the frozen order. An
+ * already-set physical map produces an empty plan and is left unchanged.</p>
  *
  * @author Lorenzo Bettini
  */

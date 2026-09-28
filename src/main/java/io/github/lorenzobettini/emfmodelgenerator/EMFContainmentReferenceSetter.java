@@ -47,7 +47,8 @@ public class EMFContainmentReferenceSetter extends EMFInstanceCreatorFeatureSett
 	 * Creates or obtains one value for a containment reference without assigning it
 	 * to the owner. A configured containment function is tried first. If it returns
 	 * {@code null} or an already-contained EObject, the configured instantiable
-	 * subclass selector is used for default creation.
+	 * subclass selector is used for default creation. The FeatureMap coordinator
+	 * reuses this operation for containment group members.
 	 *
 	 * @param owner the EObject owning the containment reference
 	 * @param containmentReference the containment reference for which to create a value

@@ -8,7 +8,9 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 
 /**
  * Round-robin selector for feature map group members.
- * Selects structural features that belong to a feature map group in a round-robin fashion.
+ * Selects the heterogeneous structural features that belong to a feature map
+ * group (attributes, containment references, and non-containment references)
+ * in deterministic Ecore feature order, in a round-robin fashion.
  * 
  * <p>This class maintains state across multiple calls to ensure that when selecting
  * group members from a feature map, we start from where we left off rather than always

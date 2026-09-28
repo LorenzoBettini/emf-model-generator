@@ -406,6 +406,8 @@ public final class EMFUtils {
 	/**
 	 * Find all structural features that are part of the given feature map group.
 	 * These are features with an ExtendedMetaData annotation pointing to the feature map.
+	 * Group members may be attributes, containment references, or non-containment
+	 * references.
 	 *
 	 * @param featureMapAttribute the feature map attribute
 	 * @return structural features that are part of the group, in EMF feature order

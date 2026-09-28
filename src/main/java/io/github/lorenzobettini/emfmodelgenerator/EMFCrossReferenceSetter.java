@@ -173,6 +173,8 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	 * to the owner. A configured function is tried first. A {@code null} or invalid
 	 * custom candidate falls back to the configured candidate selector. Default
 	 * candidates are filtered by the cycle policy and opposite multiplicity.
+	 * The FeatureMap coordinator reuses this operation for non-containment
+	 * group members.
 	 *
 	 * @param owner the EObject owning the cross-reference
 	 * @param crossReference the cross-reference for which to select a value
