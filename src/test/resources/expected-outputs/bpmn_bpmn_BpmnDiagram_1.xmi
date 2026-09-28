@@ -41,8 +41,8 @@
       documentation="MessagingEdge_documentation_1"
       name="MessagingEdge_name_1"
       ncname="MessagingEdge_ncname_1"
-      source="name4"
-      target="name5"/>
+      source="name5"
+      target="name4"/>
   <messages
       iD="name7"
       documentation="MessagingEdge_documentation_2"

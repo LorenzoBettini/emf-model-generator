@@ -348,6 +348,20 @@ class EMFUtilsTest {
 	}
 
 	@Test
+	void testIsFeatureMapWithEquivalentFeatureMapEntryDataType() {
+		var equivalentEntryType = ECORE_FACTORY.createEDataType();
+		equivalentEntryType.setName("EFeatureMapEntry");
+		equivalentEntryType.setInstanceClassName("org.eclipse.emf.ecore.util.FeatureMap$Entry");
+		var featureMapAttr = ECORE_FACTORY.createEAttribute();
+		featureMapAttr.setName("featureMapAttribute");
+		featureMapAttr.setEType(equivalentEntryType);
+
+		assertThat(FeatureMapUtil.isFeatureMap(featureMapAttr)).isTrue();
+		assertThat(EMFUtils.isFeatureMap(featureMapAttr)).isTrue();
+		assertThat(EMFUtils.isValidAttribute(featureMapAttr)).isFalse();
+	}
+
+	@Test
 	void testIsFeatureMapWithNonFeatureMapAttribute() {
 		EAttribute normalAttr = ECORE_FACTORY.createEAttribute();
 		normalAttr.setName("normalAttribute");

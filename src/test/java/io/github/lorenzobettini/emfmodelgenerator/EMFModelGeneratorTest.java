@@ -50,6 +50,8 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.util.Diagnostician;
 import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.emf.ecore.util.FeatureMap;
+import org.eclipse.emf.ecore.util.FeatureMapUtil;
 import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
 import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
@@ -4074,8 +4076,55 @@ class EMFModelGeneratorTest {
 				.findFirst()
 				.orElseThrow();
 		var bpmnDiagramClass = assertEClassExists(bpmnPackage, "BpmnDiagram");
+		var messageVertexClass = assertEClassExists(bpmnPackage, "MessageVertex");
+		var poolClass = assertEClassExists(bpmnPackage, "Pool");
 		var poolsReference = assertEReferenceExists(bpmnDiagramClass, "pools");
 		var messagesReference = assertEReferenceExists(bpmnDiagramClass, "messages");
+		var orderedMessages = assertEAttributeExists(poolClass, "orderedMessages");
+		var incomingMessages = assertEReferenceExists(poolClass, "incomingMessages");
+		var outgoingMessages = assertEReferenceExists(poolClass, "outgoingMessages");
+		var messagingEdgeClass = assertEClassExists(bpmnPackage, "MessagingEdge");
+		var messageSource = assertEReferenceExists(messagingEdgeClass, "source");
+		var messageTarget = assertEReferenceExists(messagingEdgeClass, "target");
+
+		assertThat(orderedMessages.getEContainingClass()).isSameAs(messageVertexClass);
+		assertThat(orderedMessages.isMany()).isTrue();
+		assertThat(orderedMessages.isUnique()).isFalse();
+		assertThat(FeatureMapUtil.isFeatureMap(orderedMessages)).isTrue();
+		assertThat(EMFUtils.findFeatureMapGroupMembers(orderedMessages))
+				.containsExactly(incomingMessages, outgoingMessages);
+		assertThat(List.of(incomingMessages, outgoingMessages)).allSatisfy(reference -> {
+			assertThat(reference.isMany()).isTrue();
+			assertThat(reference.isContainment()).isFalse();
+			assertThat(reference.isDerived()).isTrue();
+			assertThat(reference.isTransient()).isTrue();
+			assertThat(reference.isVolatile()).isTrue();
+			assertThat(reference.getEReferenceType()).isSameAs(messagingEdgeClass);
+		});
+		assertThat(incomingMessages.getEOpposite()).isSameAs(messageTarget);
+		assertThat(outgoingMessages.getEOpposite()).isSameAs(messageSource);
+		assertThat(messageTarget.getEOpposite()).isSameAs(incomingMessages);
+		assertThat(messageSource.getEOpposite()).isSameAs(outgoingMessages);
+		assertThat(List.of(messageSource, messageTarget)).allSatisfy(reference -> {
+			assertThat(reference.isMany()).isFalse();
+			assertThat(reference.isContainment()).isFalse();
+			assertThat(reference.getEReferenceType()).isSameAs(messageVertexClass);
+		});
+
+		var featureMapSelections = new ArrayList<Map.Entry<EReference, EObject>>();
+		generator.getInstancePopulator().setCrossReferenceSetter(
+				new EMFCrossReferenceSetter() {
+					@Override
+					public EObject selectValue(final EObject owner,
+							final EReference crossReference) {
+						var selected = super.selectValue(owner, crossReference);
+						if (crossReference == incomingMessages
+								|| crossReference == outgoingMessages) {
+							featureMapSelections.add(Map.entry(crossReference, selected));
+						}
+						return selected;
+					}
+				});
 
 		// The default depth expands recursively through optional Pool/Graph containments.
 		// One level retains the diagram's pools, messages, and artifacts without growing
@@ -4089,9 +4138,33 @@ class EMFModelGeneratorTest {
 		var messages = EMFUtils.getAsEObjectsList(generatedDiagram, messagesReference);
 		assertThat(pools).hasSize(2);
 		assertThat(messages).hasSize(2);
-		var messagingEdgeClass = assertEClassExists(bpmnPackage, "MessagingEdge");
-		var messageSource = assertEReferenceExists(messagingEdgeClass, "source");
-		var messageTarget = assertEReferenceExists(messagingEdgeClass, "target");
+		assertThat(featureMapSelections).extracting(Map.Entry::getKey)
+				.containsExactly(incomingMessages, outgoingMessages,
+						incomingMessages, outgoingMessages);
+		assertThat(featureMapSelections).extracting(Map.Entry::getValue)
+				.allSatisfy(value -> assertThat(value).isIn(messages));
+		var generatedMessagingEdges = new ArrayList<EObject>();
+		generatedDiagram.eAllContents().forEachRemaining(candidate -> {
+			if (candidate.eClass() == messagingEdgeClass) {
+				generatedMessagingEdges.add(candidate);
+			}
+		});
+		assertThat(generatedMessagingEdges).containsExactlyElementsOf(messages);
+		assertThat(pools).zipSatisfy(
+				List.of(List.of(messages.get(0), messages.get(1)),
+						List.of(messages.get(1), messages.get(0))),
+				(pool, expectedValues) -> {
+			var entries = (FeatureMap) pool.eGet(orderedMessages);
+			assertThat(entries).extracting(FeatureMap.Entry::getEStructuralFeature)
+					.containsExactly(incomingMessages, outgoingMessages);
+			assertThat(entries).extracting(FeatureMap.Entry::getValue)
+					.containsExactlyElementsOf(expectedValues);
+			assertThat(entries).allSatisfy(entry -> {
+				var edge = (EObject) entry.getValue();
+				var opposite = ((EReference) entry.getEStructuralFeature()).getEOpposite();
+				assertThat(edge.eGet(opposite)).isSameAs(pool);
+			});
+		});
 		assertThat(messages).allSatisfy(message -> {
 			assertThat(message.eGet(messageSource)).isIn(pools);
 			assertThat(message.eGet(messageTarget)).isIn(pools);

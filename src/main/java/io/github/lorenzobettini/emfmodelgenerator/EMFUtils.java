@@ -11,11 +11,11 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
-import org.eclipse.emf.ecore.EcorePackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.util.ExtendedMetaData;
+import org.eclipse.emf.ecore.util.FeatureMapUtil;
 
 /**
  * Utility class for EMF models: validation, checks, and other utility methods.
@@ -83,8 +83,7 @@ public final class EMFUtils {
 	 * @return true if the feature is a feature map, false otherwise
 	 */
 	public static boolean isFeatureMap(final EStructuralFeature feature) {
-		return feature instanceof EAttribute attribute &&
-				attribute.getEAttributeType() == EcorePackage.Literals.EFEATURE_MAP_ENTRY;
+		return feature instanceof EAttribute && FeatureMapUtil.isFeatureMap(feature);
 	}
 
 	private static boolean isValidCommon(final EStructuralFeature feature) {
