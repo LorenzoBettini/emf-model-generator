@@ -105,8 +105,7 @@ public abstract class EMFInstanceCreatorFeatureSetter<T extends EStructuralFeatu
 		if (instantiableSubClass == null) {
 			return null;
 		}
-		final EObject instance = EcoreUtil.create(instantiableSubClass);
-		return instance;
+		return EcoreUtil.create(instantiableSubClass);
 	}
 
 }
