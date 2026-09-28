@@ -171,10 +171,8 @@ public class EMFFeatureMapSetter extends EMFCountConfigurableFeatureSetter<EAttr
 		final int count = EMFUtils.getEffectiveCount(featureMapAttribute,
 				getMaxCountFor(owner, featureMapAttribute));
 		final var selectedMembers = new ArrayList<EStructuralFeature>(count);
-		for (int i = 0; i < count; i++) {
-			if (!groupMemberSelector.hasCandidates(owner, featureMapAttribute)) {
-				break;
-			}
+		for (int i = 0; i < count
+				&& groupMemberSelector.hasCandidates(owner, featureMapAttribute); i++) {
 			final var groupMember =
 					groupMemberSelector.getNextCandidate(owner, featureMapAttribute);
 			if (groupMember == null) {
