@@ -22,8 +22,8 @@ import org.eclipse.emf.ecore.util.FeatureMapUtil;
  * <p>Each physical FeatureMap is represented by a per-population-call
  * {@link FeatureMapPlan}. Planning freezes the complete heterogeneous member
  * sequence without generating values. Structural materialization then handles
- * attribute and containment-reference members; non-containment-reference
- * members remain pending for the later cross-reference phase.</p>
+ * attribute and containment-reference members. After containment expansion,
+ * cross-reference materialization handles non-containment-reference members.</p>
  *
  * @author Lorenzo Bettini
  */
@@ -217,6 +217,43 @@ public class EMFFeatureMapSetter extends EMFCountConfigurableFeatureSetter<EAttr
 			}
 		}
 		return createdEObjects;
+	}
+
+	/**
+	 * Materializes the non-containment-reference portions of a plan. Values are
+	 * selected from existing EObjects by the current cross-reference setter. Null
+	 * selections remain unmaterialized, and unique member views skip values already
+	 * exposed by that same member while candidates remain available.
+	 *
+	 * @param plan the ordered FeatureMap plan
+	 */
+	public void materializeCrossReferences(final FeatureMapPlan plan) {
+		for (int i = 0; i < plan.groupMembers().size(); i++) {
+			final var member = plan.groupMembers().get(i);
+			if (!plan.isMaterialized(i) && member instanceof EReference reference
+					&& !reference.isContainment()) {
+				insertIfNotNull(plan, i, member,
+						selectUniqueCrossReferenceValue(plan.owner(), reference));
+			}
+		}
+	}
+
+	private EObject selectUniqueCrossReferenceValue(final EObject owner,
+			final EReference reference) {
+		EObject value = crossReferenceSetter.selectValue(owner, reference);
+		if (!reference.isUnique()) {
+			return value;
+		}
+
+		final var currentValues = EMFUtils.getAsEObjectsList(owner, reference);
+		final EObject firstValue = value;
+		while (value != null && currentValues.contains(value)) {
+			value = crossReferenceSetter.selectValue(owner, reference);
+			if (value == firstValue) {
+				return null;
+			}
+		}
+		return value;
 	}
 
 	private boolean insertIfNotNull(final FeatureMapPlan plan, final int ordinal,

@@ -31,7 +31,8 @@
       </eAnnotations>
     </eStructuralFeatures>
     <eStructuralFeatures xsi:type="ecore:EReference" name="related" upperBound="-1"
-        eType="#//Target" volatile="true" transient="true" derived="true">
+        eType="#//Target" volatile="true" transient="true" derived="true"
+        eOpposite="#//Target/document">
       <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
         <details key="kind" value="element"/>
         <details key="name" value="related"/>
@@ -40,6 +41,7 @@
     </eStructuralFeatures>
     <eStructuralFeatures xsi:type="ecore:EReference" name="targets" upperBound="-1"
         eType="#//Target" containment="true" resolveProxies="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="favorite" eType="#//Target"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Child">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name"
@@ -48,5 +50,7 @@
   <eClassifiers xsi:type="ecore:EClass" name="Target">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name"
         eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="document" eType="#//Document"
+        eOpposite="#//Document/related"/>
   </eClassifiers>
 </ecore:EPackage>

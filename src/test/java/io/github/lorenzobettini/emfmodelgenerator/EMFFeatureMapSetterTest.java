@@ -7,6 +7,7 @@ import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.loadEcoreM
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.emf.ecore.EAttribute;
@@ -374,6 +375,140 @@ class EMFFeatureMapSetterTest {
 	}
 
 	@Test
+	void crossReferenceMaterializationRestoresTheFrozenOrderWithExistingValues() {
+		final var fixture = mixedFixture();
+		final var firstTarget = EcoreUtil.create(fixture.targetClass());
+		final var secondTarget = EcoreUtil.create(fixture.targetClass());
+		final var selectedTargets = List.of(firstTarget, secondTarget).iterator();
+		setter.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+			@Override
+			public EObject selectValue(final EObject owner, final EReference reference) {
+				return selectedTargets.next();
+			}
+		});
+		setter.setMaxCountFor(fixture.group(), 6);
+		final var plan = setter.createPlan(fixture.document(), fixture.group());
+		final var created = setter.materializeStructuralFeatures(plan, true);
+
+		setter.materializeCrossReferences(plan);
+
+		final var featureMap = (FeatureMap) fixture.document().eGet(fixture.group());
+		assertThat(featureMap)
+				.extracting(entry -> entry.getEStructuralFeature().getName())
+				.containsExactly("text", "child", "related", "text", "child", "related");
+		assertThat(EMFUtils.getAsEObjectsList(fixture.document(), fixture.related()))
+				.containsExactly(firstTarget, secondTarget);
+		assertThat(featureMap.getValue(2)).isSameAs(firstTarget);
+		assertThat(featureMap.getValue(5)).isSameAs(secondTarget);
+		assertThat(created).hasSize(2);
+		assertThat(fixture.document().eContents()).containsExactlyElementsOf(created);
+		assertThat(firstTarget.eContainer()).isNull();
+		assertThat(secondTarget.eContainer()).isNull();
+		assertThat(firstTarget.eGet(fixture.targetDocument())).isSameAs(fixture.document());
+		assertThat(secondTarget.eGet(fixture.targetDocument())).isSameAs(fixture.document());
+		assertThat(plan.isMaterialized(2)).isTrue();
+		assertThat(plan.isMaterialized(5)).isTrue();
+
+		setter.materializeCrossReferences(plan);
+		assertThat(featureMap).hasSize(6);
+	}
+
+	@Test
+	void nullCrossReferenceLeavesNoPlaceholderAndDoesNotShiftALaterValue() {
+		final var fixture = mixedFixture();
+		final var target = EcoreUtil.create(fixture.targetClass());
+		final var calls = new AtomicInteger();
+		setter.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+			@Override
+			public EObject selectValue(final EObject owner, final EReference reference) {
+				return calls.getAndIncrement() == 0 ? null : target;
+			}
+		});
+		setter.setMaxCountFor(fixture.group(), 6);
+		final var plan = setter.createPlan(fixture.document(), fixture.group());
+		setter.materializeStructuralFeatures(plan, true);
+
+		setter.materializeCrossReferences(plan);
+
+		final var featureMap = (FeatureMap) fixture.document().eGet(fixture.group());
+		assertThat(featureMap)
+				.extracting(entry -> entry.getEStructuralFeature().getName())
+				.containsExactly("text", "child", "text", "child", "related");
+		assertThat(featureMap.getValue(4)).isSameAs(target);
+		assertThat(plan.isMaterialized(2)).isFalse();
+		assertThat(plan.isMaterialized(5)).isTrue();
+		assertThat(calls).hasValue(2);
+	}
+
+	@Test
+	void uniqueCrossReferenceSkipsDuplicatesAndStopsAfterCandidateWrap() {
+		final var fixture = mixedFixture();
+		final var firstTarget = EcoreUtil.create(fixture.targetClass());
+		final var secondTarget = EcoreUtil.create(fixture.targetClass());
+		final var selections = List.of(firstTarget, firstTarget, secondTarget).iterator();
+		setter.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+			@Override
+			public EObject selectValue(final EObject owner, final EReference reference) {
+				return selections.next();
+			}
+		});
+		setter.setGroupMemberSelectorStrategy(selectorReturning(fixture.related()));
+		setter.setMaxCountFor(fixture.group(), 2);
+		final var plan = setter.createPlan(fixture.document(), fixture.group());
+
+		setter.materializeCrossReferences(plan);
+
+		assertThat(EMFUtils.getAsEObjectsList(fixture.document(), fixture.related()))
+				.containsExactly(firstTarget, secondTarget);
+
+		final var anotherFixture = mixedFixture();
+		final var onlyTarget = EcoreUtil.create(anotherFixture.targetClass());
+		final var calls = new AtomicInteger();
+		setter.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+			@Override
+			public EObject selectValue(final EObject owner, final EReference reference) {
+				calls.incrementAndGet();
+				return onlyTarget;
+			}
+		});
+		setter.setGroupMemberSelectorStrategy(selectorReturning(anotherFixture.related()));
+		setter.setMaxCountFor(anotherFixture.group(), 2);
+		final var exhaustedPlan = setter.createPlan(
+				anotherFixture.document(), anotherFixture.group());
+
+		setter.materializeCrossReferences(exhaustedPlan);
+
+		assertThat(EMFUtils.getAsEObjectsList(
+				anotherFixture.document(), anotherFixture.related()))
+				.containsExactly(onlyTarget);
+		assertThat(calls).hasValue(3);
+		assertThat(exhaustedPlan.isMaterialized(1)).isFalse();
+	}
+
+	@Test
+	void nonUniqueCrossReferenceAllowsRepeatedValues() {
+		final var fixture = mixedFixture();
+		fixture.related().setEOpposite(null);
+		fixture.targetDocument().setEOpposite(null);
+		fixture.related().setUnique(false);
+		final var target = EcoreUtil.create(fixture.targetClass());
+		setter.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+			@Override
+			public EObject selectValue(final EObject owner, final EReference reference) {
+				return target;
+			}
+		});
+		setter.setGroupMemberSelectorStrategy(selectorReturning(fixture.related()));
+		setter.setMaxCountFor(fixture.group(), 2);
+		final var plan = setter.createPlan(fixture.document(), fixture.group());
+
+		setter.materializeCrossReferences(plan);
+
+		assertThat(EMFUtils.getAsEObjectsList(fixture.document(), fixture.related()))
+				.containsExactly(target, target);
+	}
+
+	@Test
 	void containmentCanBeSuppressedWithoutSuppressingAttributes() {
 		final var fixture = mixedFixture();
 		setter.setMaxCountFor(fixture.group(), 3);
@@ -405,6 +540,7 @@ class EMFFeatureMapSetterTest {
 		final var plan = setter.createPlan(fixture.document(), fixture.group());
 
 		assertThat(setter.materializeStructuralFeatures(plan, true)).isEmpty();
+		setter.materializeCrossReferences(plan);
 		assertThat((FeatureMap) fixture.document().eGet(fixture.group())).isEmpty();
 		assertThat(plan.isMaterialized(0)).isFalse();
 	}
@@ -544,10 +680,14 @@ class EMFFeatureMapSetterTest {
 				EcoreUtil.create(documentClass),
 				assertEAttributeExists(documentClass, "group"),
 				assertEAttributeExists(documentClass, "text"),
-				assertEReferenceExists(documentClass, "child"));
+				assertEReferenceExists(documentClass, "child"),
+				assertEReferenceExists(documentClass, "related"),
+				assertEClassExists(mixedPackage, "Target"),
+				assertEReferenceExists(assertEClassExists(mixedPackage, "Target"), "document"));
 	}
 
 	private record MixedFixture(EObject document, EAttribute group, EAttribute text,
-			EReference child) {
+			EReference child, EReference related, EClass targetClass,
+			EReference targetDocument) {
 	}
 }

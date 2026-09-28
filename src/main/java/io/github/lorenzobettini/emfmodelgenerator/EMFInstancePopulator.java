@@ -375,6 +375,9 @@ public class EMFInstancePopulator {
 		// reset cross reference setter state
 		// so that candidates for cross-references are recomputed
 		crossReferenceSetter.reset();
+		for (var plan : featureMapPlans) {
+			featureMapSetter.materializeCrossReferences(plan);
+		}
 
 		// after having populated all containments up to max depth, populate cross references
 		// for all root instances...
