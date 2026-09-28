@@ -14,7 +14,6 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 import io.github.lorenzobettini.emfmodelgenerator.EMFAttributeSetter.EMFAttributeValueFunction;
 import io.github.lorenzobettini.emfmodelgenerator.EMFContainmentReferenceSetter.EMFContainmentReferenceValueFunction;
 import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter.EMFCrossReferenceValueFunction;
-import io.github.lorenzobettini.emfmodelgenerator.EMFFeatureMapSetter.EMFFeatureMapValueFunction;
 
 /**
  * Populates existing EMF {@link EObject EObjects} with sample data.
@@ -80,6 +79,9 @@ public class EMFInstancePopulator {
 		this.crossReferenceSetter = new EMFCrossReferenceSetter();
 		this.containmentReferenceSetter = new EMFContainmentReferenceSetter();
 		this.featureMapSetter = new EMFFeatureMapSetter();
+		featureMapSetter.setAttributeSetter(attributeSetter);
+		featureMapSetter.setContainmentReferenceSetter(containmentReferenceSetter);
+		featureMapSetter.setCrossReferenceSetter(crossReferenceSetter);
 	}
 
 	/**
@@ -125,6 +127,7 @@ public class EMFInstancePopulator {
 	 */
 	public void setAttributeSetter(EMFAttributeSetter attributeSetter) {
 		this.attributeSetter = attributeSetter;
+		featureMapSetter.setAttributeSetter(attributeSetter);
 	}
 
 	/**
@@ -134,6 +137,7 @@ public class EMFInstancePopulator {
 	 */
 	public void setCrossReferenceSetter(EMFCrossReferenceSetter crossReferenceSetter) {
 		this.crossReferenceSetter = crossReferenceSetter;
+		featureMapSetter.setCrossReferenceSetter(crossReferenceSetter);
 	}
 
 	/**
@@ -143,6 +147,7 @@ public class EMFInstancePopulator {
 	 */
 	public void setContainmentReferenceSetter(EMFContainmentReferenceSetter containmentReferenceSetter) {
 		this.containmentReferenceSetter = containmentReferenceSetter;
+		featureMapSetter.setContainmentReferenceSetter(containmentReferenceSetter);
 	}
 
 	/**
@@ -152,6 +157,9 @@ public class EMFInstancePopulator {
 	 */
 	public void setFeatureMapSetter(EMFFeatureMapSetter featureMapSetter) {
 		this.featureMapSetter = featureMapSetter;
+		featureMapSetter.setAttributeSetter(attributeSetter);
+		featureMapSetter.setContainmentReferenceSetter(containmentReferenceSetter);
+		featureMapSetter.setCrossReferenceSetter(crossReferenceSetter);
 	}
 
 	/**
@@ -197,17 +205,6 @@ public class EMFInstancePopulator {
 	public void functionForContainmentReference(EReference reference,
 			EMFContainmentReferenceValueFunction function) {
 		containmentReferenceSetter.setFunctionFor(reference, function);
-	}
-
-	/**
-	 * Set a custom function for generating values for the given feature map group member.
-	 * 
-	 * @param groupMember the feature map group member EReference for which to set the function
-	 * @param function    the function to generate values for the group member
-	 */
-	public void functionForFeatureMapGroupMember(EReference groupMember,
-			EMFFeatureMapValueFunction function) {
-		featureMapSetter.setFunctionFor(groupMember, function);
 	}
 
 	/**

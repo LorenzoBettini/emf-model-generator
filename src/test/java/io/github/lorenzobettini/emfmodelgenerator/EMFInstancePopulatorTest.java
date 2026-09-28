@@ -33,6 +33,42 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class EMFInstancePopulatorTest {
+	private static final class RecordingFeatureMapSetter extends EMFFeatureMapSetter {
+		private EMFAttributeSetter attributeSetter;
+		private EMFContainmentReferenceSetter containmentReferenceSetter;
+		private EMFCrossReferenceSetter crossReferenceSetter;
+		private int attributeUpdates;
+		private int containmentUpdates;
+		private int crossReferenceUpdates;
+
+		@Override
+		public void setAttributeSetter(final EMFAttributeSetter attributeSetter) {
+			super.setAttributeSetter(attributeSetter);
+			this.attributeSetter = attributeSetter;
+			attributeUpdates++;
+		}
+
+		@Override
+		public void setContainmentReferenceSetter(
+				final EMFContainmentReferenceSetter containmentReferenceSetter) {
+			super.setContainmentReferenceSetter(containmentReferenceSetter);
+			this.containmentReferenceSetter = containmentReferenceSetter;
+			containmentUpdates++;
+		}
+
+		@Override
+		public void setCrossReferenceSetter(final EMFCrossReferenceSetter crossReferenceSetter) {
+			super.setCrossReferenceSetter(crossReferenceSetter);
+			this.crossReferenceSetter = crossReferenceSetter;
+			crossReferenceUpdates++;
+		}
+
+		private void resetUpdates() {
+			attributeUpdates = 0;
+			containmentUpdates = 0;
+			crossReferenceUpdates = 0;
+		}
+	}
 
 	private static final String TEST_INPUTS_DIR = "target/inputs";
 	private static final String TEST_OUTPUT_DIR = "target/test-output";
@@ -1476,10 +1512,130 @@ class EMFInstancePopulatorTest {
 	}
 
 	@Test
+	void constructorInjectsAllDefaultSettersIntoFeatureMapSetter()
+			throws ReflectiveOperationException {
+		final var featureMapSetter = populator.getFeatureMapSetter();
+
+		assertThat(readDelegate(featureMapSetter, "attributeSetter"))
+				.isSameAs(populator.getAttributeSetter());
+		assertThat(readDelegate(featureMapSetter, "containmentReferenceSetter"))
+				.isSameAs(populator.getContainmentReferenceSetter());
+		assertThat(readDelegate(featureMapSetter, "crossReferenceSetter"))
+				.isSameAs(populator.getCrossReferenceSetter());
+	}
+
+	private Object readDelegate(final EMFFeatureMapSetter featureMapSetter,
+			final String fieldName) throws ReflectiveOperationException {
+		final var field = EMFFeatureMapSetter.class.getDeclaredField(fieldName);
+		field.setAccessible(true);
+		return field.get(featureMapSetter);
+	}
+
+	@Test
 	void testSetFeatureMapSetter() {
 		final var customSetter = new EMFFeatureMapSetter();
 		populator.setFeatureMapSetter(customSetter);
 		assertThat(populator.getFeatureMapSetter()).isSameAs(customSetter);
+	}
+
+	@Test
+	void setterReplacementsPropagateDirectlyToFeatureMapSetter() {
+		final var featureMapSetter = new RecordingFeatureMapSetter();
+		populator.setFeatureMapSetter(featureMapSetter);
+
+		assertThat(featureMapSetter.attributeSetter).isSameAs(populator.getAttributeSetter());
+		assertThat(featureMapSetter.containmentReferenceSetter)
+				.isSameAs(populator.getContainmentReferenceSetter());
+		assertThat(featureMapSetter.crossReferenceSetter)
+				.isSameAs(populator.getCrossReferenceSetter());
+
+		featureMapSetter.resetUpdates();
+		final var attributeSetter = new EMFAttributeSetter();
+		populator.setAttributeSetter(attributeSetter);
+		assertThat(featureMapSetter.attributeSetter).isSameAs(attributeSetter);
+		assertThat(featureMapSetter.attributeUpdates).isEqualTo(1);
+		assertThat(featureMapSetter.containmentUpdates).isZero();
+		assertThat(featureMapSetter.crossReferenceUpdates).isZero();
+
+		featureMapSetter.resetUpdates();
+		final var containmentSetter = new EMFContainmentReferenceSetter();
+		populator.setContainmentReferenceSetter(containmentSetter);
+		assertThat(featureMapSetter.containmentReferenceSetter).isSameAs(containmentSetter);
+		assertThat(featureMapSetter.attributeUpdates).isZero();
+		assertThat(featureMapSetter.containmentUpdates).isEqualTo(1);
+		assertThat(featureMapSetter.crossReferenceUpdates).isZero();
+
+		featureMapSetter.resetUpdates();
+		final var crossReferenceSetter = new EMFCrossReferenceSetter();
+		populator.setCrossReferenceSetter(crossReferenceSetter);
+		assertThat(featureMapSetter.crossReferenceSetter).isSameAs(crossReferenceSetter);
+		assertThat(featureMapSetter.attributeUpdates).isZero();
+		assertThat(featureMapSetter.containmentUpdates).isZero();
+		assertThat(featureMapSetter.crossReferenceUpdates).isEqualTo(1);
+	}
+
+	@Test
+	void replacementFeatureMapSetterReceivesPreviouslyInstalledOrdinarySetters() {
+		final var attributeSetter = new EMFAttributeSetter();
+		final var containmentSetter = new EMFContainmentReferenceSetter();
+		final var crossReferenceSetter = new EMFCrossReferenceSetter();
+		populator.setAttributeSetter(attributeSetter);
+		populator.setContainmentReferenceSetter(containmentSetter);
+		populator.setCrossReferenceSetter(crossReferenceSetter);
+
+		final var featureMapSetter = new RecordingFeatureMapSetter();
+		populator.setFeatureMapSetter(featureMapSetter);
+
+		assertThat(featureMapSetter.attributeSetter).isSameAs(attributeSetter);
+		assertThat(featureMapSetter.containmentReferenceSetter).isSameAs(containmentSetter);
+		assertThat(featureMapSetter.crossReferenceSetter).isSameAs(crossReferenceSetter);
+		assertThat(featureMapSetter.attributeUpdates).isEqualTo(1);
+		assertThat(featureMapSetter.containmentUpdates).isEqualTo(1);
+		assertThat(featureMapSetter.crossReferenceUpdates).isEqualTo(1);
+	}
+
+	@Test
+	void replacementContainmentSetterCreatesFeatureMapValues() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		final var libraryClass = assertEClassExists(ePackage, "Library");
+		final var writerClass = assertEClassExists(ePackage, "Writer");
+		final var peopleAttr = assertEAttributeExists(libraryClass, "people");
+		final var writersRef = assertEReferenceExists(libraryClass, "writers");
+		final var customWriter = EcoreUtil.create(writerClass);
+		customWriter.eSet(writerClass.getEStructuralFeature("firstName"), "ReplacementWriter");
+		final var calls = new AtomicInteger();
+
+		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public EObject createValue(final EObject owner,
+					final EReference containmentReference) {
+				if (owner.eClass() == libraryClass && containmentReference == writersRef) {
+					calls.incrementAndGet();
+					return customWriter;
+				}
+				return super.createValue(owner, containmentReference);
+			}
+		});
+		populator.setGroupMemberSelectorStrategy(
+				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+					@Override
+					public EStructuralFeature getNextCandidate(final EObject context,
+							final EAttribute type) {
+						return writersRef;
+					}
+
+					@Override
+					public boolean hasCandidates(final EObject context, final EAttribute type) {
+						return true;
+					}
+				});
+		populator.setFeatureMapMaxCountFor(peopleAttr, 1);
+
+		final var library = createInstance(ePackage, "Library");
+		populator.getFeatureMapSetter().setFeatureMap(library, peopleAttr);
+
+		assertThat(calls).hasValue(1);
+		assertThat(EMFUtils.getAsEObjectsList(library, writersRef)).containsExactly(customWriter);
 	}
 
 	@Test
@@ -1613,7 +1769,7 @@ class EMFInstancePopulatorTest {
 	}
 
 	@Test
-	void testFunctionForFeatureMapGroupMember() {
+	void containmentFunctionCustomizesFeatureMapGroupMember() {
 		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
 		final var libraryClass = assertEClassExists(ePackage, "Library");
 		final var writerClass = assertEClassExists(ePackage, "Writer");
@@ -1623,8 +1779,7 @@ class EMFInstancePopulatorTest {
 		
 		final var counter = new AtomicInteger(0);
 		
-		// Set a custom function for the writers group member
-		populator.functionForFeatureMapGroupMember(writersRef, owner -> {
+		populator.functionForContainmentReference(writersRef, owner -> {
 			counter.incrementAndGet();
 			final var writer = EcoreUtil.create(writerClass);
 			writer.eSet(writerClass.getEStructuralFeature("firstName"), "CustomWriter");

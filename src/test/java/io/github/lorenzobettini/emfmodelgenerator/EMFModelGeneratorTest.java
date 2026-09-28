@@ -3469,7 +3469,7 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
-	void testFunctionForFeatureMapGroupMember() {
+	void containmentFunctionCustomizesFeatureMapGroupMember() {
 		generator.setOutputDirectory(TEST_OUTPUT_DIR);
 		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
 		var libraryClass = assertEClassExists(ePackage, "Library");
@@ -3479,7 +3479,7 @@ class EMFModelGeneratorTest {
 		
 		var counter = new java.util.concurrent.atomic.AtomicInteger(0);
 		
-		generator.getInstancePopulator().functionForFeatureMapGroupMember(writersRef, owner -> {
+		generator.getInstancePopulator().functionForContainmentReference(writersRef, owner -> {
 			counter.incrementAndGet();
 			var writer = EcoreUtil.create(writerClass);
 			writer.eSet(writerClass.getEStructuralFeature("firstName"), "CustomWriter");

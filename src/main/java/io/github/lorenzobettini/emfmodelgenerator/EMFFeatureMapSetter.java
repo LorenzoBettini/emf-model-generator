@@ -1,8 +1,8 @@
 package io.github.lorenzobettini.emfmodelgenerator;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EObject;
@@ -12,24 +12,59 @@ import org.eclipse.emf.ecore.util.FeatureMap;
 import org.eclipse.emf.ecore.util.FeatureMapUtil;
 
 /**
- * Responsible for populating EMF feature maps.
- * Feature maps allow heterogeneous collections where different types can be mixed.
- * This class creates entries in the feature map for each group member defined via ExtendedMetaData.
+ * Coordinates population of EMF FeatureMaps. FeatureMaps allow heterogeneous
+ * collections where different structural-feature types can be mixed. This
+ * coordinator owns group-level count and member-selection configuration and
+ * delegates value semantics to the ordinary attribute, containment-reference,
+ * and cross-reference setters.
+ *
+ * <p>The current population phase handles containment-reference members only.
+ * Attribute and non-containment-reference members will be materialized by later
+ * population phases.</p>
  *
  * @author Lorenzo Bettini
  */
-public class EMFFeatureMapSetter extends EMFInstanceCreatorFeatureSetter<EAttribute> {
+public class EMFFeatureMapSetter extends EMFCountConfigurableFeatureSetter<EAttribute> {
 
 	private static final int DEFAULT_MULTI_VALUED_COUNT = 2;
 	private EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> groupMemberSelector =
 		new EMFRoundRobinFeatureMapGroupMemberSelector();
-
-	@FunctionalInterface
-	public static interface EMFFeatureMapValueFunction extends FeatureFunction<EObject> {
-	}
+	private EMFAttributeSetter attributeSetter;
+	private EMFContainmentReferenceSetter containmentReferenceSetter;
+	private EMFCrossReferenceSetter crossReferenceSetter;
 
 	protected EMFFeatureMapSetter() {
 		super(DEFAULT_MULTI_VALUED_COUNT);
+	}
+
+	/**
+	 * Set the attribute setter used to generate values for attribute group members.
+	 *
+	 * @param attributeSetter the current ordinary attribute setter
+	 */
+	public void setAttributeSetter(final EMFAttributeSetter attributeSetter) {
+		this.attributeSetter = attributeSetter;
+	}
+
+	/**
+	 * Set the containment-reference setter used to create values for containment
+	 * group members.
+	 *
+	 * @param containmentReferenceSetter the current ordinary containment setter
+	 */
+	public void setContainmentReferenceSetter(
+			final EMFContainmentReferenceSetter containmentReferenceSetter) {
+		this.containmentReferenceSetter = containmentReferenceSetter;
+	}
+
+	/**
+	 * Set the cross-reference setter used to select values for non-containment
+	 * reference group members.
+	 *
+	 * @param crossReferenceSetter the current ordinary cross-reference setter
+	 */
+	public void setCrossReferenceSetter(final EMFCrossReferenceSetter crossReferenceSetter) {
+		this.crossReferenceSetter = crossReferenceSetter;
 	}
 
 	/**
@@ -58,22 +93,21 @@ public class EMFFeatureMapSetter extends EMFInstanceCreatorFeatureSetter<EAttrib
 	 * @param featureMapAttribute the feature map attribute
 	 * @return collection of created EObjects
 	 */
-	public Collection<EObject> setFeatureMap(final EObject owner, final EAttribute featureMapAttribute) {
-		return setFeatureCreatingEObjects(owner, featureMapAttribute);
-	}
-
-	@Override
-	protected void setSingleFeature(EObject owner, EAttribute feature) {
-		// Feature maps are always multi-valued
-		throw new UnsupportedOperationException("Feature maps are always multi-valued");
+	public Collection<EObject> setFeatureMap(final EObject owner,
+			final EAttribute featureMapAttribute) {
+		if (owner.eIsSet(featureMapAttribute)) {
+			return List.of();
+		}
+		return setMultiFeature(owner, featureMapAttribute);
 	}
 
 	/**
 	 * Populate the feature map by finding all group members and creating instances for each.
 	 * This population phase currently supports containment-reference members only.
 	 */
-	@Override
-	protected void setMultiFeature(EObject owner, EAttribute featureMapAttribute) {
+	private Collection<EObject> setMultiFeature(final EObject owner,
+			final EAttribute featureMapAttribute) {
+		final var createdEObjects = new ArrayList<EObject>();
 		final FeatureMap featureMap = (FeatureMap) owner.eGet(featureMapAttribute);
 		
 		// Find all features that are part of this feature map group
@@ -81,11 +115,12 @@ public class EMFFeatureMapSetter extends EMFInstanceCreatorFeatureSetter<EAttrib
 			EMFUtils.findFeatureMapGroupMembers(featureMapAttribute);
 		
 		if (groupMembers.isEmpty()) {
-			return;
+			return List.of();
 		}
 		
 		// For each group member, create instances and add them to the feature map
-		final int count = EMFUtils.getEffectiveCount(featureMapAttribute, getMaxCountFor(owner, featureMapAttribute));
+		final int count = EMFUtils.getEffectiveCount(featureMapAttribute,
+				getMaxCountFor(owner, featureMapAttribute));
 		
 		for (int i = 0; i < count; i++) {
 			// Select the next group member using the selector strategy
@@ -93,9 +128,12 @@ public class EMFFeatureMapSetter extends EMFInstanceCreatorFeatureSetter<EAttrib
 				(EReference) groupMemberSelector.getNextCandidate(owner, featureMapAttribute);
 
 			// Create a single instance directly (pass owner as context for selector)
-			final EObject instance = createInstance(owner, groupMember, groupMember.getEReferenceType());
+			final EObject instance = containmentReferenceSetter.createValue(owner, groupMember);
 			featureMap.add(FeatureMapUtil.createEntry(groupMember, instance));
-			Optional.ofNullable(instance).ifPresent(this::trackAssignedEObject);
+			if (instance != null) {
+				createdEObjects.add(instance);
+			}
 		}
+		return createdEObjects;
 	}
 }

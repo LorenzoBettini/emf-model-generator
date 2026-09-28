@@ -5,12 +5,12 @@ import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertECla
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEReferenceExists;
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.loadEcoreModel;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
+import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.util.FeatureMap;
@@ -34,6 +34,9 @@ class EMFFeatureMapSetterTest {
 	@BeforeEach
 	void setUp() {
 		setter = new EMFFeatureMapSetter();
+		setter.setAttributeSetter(new EMFAttributeSetter());
+		setter.setContainmentReferenceSetter(new EMFContainmentReferenceSetter());
+		setter.setCrossReferenceSetter(new EMFCrossReferenceSetter());
 		ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
 		libraryClass = assertEClassExists(ePackage, "Library");
 		peopleAttr = assertEAttributeExists(libraryClass, "people");
@@ -137,21 +140,6 @@ class EMFFeatureMapSetterTest {
 	}
 
 	@Test
-	void testSetSingleFeatureThrowsException() {
-		final var library = EcoreUtil.create(libraryClass);
-		
-		final var featureMapSetter = new EMFFeatureMapSetter() {
-			public void testSetSingle(EObject owner, EAttribute attr) {
-				setSingleFeature(owner, attr);
-			}
-		};
-
-		assertThatThrownBy(() -> featureMapSetter.testSetSingle(library, peopleAttr))
-			.isInstanceOf(UnsupportedOperationException.class)
-			.hasMessage("Feature maps are always multi-valued");
-	}
-
-	@Test
 	void testSetGroupMemberSelectorStrategy() {
 		final var library = EcoreUtil.create(libraryClass);
 		final var writersRef = assertEReferenceExists(libraryClass, "writers");
@@ -222,7 +210,7 @@ class EMFFeatureMapSetterTest {
 	}
 
 	@Test
-	void testSetFeatureMapClearsCreatedEObjects() {
+	void testSetFeatureMapReturnsOnlyObjectsCreatedByEachCall() {
 		final var library1 = EcoreUtil.create(libraryClass);
 		final var library2 = EcoreUtil.create(libraryClass);
 		
@@ -236,11 +224,50 @@ class EMFFeatureMapSetterTest {
 		// Second call - should clear the collection before populating
 		final var createdObjects2 = setter.setFeatureMap(library2, peopleAttr);
 		
-		// Both references point to the same collection (getCreatedEObjects returns the same list)
-		// After clear() and second population, it should only have 2 objects, not 4
 		assertThat(createdObjects2)
-			.as("Second call should clear and repopulate, resulting in 2 objects, not 4")
+			.as("Second call should return only its own two created objects")
 			.hasSize(2);
+		assertThat(createdObjects1).doesNotContainAnyElementsOf(createdObjects2);
+	}
+
+	@Test
+	void testAlreadyPopulatedFeatureMapIsSkipped() {
+		final var library = EcoreUtil.create(libraryClass);
+		setter.setFeatureMap(library, peopleAttr);
+		final var featureMap = (FeatureMap) library.eGet(peopleAttr);
+		final var existingEntries = featureMap.size();
+
+		assertThat(setter.setFeatureMap(library, peopleAttr)).isEmpty();
+		assertThat(featureMap).hasSize(existingEntries);
+	}
+
+	@Test
+	void nullContainmentValueIsNotReportedAsCreated() {
+		final var library = EcoreUtil.create(libraryClass);
+		final var writersRef = assertEReferenceExists(libraryClass, "writers");
+		setter.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public EObject createValue(final EObject owner, final EReference reference) {
+				return null;
+			}
+		});
+		setter.setGroupMemberSelectorStrategy(
+				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+					@Override
+					public EStructuralFeature getNextCandidate(final EObject context,
+							final EAttribute type) {
+						return writersRef;
+					}
+
+					@Override
+					public boolean hasCandidates(final EObject context, final EAttribute type) {
+						return true;
+					}
+				});
+		setter.setMaxCountFor(peopleAttr, 1);
+
+		assertThat(setter.setFeatureMap(library, peopleAttr)).isEmpty();
+		assertThat((FeatureMap) library.eGet(peopleAttr)).hasSize(1);
 	}
 
 	@Test

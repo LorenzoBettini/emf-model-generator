@@ -19,7 +19,8 @@ import org.eclipse.emf.ecore.EStructuralFeature;
  *
  * @author Lorenzo Bettini
  */
-public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature, T2 extends EStructuralFeature, V> {
+public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature,
+		T2 extends EStructuralFeature, V> extends EMFCountConfigurableFeatureSetter<T1> {
 
 	/**
 	 * Function interface for feature operations.
@@ -28,50 +29,10 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 	public static interface FeatureFunction<R> extends Function<EObject, R> {
 	}
 
-	private int defaultMaxCount;
-	private Map<T1, Integer> featureMaxCountMap;
 	private Map<T2, FeatureFunction<V>> featureFunctionMap;
 
 	protected EMFConfigurableFeatureSetter(int defaultMaxCount) {
-		this.defaultMaxCount = defaultMaxCount;
-	}
-
-	/**
-	 * Set the default maximum count of values to generate for multi-valued features.
-	 * Used when no specific count has been configured for a feature via
-	 * {@link #setMaxCountFor(EStructuralFeature, int)}.
-	 *
-	 * @param defaultMaxCount the default maximum count
-	 */
-	public void setDefaultMaxCount(int defaultMaxCount) {
-		this.defaultMaxCount = defaultMaxCount;
-	}
-
-	/**
-	 * Returns the maximum count of values to set for the given feature on the given
-	 * owner.
-	 * 
-	 * @param owner   the owner EObject
-	 * @param feature the feature for which to get the max count
-	 * @return the maximum count of values to generate for the feature
-	 */
-	protected int getMaxCountFor(EObject owner, T1 feature) {
-		return (featureMaxCountMap == null)
-				? defaultMaxCount
-				: featureMaxCountMap.getOrDefault(feature, defaultMaxCount);
-	}
-
-	/**
-	 * Sets the maximum count of values to set for the given feature.
-	 * 
-	 * @param feature  the feature to configure
-	 * @param maxCount the maximum count of values to generate
-	 */
-	public void setMaxCountFor(T1 feature, int maxCount) {
-		if (featureMaxCountMap == null) {
-			featureMaxCountMap = new HashMap<>();
-		}
-		featureMaxCountMap.put(feature, maxCount);
+		super(defaultMaxCount);
 	}
 
 	/**
