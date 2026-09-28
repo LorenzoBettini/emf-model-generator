@@ -4065,28 +4065,13 @@ class EMFModelGeneratorTest {
 				generatedFileName, generatedFileName);
 	}
 
-	@Test
-	void testGenerateBpmnDiagramWithSchemaLocation() throws Exception {
-		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/BPMN.ecore");
-
-		assertThat(packages).extracting(EPackage::getName)
-				.containsExactly("bpmn", "ecore", "type");
-		var bpmnPackage = packages.stream()
-				.filter(ePackage -> "bpmn".equals(ePackage.getName()))
-				.findFirst()
-				.orElseThrow();
-		var bpmnDiagramClass = assertEClassExists(bpmnPackage, "BpmnDiagram");
-		var messageVertexClass = assertEClassExists(bpmnPackage, "MessageVertex");
-		var poolClass = assertEClassExists(bpmnPackage, "Pool");
-		var poolsReference = assertEReferenceExists(bpmnDiagramClass, "pools");
-		var messagesReference = assertEReferenceExists(bpmnDiagramClass, "messages");
-		var orderedMessages = assertEAttributeExists(poolClass, "orderedMessages");
-		var incomingMessages = assertEReferenceExists(poolClass, "incomingMessages");
-		var outgoingMessages = assertEReferenceExists(poolClass, "outgoingMessages");
-		var messagingEdgeClass = assertEClassExists(bpmnPackage, "MessagingEdge");
-		var messageSource = assertEReferenceExists(messagingEdgeClass, "source");
-		var messageTarget = assertEReferenceExists(messagingEdgeClass, "target");
-
+	private void assertBpmnMessageFeatureMapStructure(final EAttribute orderedMessages,
+			final EClass messageVertexClass,
+			final EReference incomingMessages,
+			final EReference outgoingMessages,
+			final EClass messagingEdgeClass,
+			final EReference messageSource,
+			final EReference messageTarget) {
 		assertThat(orderedMessages.getEContainingClass()).isSameAs(messageVertexClass);
 		assertThat(orderedMessages.isMany()).isTrue();
 		assertThat(orderedMessages.isUnique()).isFalse();
@@ -4110,32 +4095,20 @@ class EMFModelGeneratorTest {
 			assertThat(reference.isContainment()).isFalse();
 			assertThat(reference.getEReferenceType()).isSameAs(messageVertexClass);
 		});
+	}
 
-		var featureMapSelections = new ArrayList<Map.Entry<EReference, EObject>>();
-		generator.getInstancePopulator().setCrossReferenceSetter(
-				new EMFCrossReferenceSetter() {
-					@Override
-					public EObject selectValue(final EObject owner,
-							final EReference crossReference) {
-						var selected = super.selectValue(owner, crossReference);
-						if (crossReference == incomingMessages
-								|| crossReference == outgoingMessages) {
-							featureMapSelections.add(Map.entry(crossReference, selected));
-						}
-						return selected;
-					}
-				});
-
-		// The default depth expands recursively through optional Pool/Graph containments.
-		// One level retains the diagram's pools, messages, and artifacts without growing
-		// unrelated nested subprocess graphs.
-		generator.getInstancePopulator().setMaxDepth(1);
-		generator.setFilePrefix("bpmn_");
-		var generatedDiagram = generator.generateFrom(bpmnDiagramClass);
-
+	private void assertBpmnGeneratedDiagram(final EObject generatedDiagram,
+			final EClass bpmnDiagramClass,
+			final List<EObject> pools,
+			final List<EObject> messages,
+			final List<Map.Entry<EReference, EObject>> featureMapSelections,
+			final EClass messagingEdgeClass,
+			final EAttribute orderedMessages,
+			final EReference incomingMessages,
+			final EReference outgoingMessages,
+			final EReference messageSource,
+			final EReference messageTarget) {
 		assertThat(generatedDiagram.eClass()).isSameAs(bpmnDiagramClass);
-		var pools = EMFUtils.getAsEObjectsList(generatedDiagram, poolsReference);
-		var messages = EMFUtils.getAsEObjectsList(generatedDiagram, messagesReference);
 		assertThat(pools).hasSize(2);
 		assertThat(messages).hasSize(2);
 		assertThat(featureMapSelections).extracting(Map.Entry::getKey)
@@ -4169,6 +4142,61 @@ class EMFModelGeneratorTest {
 			assertThat(message.eGet(messageSource)).isIn(pools);
 			assertThat(message.eGet(messageTarget)).isIn(pools);
 		});
+	}
+
+	@Test
+	void testGenerateBpmnDiagramWithSchemaLocation() throws Exception {
+		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/BPMN.ecore");
+
+		assertThat(packages).extracting(EPackage::getName)
+				.containsExactly("bpmn", "ecore", "type");
+		var bpmnPackage = packages.stream()
+				.filter(ePackage -> "bpmn".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var bpmnDiagramClass = assertEClassExists(bpmnPackage, "BpmnDiagram");
+		var messageVertexClass = assertEClassExists(bpmnPackage, "MessageVertex");
+		var poolClass = assertEClassExists(bpmnPackage, "Pool");
+		var poolsReference = assertEReferenceExists(bpmnDiagramClass, "pools");
+		var messagesReference = assertEReferenceExists(bpmnDiagramClass, "messages");
+		var orderedMessages = assertEAttributeExists(poolClass, "orderedMessages");
+		var incomingMessages = assertEReferenceExists(poolClass, "incomingMessages");
+		var outgoingMessages = assertEReferenceExists(poolClass, "outgoingMessages");
+		var messagingEdgeClass = assertEClassExists(bpmnPackage, "MessagingEdge");
+		var messageSource = assertEReferenceExists(messagingEdgeClass, "source");
+		var messageTarget = assertEReferenceExists(messagingEdgeClass, "target");
+
+		assertBpmnMessageFeatureMapStructure(orderedMessages, messageVertexClass,
+				incomingMessages, outgoingMessages, messagingEdgeClass,
+				messageSource, messageTarget);
+
+		var featureMapSelections = new ArrayList<Map.Entry<EReference, EObject>>();
+		generator.getInstancePopulator().setCrossReferenceSetter(
+				new EMFCrossReferenceSetter() {
+					@Override
+					public EObject selectValue(final EObject owner,
+							final EReference crossReference) {
+						var selected = super.selectValue(owner, crossReference);
+						if (crossReference == incomingMessages
+								|| crossReference == outgoingMessages) {
+							featureMapSelections.add(Map.entry(crossReference, selected));
+						}
+						return selected;
+					}
+				});
+
+		// The default depth expands recursively through optional Pool/Graph containments.
+		// One level retains the diagram's pools, messages, and artifacts without growing
+		// unrelated nested subprocess graphs.
+		generator.getInstancePopulator().setMaxDepth(1);
+		generator.setFilePrefix("bpmn_");
+		var generatedDiagram = generator.generateFrom(bpmnDiagramClass);
+
+		var pools = EMFUtils.getAsEObjectsList(generatedDiagram, poolsReference);
+		var messages = EMFUtils.getAsEObjectsList(generatedDiagram, messagesReference);
+		assertBpmnGeneratedDiagram(generatedDiagram, bpmnDiagramClass, pools, messages,
+				featureMapSelections, messagingEdgeClass, orderedMessages,
+				incomingMessages, outgoingMessages, messageSource, messageTarget);
 
 		var validation = generator.validate();
 		assertThat(validation.isValid())
