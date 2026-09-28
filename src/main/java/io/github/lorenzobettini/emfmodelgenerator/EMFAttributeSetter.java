@@ -127,7 +127,7 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 
 	@Override
 	protected void setSingleFeature(final EObject owner, final EAttribute attribute) {
-		final Object value = generateAttributeValue(owner, attribute);
+		final Object value = generateValue(owner, attribute);
 		// For single-valued attributes
 		if (value != null) {
 			owner.eSet(attribute, value);
@@ -140,7 +140,7 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 		// For multi-valued attributes, add multiple values
 		// Respect upper and lower bounds
 		for (int i = 0; i < count; i++) {
-			final Object value = generateAttributeValue(owner, attribute);
+			final Object value = generateValue(owner, attribute);
 			if (value != null) {
 				final var list = EMFUtils.getAsList(owner, attribute);
 				list.add(value);
@@ -149,18 +149,22 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	}
 
 	/**
-	 * Generate a sample value for an attribute based on its data type. Uses a
+	 * Generates one sample value for an attribute without assigning it to the owner.
+	 * Uses a
 	 * per-attribute counter to generate unique incremental values. ID attributes
 	 * instead use a counter shared across all EClasses to avoid duplicate IDs. For
 	 * enum types, uses the configured enum literal selector strategy to select
-	 * enum literals (by default, round-robin).
+	 * enum literals (by default, round-robin). If a custom function is configured
+	 * for the attribute, its result is returned directly, including {@code null}.
 	 * 
-	 * @param owner The EObject owning the attribute. By default, this parameter is not used in value generation but may be useful for extensions.
+	 * @param owner the EObject owning the attribute; default generation uses it for
+	 *              counters and generated strings, and custom functions receive it
 	 * @param attribute the attribute to generate a value for
 	 * 
-	 * @return the generated value, or null if the data type is not supported
+	 * @return the generated value, or {@code null} if the custom function returns
+	 *         {@code null} or the data type is not supported
 	 */
-	protected Object generateAttributeValue(EObject owner, final EAttribute attribute) {
+	public Object generateValue(final EObject owner, final EAttribute attribute) {
 		final EDataType dataType = attribute.getEAttributeType();
 
 		var function = getFunctionFor(attribute);

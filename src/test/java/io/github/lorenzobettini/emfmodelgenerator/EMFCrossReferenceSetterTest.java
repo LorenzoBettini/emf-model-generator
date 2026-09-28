@@ -267,6 +267,48 @@ class EMFCrossReferenceSetterTest {
 	// ========== Single-valued reference tests ==========
 
 	@Test
+	void shouldSelectValueWithoutAssigningIt() {
+		final EReference reference = createNonContainmentReference("ref", false);
+		final EObject owner = createOwner();
+		final EObject candidate = createExistingInstance(referencedClass);
+
+		assertThat(setter.selectValue(owner, reference)).isSameAs(candidate);
+		assertThat(owner.eIsSet(reference)).isFalse();
+	}
+
+	@Test
+	void shouldSelectCustomValueWithoutAssigningIt() {
+		final EReference reference = createNonContainmentReference("ref", false);
+		final EObject owner = createOwner();
+		final EObject customCandidate = createExistingInstance(referencedClass);
+		setter.setFunctionFor(reference, ignored -> customCandidate);
+
+		assertThat(setter.selectValue(owner, reference)).isSameAs(customCandidate);
+		assertThat(owner.eIsSet(reference)).isFalse();
+	}
+
+	@Test
+	void shouldFallBackWhenCustomSelectionReturnsNull() {
+		final EReference reference = createNonContainmentReference("ref", false);
+		final EObject owner = createOwner();
+		final EObject defaultCandidate = createExistingInstance(referencedClass);
+		setter.setFunctionFor(reference, ignored -> null);
+
+		assertThat(setter.selectValue(owner, reference)).isSameAs(defaultCandidate);
+		assertThat(owner.eIsSet(reference)).isFalse();
+	}
+
+	@Test
+	void shouldFilterSelfCycleWhenSelectingValue() {
+		final EReference reference = createNonContainmentReference("self", false);
+		reference.setEType(ownerClass);
+		final EObject owner = createOwner();
+
+		assertThat(setter.selectValue(owner, reference)).isNull();
+		assertThat(owner.eIsSet(reference)).isFalse();
+	}
+
+	@Test
 	void shouldNotSetSingleValuedReferenceWhenNoExistingInstance() {
 		EReference reference = createNonContainmentReference("ref", false);
 		EObject owner = createOwner();
@@ -449,6 +491,34 @@ class EMFCrossReferenceSetterTest {
 	}
 
 	// ========== Opposite reference constraint tests ==========
+
+	@Test
+	void shouldFilterFullOppositeWhenSelectingValueWithoutAssignment() {
+		final EClass targetClass = ECORE_FACTORY.createEClass();
+		targetClass.setName("Target");
+		testPackage.getEClassifiers().add(targetClass);
+
+		final EReference reference = ECORE_FACTORY.createEReference();
+		reference.setName("target");
+		reference.setEType(targetClass);
+		ownerClass.getEStructuralFeatures().add(reference);
+
+		final EReference opposite = ECORE_FACTORY.createEReference();
+		opposite.setName("owner");
+		opposite.setEType(ownerClass);
+		targetClass.getEStructuralFeatures().add(opposite);
+		reference.setEOpposite(opposite);
+		opposite.setEOpposite(reference);
+
+		final EObject invalidTarget = createExistingInstance(targetClass);
+		invalidTarget.eSet(opposite, EcoreUtil.create(ownerClass));
+		final EObject validTarget = createExistingInstance(targetClass);
+		final EObject owner = createOwner();
+
+		assertThat(setter.selectValue(owner, reference)).isSameAs(validTarget);
+		assertThat(owner.eIsSet(reference)).isFalse();
+		assertThat(invalidTarget.eGet(opposite)).isNotNull();
+	}
 
 	@Test
 	void shouldSkipExistingInstanceWithMultiValuedOppositeAtUpperBound() {

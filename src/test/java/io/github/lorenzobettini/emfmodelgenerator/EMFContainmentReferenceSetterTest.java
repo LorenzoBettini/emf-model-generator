@@ -120,6 +120,63 @@ class EMFContainmentReferenceSetterTest {
 	// ========== Single-valued containment reference tests ==========
 
 	@Test
+	void testCreateValueDoesNotAssignDefaultValue() {
+		final EReference reference = createContainmentReference("child", false);
+		final EObject owner = createOwner();
+
+		final EObject created = setter.createValue(owner, reference);
+
+		assertThat(created)
+				.isNotNull()
+				.extracting(EObject::eClass)
+				.isEqualTo(containedClass);
+		assertThat(owner.eIsSet(reference)).isFalse();
+		assertThat(created.eContainer()).isNull();
+	}
+
+	@Test
+	void testCreateValueUsesCustomFunctionWithoutAssignment() {
+		final EReference reference = createContainmentReference("child", false);
+		final EObject owner = createOwner();
+		final EObject customValue = EcoreUtil.create(containedClass);
+		setter.setFunctionFor(reference, ignored -> customValue);
+
+		assertThat(setter.createValue(owner, reference)).isSameAs(customValue);
+		assertThat(owner.eIsSet(reference)).isFalse();
+		assertThat(customValue.eContainer()).isNull();
+	}
+
+	@Test
+	void testCreateValueFallsBackWhenCustomFunctionReturnsNull() {
+		final EReference reference = createContainmentReference("child", false);
+		final EObject owner = createOwner();
+		setter.setFunctionFor(reference, ignored -> null);
+
+		final EObject created = setter.createValue(owner, reference);
+
+		assertThat(created).isNotNull();
+		assertThat(created.eClass()).isEqualTo(containedClass);
+		assertThat(owner.eIsSet(reference)).isFalse();
+	}
+
+	@Test
+	void testCreateValueFallsBackForAlreadyContainedCustomValue() {
+		final EReference reference = createContainmentReference("children", true);
+		final EObject currentOwner = createOwner();
+		final EObject newOwner = createOwner();
+		final EObject contained = EcoreUtil.create(containedClass);
+		EMFUtils.getAsEObjectsList(currentOwner, reference).add(contained);
+		setter.setFunctionFor(reference, ignored -> contained);
+
+		final EObject created = setter.createValue(newOwner, reference);
+
+		assertThat(created).isNotSameAs(contained);
+		assertThat(created.eClass()).isEqualTo(containedClass);
+		assertThat(contained.eContainer()).isSameAs(currentOwner);
+		assertThat(newOwner.eIsSet(reference)).isFalse();
+	}
+
+	@Test
 	void testSetContainmentReference_SingleValued() {
 		EReference reference = createContainmentReference("child", false);
 

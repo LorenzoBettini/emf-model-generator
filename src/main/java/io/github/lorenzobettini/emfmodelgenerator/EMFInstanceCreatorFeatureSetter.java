@@ -25,7 +25,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
 public abstract class EMFInstanceCreatorFeatureSetter<T extends EStructuralFeature> extends EMFConfigurableFeatureSetter<T, EReference, EObject> {
 
 	private EMFCandidateSelectorStrategy<EClass, EClass> instantiableSubclassSelectorStrategy = new EMFRoundRobinEClassCandidateSelector();
-	private List<EObject> createdEObjects = new ArrayList<>();
+	private List<EObject> assignedEObjects;
 
 	protected EMFInstanceCreatorFeatureSetter(int defaultMaxCount) {
 		super(defaultMaxCount);
@@ -43,19 +43,34 @@ public abstract class EMFInstanceCreatorFeatureSetter<T extends EStructuralFeatu
 	/**
 	 * Set the feature on the given owner EObject by creating new EObject instances.
 	 * 
-	 * Each time the method is called, the list of created EObjects is cleared.
-	 * So the returned collection only contains the EObjects created during this call.
+	 * The returned collection contains only the EObjects assigned during this call.
 	 * 
 	 * @param owner   the EObject owning the feature
 	 * @param feature the feature to set
 	 * @return a collection of created EObjects assigned to the feature
 	 */
 	protected Collection<EObject> setFeatureCreatingEObjects(EObject owner, T feature) {
-		createdEObjects = new ArrayList<>();
-	
-		setFeature(owner, feature);
-	
-		return createdEObjects;
+		final var result = new ArrayList<EObject>();
+		assignedEObjects = result;
+		try {
+			setFeature(owner, feature);
+		} finally {
+			assignedEObjects = null;
+		}
+		return result;
+	}
+
+	/**
+	 * Records an EObject after a concrete setter has assigned it to its feature.
+	 * Recording is active only while {@link #setFeatureCreatingEObjects(EObject,
+	 * EStructuralFeature)} is executing.
+	 *
+	 * @param assignedEObject the EObject assigned by the setter
+	 */
+	protected void trackAssignedEObject(final EObject assignedEObject) {
+		if (assignedEObjects != null) {
+			assignedEObjects.add(assignedEObject);
+		}
 	}
 
 	/**
@@ -83,7 +98,6 @@ public abstract class EMFInstanceCreatorFeatureSetter<T extends EStructuralFeatu
 		if (function != null) {
 			final EObject instance = function.apply(owner);
 			if (instance != null && instance.eContainer() == null) {
-				createdEObjects.add(instance);
 				return instance;
 			}
 		}
@@ -92,7 +106,6 @@ public abstract class EMFInstanceCreatorFeatureSetter<T extends EStructuralFeatu
 			return null;
 		}
 		final EObject instance = EcoreUtil.create(instantiableSubClass);
-		createdEObjects.add(instance);
 		return instance;
 	}
 

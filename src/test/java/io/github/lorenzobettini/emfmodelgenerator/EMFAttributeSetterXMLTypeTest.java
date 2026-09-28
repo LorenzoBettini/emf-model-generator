@@ -36,6 +36,19 @@ class EMFAttributeSetterXMLTypeTest {
 			EDataType dataType, EAttribute attribute, EObject owner, Object value) {}
 
 	@Test
+	void shouldGenerateXMLTypeValueWithoutAssignment() {
+		final var fixture = createFixture(
+				createEPackage("test", "test:string", "test"),
+				XMLTypePackage.Literals.STRING);
+
+		final var value = new EMFAttributeSetter()
+				.generateValue(fixture.owner(), fixture.attribute());
+
+		assertThat(value).isEqualTo("TestClass_value_1");
+		assertThat(fixture.owner().eIsSet(fixture.attribute())).isFalse();
+	}
+
+	@Test
 	void shouldGenerateAValidValueForEveryXMLTypeEDataType() {
 		final var dataTypes = XMLTypePackage.eINSTANCE.getEClassifiers().stream()
 				.filter(EDataType.class::isInstance)

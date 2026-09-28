@@ -28,14 +28,25 @@ class EMFInstanceCreatorFeatureSetterTest {
 		@Override
 		protected void setSingleFeature(EObject owner, EReference feature) {
 			setSingleFeatureCalls++;
-			createInstance(owner, feature, feature.getEReferenceType());
+			createAndTrack(owner, feature);
 		}
 
 		@Override
 		protected void setMultiFeature(EObject owner, EReference feature) {
 			setMultiFeatureCalls++;
-			createInstance(owner, feature, feature.getEReferenceType());
-			createInstance(owner, feature, feature.getEReferenceType());
+			createAndTrack(owner, feature);
+			createAndTrack(owner, feature);
+		}
+
+		private void createAndTrack(EObject owner, EReference feature) {
+			final var created = createInstance(owner, feature, feature.getEReferenceType());
+			if (created != null) {
+				trackAssignedEObject(created);
+			}
+		}
+
+		void track(EObject instance) {
+			trackAssignedEObject(instance);
 		}
 	}
 
@@ -248,5 +259,17 @@ class EMFInstanceCreatorFeatureSetterTest {
 		var result = setter.setFeatureCreatingEObjects(owner, reference);
 
 		assertThat(result).contains(customInstance);
+	}
+
+	@Test
+	void testCreateInstanceOutsideSettingIsNotTrackedByNextCall() {
+		final var unassigned = setter.createInstance(owner, reference, targetClass);
+		setter.track(unassigned);
+
+		final var result = setter.setFeatureCreatingEObjects(owner, reference);
+
+		assertThat(result)
+				.hasSize(2)
+				.doesNotContain(unassigned);
 	}
 }

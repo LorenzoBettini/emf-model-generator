@@ -2,6 +2,7 @@ package io.github.lorenzobettini.emfmodelgenerator;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EObject;
@@ -94,6 +95,7 @@ public class EMFFeatureMapSetter extends EMFInstanceCreatorFeatureSetter<EAttrib
 			// Create a single instance directly (pass owner as context for selector)
 			final EObject instance = createInstance(owner, groupMember, groupMember.getEReferenceType());
 			featureMap.add(FeatureMapUtil.createEntry(groupMember, instance));
+			Optional.ofNullable(instance).ifPresent(this::trackAssignedEObject);
 		}
 	}
 }

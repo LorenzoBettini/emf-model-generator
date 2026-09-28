@@ -118,14 +118,39 @@ class EMFAttributeSetterTest {
 	}
 
 	@Test
-	void testGenerateAttributeValue_EString() {
+	void testGenerateValue_EString() {
 		final EAttribute attribute = createEAttribute(testClass, "name", EcorePackage.Literals.ESTRING);
-		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final EObject owner = createInstance(testClass);
+
+		final Object value = setter.generateValue(owner, attribute);
 		assertThat(value).isEqualTo("TestClass_name_1");
+		assertThat(owner.eIsSet(attribute)).isFalse();
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo("TestClass_name_2");
+	}
+
+	@Test
+	void testGenerateValueUsesCustomFunctionWithoutAssignmentOrCounterIncrement() {
+		final EAttribute attribute = createEAttribute(testClass, "name", EcorePackage.Literals.ESTRING);
+		final EObject owner = createInstance(testClass);
+		setter.setFunctionFor(attribute, ignored -> "custom");
+
+		assertThat(setter.generateValue(owner, attribute)).isEqualTo("custom");
+		assertThat(owner.eIsSet(attribute)).isFalse();
+
+		setter.setFunctionFor(attribute, null);
+		assertThat(setter.generateValue(owner, attribute)).isEqualTo("TestClass_name_1");
+	}
+
+	@Test
+	void testGenerateValueReturnsNullFromCustomFunctionWithoutAssignment() {
+		final EAttribute attribute = createEAttribute(testClass, "name", EcorePackage.Literals.ESTRING);
+		final EObject owner = createInstance(testClass);
+		setter.setFunctionFor(attribute, ignored -> null);
+
+		assertThat(setter.generateValue(owner, attribute)).isNull();
+		assertThat(owner.eIsSet(attribute)).isFalse();
 	}
 
 	@Test
@@ -147,7 +172,7 @@ class EMFAttributeSetterTest {
 	}
 
 	@Test
-	void testGenerateAttributeValue_UsesOwnerClassName() {
+	void testGenerateValue_UsesOwnerClassName() {
 		// Test that the generated string value uses the owner's EClass name,
 		// not the attribute's declaring class
 		// Create an attribute that's NOT added to the class (not using utility method here)
@@ -159,15 +184,15 @@ class EMFAttributeSetterTest {
 		assertThat(attribute.getEContainingClass()).isNull();
 		
 		// Should generate value using owner's EClass name (TestClass)
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo("TestClass_myAttr_1");
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo("TestClass_myAttr_2");
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomStringType() {
+	void testGenerateValue_CustomStringType() {
 		// Create a custom String data type
 		final EDataType stringType = EcoreFactory.eINSTANCE.createEDataType();
 		stringType.setName("String");
@@ -175,23 +200,23 @@ class EMFAttributeSetterTest {
 		
 		final EAttribute attribute = createEAttribute(testClass, "customString", stringType);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo("TestClass_customString_1");
 	}
 
 	@Test
-	void testGenerateAttributeValue_EInt() {
+	void testGenerateValue_EInt() {
 		final EAttribute attribute = createEAttribute(testClass, "age", EcorePackage.Literals.EINT);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20);
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(21);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomIntType() {
+	void testGenerateValue_CustomIntType() {
 		// Create a custom int data type
 		final EDataType intType = EcoreFactory.eINSTANCE.createEDataType();
 		intType.setName("WholeNumberPrimitive");
@@ -199,12 +224,12 @@ class EMFAttributeSetterTest {
 		
 		final EAttribute attribute = createEAttribute(testClass, "customInt", intType);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomIntegerType() {
+	void testGenerateValue_CustomIntegerType() {
 		// Create a custom Integer data type
 		final EDataType integerType = EcoreFactory.eINSTANCE.createEDataType();
 		integerType.setName("Integer");
@@ -212,39 +237,39 @@ class EMFAttributeSetterTest {
 		
 		final EAttribute attribute = createEAttribute(testClass, "customInteger", integerType);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20);
 	}
 
 	@Test
-	void testGenerateAttributeValue_WithCustomDefaultIntValue() {
+	void testGenerateValue_WithCustomDefaultIntValue() {
 		setter.setDefaultIntValue(100);
 		
 		final EAttribute attribute = createEAttribute(testClass, "age", EcorePackage.Literals.EINT);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(100);
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(101);
 	}
 
 	@Test
-	void testGenerateAttributeValue_EBoolean() {
+	void testGenerateValue_EBoolean() {
 		final EAttribute attribute = createEAttribute(testClass, "active", EcorePackage.Literals.EBOOLEAN);
 		
-		final Object value0 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value0 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value0).isEqualTo(true);
 		
-		final Object value1 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value1 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value1).isEqualTo(false);
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(true);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomBooleanType() {
+	void testGenerateValue_CustomBooleanType() {
 		// Create a custom boolean data type
 		final EDataType boolType = EcoreFactory.eINSTANCE.createEDataType();
 		boolType.setName("TruthValuePrimitive");
@@ -252,12 +277,12 @@ class EMFAttributeSetterTest {
 		
 		final EAttribute attribute = createEAttribute(testClass, "customBool", boolType);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(true);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomBooleanBoxedType() {
+	void testGenerateValue_CustomBooleanBoxedType() {
 		// Create a custom Boolean data type
 		final EDataType boolType = EcoreFactory.eINSTANCE.createEDataType();
 		boolType.setName("Boolean");
@@ -266,24 +291,24 @@ class EMFAttributeSetterTest {
 		final EAttribute attribute = createEAttribute(testClass, "customBoolean", boolType);
 		
 		// First call returns counter=0 (true), so we need another call to get false
-		setter.generateAttributeValue(createInstance(testClass), attribute); // counter=0→1, returns true
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute); // counter=1→2, returns false
+		setter.generateValue(createInstance(testClass), attribute); // counter=0→1, returns true
+		final Object value = setter.generateValue(createInstance(testClass), attribute); // counter=1→2, returns false
 		assertThat(value).isEqualTo(false);
 	}
 
 	@Test
-	void testGenerateAttributeValue_EDouble() {
+	void testGenerateValue_EDouble() {
 		final EAttribute attribute = createEAttribute(testClass, "price", EcorePackage.Literals.EDOUBLE);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20.5);
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(21.5);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomDoubleType() {
+	void testGenerateValue_CustomDoubleType() {
 		// Create a custom double data type
 		final EDataType doubleType = EcoreFactory.eINSTANCE.createEDataType();
 		doubleType.setName("RealNumberPrimitive");
@@ -291,12 +316,12 @@ class EMFAttributeSetterTest {
 		
 		final EAttribute attribute = createEAttribute(testClass, "customDouble", doubleType);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20.5);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomDoubleBoxedType() {
+	void testGenerateValue_CustomDoubleBoxedType() {
 		// Create a custom Double data type
 		final EDataType doubleType = EcoreFactory.eINSTANCE.createEDataType();
 		doubleType.setName("Double");
@@ -305,38 +330,38 @@ class EMFAttributeSetterTest {
 		final EAttribute attribute = createEAttribute(testClass, "customDoubleBoxed", doubleType);
 		
 		// Call twice to get counter=2
-		setter.generateAttributeValue(createInstance(testClass), attribute); // counter=0→1, returns 20.5
-		setter.generateAttributeValue(createInstance(testClass), attribute); // counter=1→2, returns 21.5
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute); // counter=2→3, returns 22.5
+		setter.generateValue(createInstance(testClass), attribute); // counter=0→1, returns 20.5
+		setter.generateValue(createInstance(testClass), attribute); // counter=1→2, returns 21.5
+		final Object value = setter.generateValue(createInstance(testClass), attribute); // counter=2→3, returns 22.5
 		assertThat(value).isEqualTo(22.5);
 	}
 
 	@Test
-	void testGenerateAttributeValue_WithCustomDefaultDoubleValue() {
+	void testGenerateValue_WithCustomDefaultDoubleValue() {
 		setter.setDefaultDoubleValue(100.5);
 		
 		final EAttribute attribute = createEAttribute(testClass, "price", EcorePackage.Literals.EDOUBLE);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(100.5);
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(101.5);
 	}
 
 	@Test
-	void testGenerateAttributeValue_EFloat() {
+	void testGenerateValue_EFloat() {
 		final EAttribute attribute = createEAttribute(testClass, "weight", EcorePackage.Literals.EFLOAT);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20.5f);
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(21.5f);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomFloatType() {
+	void testGenerateValue_CustomFloatType() {
 		// Create a custom float data type
 		final EDataType floatType = EcoreFactory.eINSTANCE.createEDataType();
 		floatType.setName("DecimalNumberPrimitive");
@@ -344,12 +369,12 @@ class EMFAttributeSetterTest {
 		
 		final EAttribute attribute = createEAttribute(testClass, "customFloat", floatType);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20.5f);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomFloatBoxedType() {
+	void testGenerateValue_CustomFloatBoxedType() {
 		// Create a custom Float data type
 		final EDataType floatType = EcoreFactory.eINSTANCE.createEDataType();
 		floatType.setName("Float");
@@ -358,24 +383,24 @@ class EMFAttributeSetterTest {
 		final EAttribute attribute = createEAttribute(testClass, "customFloatBoxed", floatType);
 		
 		// Call once to get counter=1
-		setter.generateAttributeValue(createInstance(testClass), attribute); // counter=0→1, returns 20.5f
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute); // counter=1→2, returns 21.5f
+		setter.generateValue(createInstance(testClass), attribute); // counter=0→1, returns 20.5f
+		final Object value = setter.generateValue(createInstance(testClass), attribute); // counter=1→2, returns 21.5f
 		assertThat(value).isEqualTo(21.5f);
 	}
 
 	@Test
-	void testGenerateAttributeValue_ELong() {
+	void testGenerateValue_ELong() {
 		final EAttribute attribute = createEAttribute(testClass, "id", EcorePackage.Literals.ELONG);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20L);
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(21L);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomLongType() {
+	void testGenerateValue_CustomLongType() {
 		// Create a custom long data type
 		final EDataType longType = EcoreFactory.eINSTANCE.createEDataType();
 		longType.setName("LargeNumberPrimitive");
@@ -383,12 +408,12 @@ class EMFAttributeSetterTest {
 		
 		final EAttribute attribute = createEAttribute(testClass, "customLong", longType);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20L);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomLongBoxedType() {
+	void testGenerateValue_CustomLongBoxedType() {
 		// Create a custom Long data type
 		final EDataType longType = EcoreFactory.eINSTANCE.createEDataType();
 		longType.setName("Long");
@@ -397,25 +422,25 @@ class EMFAttributeSetterTest {
 		final EAttribute attribute = createEAttribute(testClass, "customLongBoxed", longType);
 		
 		// Call twice to get counter=2
-		setter.generateAttributeValue(createInstance(testClass), attribute); // counter=0→1, returns 20L
-		setter.generateAttributeValue(createInstance(testClass), attribute); // counter=1→2, returns 21L
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute); // counter=2→3, returns 22L
+		setter.generateValue(createInstance(testClass), attribute); // counter=0→1, returns 20L
+		setter.generateValue(createInstance(testClass), attribute); // counter=1→2, returns 21L
+		final Object value = setter.generateValue(createInstance(testClass), attribute); // counter=2→3, returns 22L
 		assertThat(value).isEqualTo(22L);
 	}
 
 	@Test
-	void testGenerateAttributeValue_EShort() {
+	void testGenerateValue_EShort() {
 		final EAttribute attribute = createEAttribute(testClass, "count", EcorePackage.Literals.ESHORT);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo((short) 20);
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo((short) 21);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomShortType() {
+	void testGenerateValue_CustomShortType() {
 		// Create a custom short data type
 		final EDataType shortType = EcoreFactory.eINSTANCE.createEDataType();
 		shortType.setName("SmallNumberPrimitive");
@@ -423,12 +448,12 @@ class EMFAttributeSetterTest {
 		
 		final EAttribute attribute = createEAttribute(testClass, "customShort", shortType);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo((short) 20);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomShortBoxedType() {
+	void testGenerateValue_CustomShortBoxedType() {
 		// Create a custom Short data type
 		final EDataType shortType = EcoreFactory.eINSTANCE.createEDataType();
 		shortType.setName("Short");
@@ -437,24 +462,24 @@ class EMFAttributeSetterTest {
 		final EAttribute attribute = createEAttribute(testClass, "customShortBoxed", shortType);
 		
 		// Call once to get counter=1
-		setter.generateAttributeValue(createInstance(testClass), attribute); // counter=0→1, returns 20
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute); // counter=1→2, returns 21
+		setter.generateValue(createInstance(testClass), attribute); // counter=0→1, returns 20
+		final Object value = setter.generateValue(createInstance(testClass), attribute); // counter=1→2, returns 21
 		assertThat(value).isEqualTo((short) 21);
 	}
 
 	@Test
-	void testGenerateAttributeValue_EByte() {
+	void testGenerateValue_EByte() {
 		final EAttribute attribute = createEAttribute(testClass, "flags", EcorePackage.Literals.EBYTE);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo((byte) 20);
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo((byte) 21);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomByteType() {
+	void testGenerateValue_CustomByteType() {
 		// Create a custom byte data type
 		final EDataType byteType = EcoreFactory.eINSTANCE.createEDataType();
 		byteType.setName("TinyNumberPrimitive");
@@ -462,12 +487,12 @@ class EMFAttributeSetterTest {
 		
 		final EAttribute attribute = createEAttribute(testClass, "customByte", byteType);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo((byte) 20);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomByteBoxedType() {
+	void testGenerateValue_CustomByteBoxedType() {
 		// Create a custom Byte data type
 		final EDataType byteType = EcoreFactory.eINSTANCE.createEDataType();
 		byteType.setName("Byte");
@@ -476,28 +501,28 @@ class EMFAttributeSetterTest {
 		final EAttribute attribute = createEAttribute(testClass, "customByteBoxed", byteType);
 		
 		// Call twice to get counter=2
-		setter.generateAttributeValue(createInstance(testClass), attribute); // counter=0→1, returns 20
-		setter.generateAttributeValue(createInstance(testClass), attribute); // counter=1→2, returns 21
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute); // counter=2→3, returns 22
+		setter.generateValue(createInstance(testClass), attribute); // counter=0→1, returns 20
+		setter.generateValue(createInstance(testClass), attribute); // counter=1→2, returns 21
+		final Object value = setter.generateValue(createInstance(testClass), attribute); // counter=2→3, returns 22
 		assertThat(value).isEqualTo((byte) 22);
 	}
 
 	@Test
-	void testGenerateAttributeValue_EChar() {
+	void testGenerateValue_EChar() {
 		final EAttribute attribute = createEAttribute(testClass, "initial", EcorePackage.Literals.ECHAR);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo('A');
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo('B');
 		
-		final Object value3 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value3 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value3).isEqualTo('C');
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomCharType() {
+	void testGenerateValue_CustomCharType() {
 		// Create a custom char data type
 		final EDataType charType = EcoreFactory.eINSTANCE.createEDataType();
 		charType.setName("InitialPrimitive");
@@ -505,12 +530,12 @@ class EMFAttributeSetterTest {
 		
 		final EAttribute attribute = createEAttribute(testClass, "customChar", charType);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo('A');
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomCharacterType() {
+	void testGenerateValue_CustomCharacterType() {
 		// Create a custom Character data type
 		final EDataType charType = EcoreFactory.eINSTANCE.createEDataType();
 		charType.setName("Character");
@@ -519,40 +544,40 @@ class EMFAttributeSetterTest {
 		final EAttribute attribute = createEAttribute(testClass, "customCharacter", charType);
 		
 		// Call once to get counter=1
-		setter.generateAttributeValue(createInstance(testClass), attribute); // counter=0→1, returns 'A'
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute); // counter=1→2, returns 'B'
+		setter.generateValue(createInstance(testClass), attribute); // counter=0→1, returns 'A'
+		final Object value = setter.generateValue(createInstance(testClass), attribute); // counter=1→2, returns 'B'
 		assertThat(value).isEqualTo('B');
 	}
 
 	@Test
-	void testGenerateAttributeValue_EDate() {
+	void testGenerateValue_EDate() {
 		final EAttribute attribute = createEAttribute(testClass, "birthDate", EcorePackage.Literals.EDATE);
 		
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isInstanceOf(java.util.Date.class);
 		assertThat(((java.util.Date) value).toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
 			.isEqualTo(LocalDate.of(2025, Month.JANUARY, 1));
 		
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isInstanceOf(java.util.Date.class);
 		assertThat(((java.util.Date) value2).toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
 			.isEqualTo(LocalDate.of(2025, Month.JANUARY, 2));
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomDateType() {
+	void testGenerateValue_CustomDateType() {
 		final EDataType dateType = EcoreFactory.eINSTANCE.createEDataType();
 		dateType.setName("Birthday");
 		dateType.setInstanceClassName("java.util.Date");
 
 		final EAttribute attribute = createEAttribute(testClass, "customDate", dateType);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isInstanceOf(java.util.Date.class);
 	}
 
 	@Test
-	void testGenerateAttributeValue_UnknownTypeReturnsDefaultValue() {
+	void testGenerateValue_UnknownTypeReturnsDefaultValue() {
 		// Create a custom unknown data type
 		final EDataType unknownType = EcoreFactory.eINSTANCE.createEDataType();
 		unknownType.setName("UnknownType");
@@ -562,12 +587,12 @@ class EMFAttributeSetterTest {
 		final EAttribute attribute = createEAttribute(testClass, "unknown", unknownType);
 		
 		// For unknown types, getDefaultValue() returns null
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isNull();
 	}
 
 	@Test
-	void testGenerateAttributeValue_UnknownTypeWithNonNullDefaultValue() {
+	void testGenerateValue_UnknownTypeWithNonNullDefaultValue() {
 		// EJavaClass is deliberately unsupported, so its configured default is returned.
 		final EAttribute attribute = EcoreFactory.eINSTANCE.createEAttribute();
 		attribute.setName("customAttr");
@@ -576,7 +601,7 @@ class EMFAttributeSetterTest {
 		testClass.getEStructuralFeatures().add(attribute);
 		
 		// This should return the non-null default value
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isNotNull()
 			.isInstanceOf(Class.class)
 			.isEqualTo(String.class);
@@ -597,7 +622,7 @@ class EMFAttributeSetterTest {
 		final EObject instance = createInstance(testClass);
 		setter.setAttribute(instance, attribute);
 		
-		// Value should remain null because generateAttributeValue returns null
+		// Value should remain null because generateValue returns null
 		assertThat(instance.eGet(attribute)).isNull();
 	}
 
@@ -846,79 +871,79 @@ class EMFAttributeSetterTest {
 	}
 
 	@Test
-	void testGenerateAttributeValue_EBigDecimal() {
+	void testGenerateValue_EBigDecimal() {
 		final EAttribute attribute = createEAttribute(testClass, "price", EcorePackage.Literals.EBIG_DECIMAL);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(java.math.BigDecimal.valueOf(20.5));
 
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(java.math.BigDecimal.valueOf(21.5));
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomBigDecimalType() {
+	void testGenerateValue_CustomBigDecimalType() {
 		final EDataType bigDecimalType = EcoreFactory.eINSTANCE.createEDataType();
 		bigDecimalType.setName("BigDecimal");
 		bigDecimalType.setInstanceClassName("java.math.BigDecimal");
 
 		final EAttribute attribute = createEAttribute(testClass, "customBigDecimal", bigDecimalType);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(java.math.BigDecimal.valueOf(20.5));
 	}
 
 	@Test
-	void testGenerateAttributeValue_EBigInteger() {
+	void testGenerateValue_EBigInteger() {
 		final EAttribute attribute = createEAttribute(testClass, "bigId", EcorePackage.Literals.EBIG_INTEGER);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(java.math.BigInteger.valueOf(20));
 
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(java.math.BigInteger.valueOf(21));
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomBigIntegerType() {
+	void testGenerateValue_CustomBigIntegerType() {
 		final EDataType bigIntegerType = EcoreFactory.eINSTANCE.createEDataType();
 		bigIntegerType.setName("BigInteger");
 		bigIntegerType.setInstanceClassName("java.math.BigInteger");
 
 		final EAttribute attribute = createEAttribute(testClass, "customBigInteger", bigIntegerType);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(java.math.BigInteger.valueOf(20));
 	}
 
 	@Test
-	void testGenerateAttributeValue_EByteArray() {
+	void testGenerateValue_EByteArray() {
 		final EAttribute attribute = createEAttribute(testClass, "data", EcorePackage.Literals.EBYTE_ARRAY);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isInstanceOf(byte[].class);
 		assertThat((byte[]) value).containsExactly((byte) 20, (byte) 21);
 
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isInstanceOf(byte[].class);
 		assertThat((byte[]) value2).containsExactly((byte) 21, (byte) 22);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomByteArrayType() {
+	void testGenerateValue_CustomByteArrayType() {
 		final EDataType byteArrayType = EcoreFactory.eINSTANCE.createEDataType();
 		byteArrayType.setName("byte[]");
 		byteArrayType.setInstanceClassName("byte[]");
 
 		final EAttribute attribute = createEAttribute(testClass, "customByteArray", byteArrayType);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isInstanceOf(byte[].class);
 		assertThat((byte[]) value).containsExactly((byte) 20, (byte) 21);
 	}
 
 	@Test
-	void testGenerateAttributeValue_CustomTypesMatchedByInstanceClassName() {
+	void testGenerateValue_CustomTypesMatchedByInstanceClassName() {
 		final EDataType moneyType = EcoreFactory.eINSTANCE.createEDataType();
 		moneyType.setName("Money");
 		moneyType.setInstanceClassName("java.math.BigDecimal");
@@ -935,103 +960,122 @@ class EMFAttributeSetterTest {
 		final EAttribute binaryData = createEAttribute(testClass, "binaryData", binaryDataType);
 
 		final EObject instance = createInstance(testClass);
-		assertThat(setter.generateAttributeValue(instance, money))
+		assertThat(setter.generateValue(instance, money))
 			.isEqualTo(java.math.BigDecimal.valueOf(20.5));
-		assertThat(setter.generateAttributeValue(instance, identifier))
+		assertThat(setter.generateValue(instance, identifier))
 			.isEqualTo(java.math.BigInteger.valueOf(20));
-		assertThat((byte[]) setter.generateAttributeValue(instance, binaryData))
+		assertThat((byte[]) setter.generateValue(instance, binaryData))
 			.containsExactly((byte) 20, (byte) 21);
 	}
 
 	@Test
-	void testGenerateAttributeValue_EIntegerObject() {
+	void testGenerateValue_EIntegerObject() {
 		final EAttribute attribute = createEAttribute(testClass, "integerObject", EcorePackage.Literals.EINTEGER_OBJECT);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20);
 
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(21);
 	}
 
 	@Test
-	void testGenerateAttributeValue_EBooleanObject() {
+	void testGenerateValue_EBooleanObject() {
 		final EAttribute attribute = createEAttribute(testClass, "booleanObject", EcorePackage.Literals.EBOOLEAN_OBJECT);
 
-		final Object value0 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value0 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value0).isEqualTo(true);
 
-		final Object value1 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value1 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value1).isEqualTo(false);
 	}
 
 	@Test
-	void testGenerateAttributeValue_EDoubleObject() {
+	void testGenerateValue_EDoubleObject() {
 		final EAttribute attribute = createEAttribute(testClass, "doubleObject", EcorePackage.Literals.EDOUBLE_OBJECT);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20.5);
 
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(21.5);
 	}
 
 	@Test
-	void testGenerateAttributeValue_EFloatObject() {
+	void testGenerateValue_EFloatObject() {
 		final EAttribute attribute = createEAttribute(testClass, "floatObject", EcorePackage.Literals.EFLOAT_OBJECT);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20.5f);
 
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(21.5f);
 	}
 
 	@Test
-	void testGenerateAttributeValue_ELongObject() {
+	void testGenerateValue_ELongObject() {
 		final EAttribute attribute = createEAttribute(testClass, "longObject", EcorePackage.Literals.ELONG_OBJECT);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo(20L);
 
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo(21L);
 	}
 
 	@Test
-	void testGenerateAttributeValue_EShortObject() {
+	void testGenerateValue_EShortObject() {
 		final EAttribute attribute = createEAttribute(testClass, "shortObject", EcorePackage.Literals.ESHORT_OBJECT);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo((short) 20);
 
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo((short) 21);
 	}
 
 	@Test
-	void testGenerateAttributeValue_EByteObject() {
+	void testGenerateValue_EByteObject() {
 		final EAttribute attribute = createEAttribute(testClass, "byteObject", EcorePackage.Literals.EBYTE_OBJECT);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo((byte) 20);
 
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo((byte) 21);
 	}
 
 	@Test
-	void testGenerateAttributeValue_ECharacterObject() {
+	void testGenerateValue_ECharacterObject() {
 		final EAttribute attribute = createEAttribute(testClass, "charObject", EcorePackage.Literals.ECHARACTER_OBJECT);
 
-		final Object value = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value).isEqualTo('A');
 
-		final Object value2 = setter.generateAttributeValue(createInstance(testClass), attribute);
+		final Object value2 = setter.generateValue(createInstance(testClass), attribute);
 		assertThat(value2).isEqualTo('B');
 	}
 
 	// ========== Candidate selector strategy tests ==========
+
+	@Test
+	void testGenerateValueSelectsEnumWithoutAssignment() {
+		final EEnum colorEnum = EcoreFactory.eINSTANCE.createEEnum();
+		colorEnum.setName("Color");
+		testPackage.getEClassifiers().add(colorEnum);
+		final EEnumLiteral red = EcoreFactory.eINSTANCE.createEEnumLiteral();
+		red.setName("RED");
+		final EEnumLiteral blue = EcoreFactory.eINSTANCE.createEEnumLiteral();
+		blue.setName("BLUE");
+		colorEnum.getELiterals().add(red);
+		colorEnum.getELiterals().add(blue);
+		final EAttribute attribute = createEAttribute(testClass, "color", colorEnum);
+		final EObject owner = createInstance(testClass);
+
+		assertThat(setter.generateValue(owner, attribute)).isEqualTo(red.getInstance());
+		assertThat(setter.generateValue(owner, attribute)).isEqualTo(blue.getInstance());
+		assertThat(owner.eIsSet(attribute)).isFalse();
+	}
 
 	@Test
 	void testSetEnumLiteralSelectorStrategy() {

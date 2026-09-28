@@ -122,9 +122,8 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 	@Override
 	protected void setSingleFeature(EObject owner, EReference reference) {
-		EClass eReferenceType = reference.getEReferenceType();
 		// For single-valued references, use an existing assignable instance
-		EObject referencedEObject = nextAssignableExistingInstance(owner, eReferenceType, reference);
+		EObject referencedEObject = selectValue(owner, reference);
 		if (referencedEObject == null) {
 			return;
 		}
@@ -133,7 +132,6 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 	@Override
 	protected void setMultiFeature(EObject owner, EReference reference) {
-		EClass eReferenceType = reference.getEReferenceType();
 		final var list = EMFUtils.getAsList(owner, reference);
 
 		// For multi-valued references, add multiple EObjects
@@ -145,13 +143,13 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 		for (int i = 0; i < missingCount; i++) {
 			// Get next candidate using the configured selector strategy
-			EObject referencedEObject = nextAssignableExistingInstance(owner, eReferenceType, reference);
+			EObject referencedEObject = selectValue(owner, reference);
 			// but skip already present ones (only if unique is true), avoiding infinite loops
 			if (reference.isUnique()) {
 				EObject firstCandidate = referencedEObject;
 				while (referencedEObject != null &&
 						list.contains(referencedEObject)) {
-					referencedEObject = nextAssignableExistingInstance(owner, eReferenceType, reference);
+					referencedEObject = selectValue(owner, reference);
 					if (referencedEObject == firstCandidate) {
 						// we've looped through all candidates and found no new one
 						return;
@@ -166,12 +164,22 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 		}
 	}
 
-	private EObject nextAssignableExistingInstance(EObject owner, EClass eReferenceType, EReference reference) {
-		var function = getFunctionFor(reference);
+	/**
+	 * Selects one valid existing value for a cross-reference without assigning it
+	 * to the owner. A configured function is tried first. A {@code null} or invalid
+	 * custom candidate falls back to the configured candidate selector. Default
+	 * candidates are filtered by the cycle policy and opposite multiplicity.
+	 *
+	 * @param owner the EObject owning the cross-reference
+	 * @param crossReference the cross-reference for which to select a value
+	 * @return one valid existing EObject, or {@code null} if none is available
+	 */
+	public EObject selectValue(final EObject owner, final EReference crossReference) {
+		var function = getFunctionFor(crossReference);
 		if (function != null) {
 			final EObject candidate = function.apply(owner);
 			if (candidate != null &&
-					isCandidateValid(owner, reference, candidate)) {
+					isCandidateValid(owner, crossReference, candidate)) {
 				return candidate;
 			}
 		}
@@ -180,6 +188,7 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 		// that passes the opposite reference check and is not the owner itself (unless cycles are allowed).
 		// Since the selector wraps around, we track the first candidate to detect when
 		// we've checked all
+		final EClass eReferenceType = crossReference.getEReferenceType();
 		final EObject firstCandidate = candidateSelectorStrategy.getNextCandidate(owner, eReferenceType);
 		if (firstCandidate == null) {
 			return null;
@@ -188,7 +197,7 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 		// Note: at this point, getNextCandidate never returns null (it wraps around)
 		EObject candidate = firstCandidate;
 		do {
-			if (isCandidateValid(owner, reference, candidate)) {
+			if (isCandidateValid(owner, crossReference, candidate)) {
 				return candidate;
 			}
 			candidate = candidateSelectorStrategy.getNextCandidate(owner, eReferenceType);

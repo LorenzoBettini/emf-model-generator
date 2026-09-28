@@ -43,13 +43,28 @@ public class EMFContainmentReferenceSetter extends EMFInstanceCreatorFeatureSett
 		return setFeatureCreatingEObjects(owner, reference);
 	}
 
+	/**
+	 * Creates or obtains one value for a containment reference without assigning it
+	 * to the owner. A configured containment function is tried first. If it returns
+	 * {@code null} or an already-contained EObject, the configured instantiable
+	 * subclass selector is used for default creation.
+	 *
+	 * @param owner the EObject owning the containment reference
+	 * @param containmentReference the containment reference for which to create a value
+	 * @return one unassigned EObject, or {@code null} if no instantiable type is available
+	 */
+	public EObject createValue(final EObject owner, final EReference containmentReference) {
+		return createInstance(owner, containmentReference,
+				containmentReference.getEReferenceType());
+	}
+
 	@Override
 	protected void setSingleFeature(EObject owner, EReference reference) {
-		var eReferenceType = reference.getEReferenceType();
 		// For single-valued references, create and set one EObject
-		final EObject created = createInstance(owner, reference, eReferenceType);
+		final EObject created = createValue(owner, reference);
 		if (created != null) {
 			owner.eSet(reference, created);
+			trackAssignedEObject(created);
 		}
 	}
 
@@ -57,13 +72,13 @@ public class EMFContainmentReferenceSetter extends EMFInstanceCreatorFeatureSett
 	protected void setMultiFeature(EObject owner, EReference reference) {
 		final int count = EMFUtils.getEffectiveCount(reference, getMaxCountFor(owner, reference));
 		final var list = EMFUtils.getAsList(owner, reference);
-		var eReferenceType = reference.getEReferenceType();
 		// For multi-valued references, add multiple EObjects
 		// Respect upper and lower bounds
 		for (int i = 0; i < count; i++) {
-			final EObject created = createInstance(owner, reference, eReferenceType);
+			final EObject created = createValue(owner, reference);
 			if (created != null) {
 				list.add(created);
+				trackAssignedEObject(created);
 			}
 		}
 	}

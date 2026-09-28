@@ -377,7 +377,7 @@ class EMFModelGeneratorTest {
 
 	@Test
 	void testGenerateAttributeValue_FullCoverage() throws Exception {
-		// Load the alltypes.ecore model which exercises all generateAttributeValue branches
+		// Load the alltypes.ecore model which exercises all generateValue branches
 		EPackage ePackage = loadEcoreModel(TEST_INPUTS_DIR, "alltypes.ecore");
 		assertNotNull(ePackage, "alltypes EPackage should be loaded");
 		
