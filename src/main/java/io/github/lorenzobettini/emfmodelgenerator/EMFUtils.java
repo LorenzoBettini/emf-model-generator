@@ -405,23 +405,24 @@ public final class EMFUtils {
 	}
 
 	/**
-	 * Find all references that are part of the given feature map group.
-	 * These are references with ExtendedMetaData annotation pointing to the feature map.
+	 * Find all structural features that are part of the given feature map group.
+	 * These are features with an ExtendedMetaData annotation pointing to the feature map.
 	 *
 	 * @param featureMapAttribute the feature map attribute
-	 * @return list of references that are part of the group
+	 * @return structural features that are part of the group, in EMF feature order
 	 */
-	public static List<EReference> findFeatureMapGroupMembers(final EAttribute featureMapAttribute) {
-		final var groupMembers = new java.util.ArrayList<EReference>();
+	public static List<EStructuralFeature> findFeatureMapGroupMembers(
+			final EAttribute featureMapAttribute) {
+		final var groupMembers = new java.util.ArrayList<EStructuralFeature>();
 		final var extendedMetaData = ExtendedMetaData.INSTANCE;
 		final var eClass = featureMapAttribute.getEContainingClass();
 		
-		// Iterate through all references to find group members
-		for (var reference : eClass.getEAllReferences()) {
+		// Iterate through all structural features to find group members
+		for (var feature : eClass.getEAllStructuralFeatures()) {
 			// Check if this feature is part of the feature map group
-			final EStructuralFeature group = extendedMetaData.getGroup(reference);
+			final EStructuralFeature group = extendedMetaData.getGroup(feature);
 			if (group != null && group.equals(featureMapAttribute)) {
-				groupMembers.add(reference);
+				groupMembers.add(feature);
 			}
 		}
 		

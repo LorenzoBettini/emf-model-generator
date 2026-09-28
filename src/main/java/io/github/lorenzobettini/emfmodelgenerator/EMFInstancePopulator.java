@@ -9,6 +9,7 @@ import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFAttributeSetter.EMFAttributeValueFunction;
 import io.github.lorenzobettini.emfmodelgenerator.EMFContainmentReferenceSetter.EMFContainmentReferenceValueFunction;
@@ -213,7 +214,7 @@ public class EMFInstancePopulator {
 	 * Set the strategy for selecting instantiable subclasses when creating instances
 	 * for types in containment references.
 	 * 
-	 * @param strategy the candidate selector strategy
+	 * @param strategy the heterogeneous structural-feature selector strategy
 	 */
 	public void setInstantiableSubclassSelectorStrategy(EMFCandidateSelectorStrategy<EClass, EClass> strategy) {
 		containmentReferenceSetter.setInstantiableSubclassSelectorStrategy(strategy);
@@ -242,7 +243,8 @@ public class EMFInstancePopulator {
 	 * 
 	 * @param strategy the candidate selector strategy
 	 */
-	public void setGroupMemberSelectorStrategy(EMFCandidateSelectorStrategy<EAttribute, EReference> strategy) {
+	public void setGroupMemberSelectorStrategy(
+			EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> strategy) {
 		featureMapSetter.setGroupMemberSelectorStrategy(strategy);
 	}
 

@@ -43,6 +43,7 @@ import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.EcoreFactory;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
@@ -3399,9 +3400,9 @@ class EMFModelGeneratorTest {
 		var employeesRef = (EReference) libraryClass.getEStructuralFeature("employees");
 		var borrowersRef = (EReference) libraryClass.getEStructuralFeature("borrowers");
 		
-		var customStrategy = new EMFCandidateSelectorStrategy<EAttribute, EReference>() {
+		var customStrategy = new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
 			@Override
-			public EReference getNextCandidate(EObject context, EAttribute type) {
+			public EStructuralFeature getNextCandidate(EObject context, EAttribute type) {
 				return writersRef;
 			}
 

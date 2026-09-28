@@ -12,6 +12,7 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.util.FeatureMap;
 import org.junit.jupiter.api.AfterEach;
@@ -156,9 +157,10 @@ class EMFFeatureMapSetterTest {
 		final var library = EcoreUtil.create(libraryClass);
 		final var writersRef = assertEReferenceExists(libraryClass, "writers");
 		
-		final var customSelector = new EMFCandidateSelectorStrategy<EAttribute, EReference>() {
+		final var customSelector =
+				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
 			@Override
-			public EReference getNextCandidate(EObject context, EAttribute type) {
+			public EStructuralFeature getNextCandidate(EObject context, EAttribute type) {
 				return writersRef;
 			}
 

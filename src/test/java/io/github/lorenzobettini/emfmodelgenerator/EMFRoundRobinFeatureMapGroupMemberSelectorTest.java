@@ -8,6 +8,7 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.EcoreFactory;
 import org.eclipse.emf.ecore.EcorePackage;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -31,7 +32,7 @@ class EMFRoundRobinFeatureMapGroupMemberSelectorTest {
 	private EPackage testPackage;
 	private EClass testClass;
 	private EAttribute featureMapAttribute;
-	private EReference member1;
+	private EStructuralFeature member1;
 	private EReference member2;
 	private EReference member3;
 	private Resource contextResource;
@@ -74,15 +75,16 @@ class EMFRoundRobinFeatureMapGroupMemberSelectorTest {
 		targetClass3.setName("Target3");
 		testPackage.getEClassifiers().add(targetClass3);
 
-		// Create group member references
-		member1 = ECORE_FACTORY.createEReference();
+		// Create heterogeneous group members
+		member1 = ECORE_FACTORY.createEAttribute();
 		member1.setName("member1");
-		member1.setEType(targetClass1);
+		member1.setEType(EcorePackage.Literals.ESTRING);
 		testClass.getEStructuralFeatures().add(member1);
 
 		member2 = ECORE_FACTORY.createEReference();
 		member2.setName("member2");
 		member2.setEType(targetClass2);
+		member2.setContainment(true);
 		testClass.getEStructuralFeatures().add(member2);
 
 		member3 = ECORE_FACTORY.createEReference();
@@ -90,7 +92,7 @@ class EMFRoundRobinFeatureMapGroupMemberSelectorTest {
 		member3.setEType(targetClass3);
 		testClass.getEStructuralFeatures().add(member3);
 
-		// Set ExtendedMetaData to link references to feature map
+		// Set ExtendedMetaData to link structural features to feature map
 		var extendedMetaData = ExtendedMetaData.INSTANCE;
 		extendedMetaData.setGroup(member1, featureMapAttribute);
 		extendedMetaData.setGroup(member2, featureMapAttribute);

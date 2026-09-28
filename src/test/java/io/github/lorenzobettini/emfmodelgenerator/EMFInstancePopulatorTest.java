@@ -20,6 +20,7 @@ import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.EcoreFactory;
 import org.eclipse.emf.ecore.EcorePackage;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -1491,9 +1492,10 @@ class EMFInstancePopulatorTest {
 		final var borrowersRef = assertEReferenceExists(libraryClass, "borrowers");
 		
 		// Create a custom strategy that always returns the writers reference
-		final var customStrategy = new EMFCandidateSelectorStrategy<EAttribute, EReference>() {
+		final var customStrategy =
+				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
 			@Override
-			public EReference getNextCandidate(EObject context, EAttribute type) {
+			public EStructuralFeature getNextCandidate(EObject context, EAttribute type) {
 				return writersRef;
 			}
 

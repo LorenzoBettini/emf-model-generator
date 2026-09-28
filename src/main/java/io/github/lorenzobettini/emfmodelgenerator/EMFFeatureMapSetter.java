@@ -6,6 +6,7 @@ import java.util.List;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.util.FeatureMap;
 import org.eclipse.emf.ecore.util.FeatureMapUtil;
 
@@ -19,7 +20,8 @@ import org.eclipse.emf.ecore.util.FeatureMapUtil;
 public class EMFFeatureMapSetter extends EMFInstanceCreatorFeatureSetter<EAttribute> {
 
 	private static final int DEFAULT_MULTI_VALUED_COUNT = 2;
-	private EMFCandidateSelectorStrategy<EAttribute, EReference> groupMemberSelector = new EMFRoundRobinFeatureMapGroupMemberSelector();
+	private EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> groupMemberSelector =
+		new EMFRoundRobinFeatureMapGroupMemberSelector();
 
 	@FunctionalInterface
 	public static interface EMFFeatureMapValueFunction extends FeatureFunction<EObject> {
@@ -32,9 +34,10 @@ public class EMFFeatureMapSetter extends EMFInstanceCreatorFeatureSetter<EAttrib
 	/**
 	 * Set the group member selector strategy for selecting feature map group members.
 	 * 
-	 * @param strategy the candidate selector strategy to use
+	 * @param strategy the heterogeneous structural-feature selector strategy to use
 	 */
-	public void setGroupMemberSelectorStrategy(EMFCandidateSelectorStrategy<EAttribute, EReference> strategy) {
+	public void setGroupMemberSelectorStrategy(
+			EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> strategy) {
 		this.groupMemberSelector = strategy;
 	}
 
@@ -66,14 +69,15 @@ public class EMFFeatureMapSetter extends EMFInstanceCreatorFeatureSetter<EAttrib
 
 	/**
 	 * Populate the feature map by finding all group members and creating instances for each.
-	 * Group members are references that have an ExtendedMetaData annotation pointing to this feature map.
+	 * This population phase currently supports containment-reference members only.
 	 */
 	@Override
 	protected void setMultiFeature(EObject owner, EAttribute featureMapAttribute) {
 		final FeatureMap featureMap = (FeatureMap) owner.eGet(featureMapAttribute);
 		
 		// Find all features that are part of this feature map group
-		final List<EReference> groupMembers = EMFUtils.findFeatureMapGroupMembers(featureMapAttribute);
+		final List<EStructuralFeature> groupMembers =
+			EMFUtils.findFeatureMapGroupMembers(featureMapAttribute);
 		
 		if (groupMembers.isEmpty()) {
 			return;
@@ -84,7 +88,8 @@ public class EMFFeatureMapSetter extends EMFInstanceCreatorFeatureSetter<EAttrib
 		
 		for (int i = 0; i < count; i++) {
 			// Select the next group member using the selector strategy
-			final EReference groupMember = groupMemberSelector.getNextCandidate(owner, featureMapAttribute);
+			final EReference groupMember =
+				(EReference) groupMemberSelector.getNextCandidate(owner, featureMapAttribute);
 
 			// Create a single instance directly (pass owner as context for selector)
 			final EObject instance = createInstance(owner, groupMember, groupMember.getEReferenceType());
