@@ -26,6 +26,7 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.util.FeatureMap;
 import org.eclipse.emf.ecore.util.FeatureMapUtil;
@@ -207,9 +208,12 @@ class EMFModelGeneratorExternalMetamodelTest {
 	}
 
 	@Test
-	void testGenerateBpelWsdlDefinitionWithDefaultConfigurationWithSchemaLocation() throws Exception {
-		// The BPEL.ecore model imports WSDL.ecore, but also the package "messageproperties" that provides
-		// additional ExtensibilityElement types that can be used to populate a WSDL Definition.
+	void testGenerateBpelWsdlDefinitionWithSerializableOptionalContainments() throws Exception {
+		// BPEL.ecore contains the WSDL package together with BPEL extension packages
+		// such as "messageproperties". Registering those packages makes additional
+		// ExtensibilityElement subclasses available to the normal polymorphic
+		// containment selection; these subclasses are not present when WSDL.ecore is
+		// loaded on its own.
 		var packages = generator.loadEcoreModelPackages(EXTERNAL_METAMODELS_DIR + "/BPEL.ecore");
 
 		assertThat(packages).extracting(EPackage::getName)
@@ -221,27 +225,57 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.orElseThrow();
 		var definitionClass = assertEClassExists(wsdlPackage, "Definition");
 
-		generator.getInstancePopulator().setMaxDepth(2);
+		var populator = generator.getInstancePopulator();
+
+		// Skip optional containment candidates whose validity depends on required
+		// transient state. Such state can be populated in memory, so Diagnostician
+		// accepts the generated object, but it is not serialized to XMI and is
+		// therefore lost when the model is loaded again. Container references are
+		// excluded because they can be reconstructed from the containment relation.
+		// Example: The messageproperties.PropertyAlias.wsdlPart has
+		// PropertyAlias.wsdlPart : wsdl::Part [1..1] but it's TRANSIENT
+		// So, the generated model in memory would be valid with the required features set,
+		// but the generated XMI file is not valid because the wsdlPart is not serialized.
+		// This is specific of BPEL that provides a custom implementation to deal with that.
+		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public EObject createValue(final EObject owner, final EReference reference) {
+				var value = super.createValue(owner, reference);
+				if (value == null || reference.getLowerBound() > 0) {
+					return value;
+				}
+				return hasRequiredTransientFeature(value.eClass()) ? null : value;
+			}
+		});
+
+		populator.setMaxDepth(2);
 		generator.setFilePrefix("bpel_deep_");
 		generator.generateFromSeveral(definitionClass);
-		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 
-		// NOTE: The messageproperties.PropertyAlias.wsdlPart has
-		// PropertyAlias.wsdlPart : wsdl::Part [1..1] but it's TRANSIENT
-		// So, the generated model in memory is valid, but the generated XMI file is not valid because the wsdlPart is not serialized.
-		// This is specific of BPEL that provides a custom implementation to deal with that.
 		var validation = generator.validate();
 		assertThat(validation.isValid())
-				.withFailMessage("BPEL Process validation failed: %s",
+				.withFailMessage("BPEL-hosted WSDL Definition validation failed: %s",
 						validation.rejectedDiagnostics().stream()
 								.map(Diagnostic::getMessage)
 								.toList())
 				.isTrue();
 
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
 		var generatedFileName = "bpel_deep_wsdl_Definition_1.xmi";
 		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
 				generatedFileName, generatedFileName);
+	}
+
+	private boolean hasRequiredTransientFeature(EClass eClass) {
+		return eClass
+				.getEAllStructuralFeatures()
+				.stream()
+				.filter(feature -> feature.getLowerBound() > 0)
+				.filter(EStructuralFeature::isTransient)
+				.anyMatch(feature -> !(feature instanceof EReference eReference)
+						|| !eReference.isContainer());
 	}
 
 	private void assertBpmnMessageFeatureMapStructure(final EAttribute orderedMessages,

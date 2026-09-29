@@ -70,10 +70,6 @@
         required="true"
         qName="name1"
         name="Property_name_1"/>
-    <eExtensibilityElements
-        xsi:type="vprop:PropertyAlias"
-        required="true"
-        part="PropertyAlias_part_1"/>
     <eParts
         name="Part_name_1"
         elementName="name1"
@@ -117,10 +113,10 @@
     <eOperations
         name="Operation_name_1"
         undefined="true"
-        eParameterOrdering="//@eMessages.0/@eParts.1 //@eMessages.1/@eParts.0"/>
+        eParameterOrdering="//@eMessages.0/@eParts.0 //@eMessages.0/@eParts.1"/>
     <eOperations
         name="Operation_name_2"
-        eParameterOrdering="//@eMessages.1/@eParts.1 //@eMessages.0/@eParts.0"/>
+        eParameterOrdering="//@eMessages.1/@eParts.0 //@eMessages.1/@eParts.1"/>
   </ePortTypes>
   <ePortTypes
       qName="name2">
@@ -133,10 +129,10 @@
     <eOperations
         name="Operation_name_3"
         undefined="true"
-        eParameterOrdering="//@eMessages.0/@eParts.1 //@eMessages.1/@eParts.0"/>
+        eParameterOrdering="//@eMessages.0/@eParts.0 //@eMessages.0/@eParts.1"/>
     <eOperations
         name="Operation_name_4"
-        eParameterOrdering="//@eMessages.1/@eParts.1 //@eMessages.0/@eParts.0"/>
+        eParameterOrdering="//@eMessages.1/@eParts.0 //@eMessages.1/@eParts.1"/>
   </ePortTypes>
   <eBindings
       qName="name1"
@@ -194,9 +190,6 @@
   </eServices>
   <eServices
       qName="name2">
-    <eExtensibilityElements
-        xsi:type="vprop:PropertyAlias"
-        part="PropertyAlias_part_2"/>
     <eExtensibilityElements
         xsi:type="vprop:Query"
         queryLanguage="Query_queryLanguage_2"
