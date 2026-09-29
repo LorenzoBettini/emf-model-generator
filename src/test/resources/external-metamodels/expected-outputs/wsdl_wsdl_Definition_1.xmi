@@ -4,7 +4,7 @@
     xmlns:xmi="http://www.omg.org/XMI"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:wsdl="http://www.eclipse.org/wsdl/2003/WSDL"
-    xsi:schemaLocation="http://www.eclipse.org/wsdl/2003/WSDL ../inputs/WSDL.ecore#/0"
+    xsi:schemaLocation="http://www.eclipse.org/wsdl/2003/WSDL ../external-metamodels/metamodels/WSDL.ecore#/0"
     targetNamespace="Definition_targetNamespace_1"
     location="Definition_location_1"
     qName="name1"

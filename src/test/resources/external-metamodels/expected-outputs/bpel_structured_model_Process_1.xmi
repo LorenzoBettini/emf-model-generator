@@ -4,7 +4,7 @@
     xmlns:xmi="http://www.omg.org/XMI"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:bpws="http://docs.oasis-open.org/wsbpel/2.0/process/executable"
-    xsi:schemaLocation="http://docs.oasis-open.org/wsbpel/2.0/process/executable ../inputs/BPEL.ecore#/0"
+    xsi:schemaLocation="http://docs.oasis-open.org/wsbpel/2.0/process/executable ../external-metamodels/metamodels/BPEL.ecore#/0"
     name="Process_name_1"
     targetNamespace="Process_targetNamespace_1"
     queryLanguage="Process_queryLanguage_1"

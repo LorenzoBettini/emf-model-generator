@@ -4,7 +4,7 @@
     xmlns:xmi="http://www.omg.org/XMI"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:bpmn="http://stp.eclipse.org/bpmn"
-    xsi:schemaLocation="http://stp.eclipse.org/bpmn ../inputs/BPMN.ecore#/0"
+    xsi:schemaLocation="http://stp.eclipse.org/bpmn ../external-metamodels/metamodels/BPMN.ecore#/0"
     iD="name1"
     documentation="BpmnDiagram_documentation_1"
     name="BpmnDiagram_name_1"

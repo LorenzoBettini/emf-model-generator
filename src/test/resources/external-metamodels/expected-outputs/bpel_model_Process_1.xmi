@@ -5,7 +5,7 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:bpws="http://docs.oasis-open.org/wsbpel/2.0/process/executable"
     xmlns:plnk="http://docs.oasis-open.org/wsbpel/2.0/plnktype"
-    xsi:schemaLocation="http://docs.oasis-open.org/wsbpel/2.0/process/executable ../inputs/BPEL.ecore#/0 http://docs.oasis-open.org/wsbpel/2.0/plnktype ../inputs/BPEL.ecore#/3"
+    xsi:schemaLocation="http://docs.oasis-open.org/wsbpel/2.0/process/executable ../external-metamodels/metamodels/BPEL.ecore#/0 http://docs.oasis-open.org/wsbpel/2.0/plnktype ../external-metamodels/metamodels/BPEL.ecore#/3"
     name="Process_name_1"
     targetNamespace="Process_targetNamespace_1"
     queryLanguage="Process_queryLanguage_1"
