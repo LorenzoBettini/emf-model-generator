@@ -264,16 +264,6 @@ class EMFContainmentReferenceSetterTest {
 	}
 
 	@Test
-	void testDirectSetFeatureAssignsValuesWithoutActiveResultTracking() {
-		final EReference reference = createContainmentReference("children", true);
-		final EObject owner = createOwner();
-
-		setter.setFeature(owner, reference);
-
-		assertThat(EMFUtils.getAsEObjectsList(owner, reference)).hasSize(2);
-	}
-
-	@Test
 	void testCreateValueBeforeSetContainmentReferenceIsNotIncludedInResult() {
 		final EReference reference = createContainmentReference("children", true);
 		final EObject owner = createOwner();

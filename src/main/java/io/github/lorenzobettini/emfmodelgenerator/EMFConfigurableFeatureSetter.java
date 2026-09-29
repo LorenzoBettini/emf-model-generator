@@ -8,9 +8,11 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 
 /**
- * Base class for setting configurable features on EMF EObjects.
+ * Base class for concrete setters of configurable features on EMF EObjects.
  * Supports setting maximum counts for multi-valued features and associating
- * operations with features.
+ * operations with features. Client code uses the semantic operations exposed by
+ * the concrete setters; subclasses share the protected template workflow and
+ * customize it through its hook methods.
  * 
  * @param <T1> The type of EStructuralFeature (e.g., EAttribute, EReference) used for setting.
  * @param <T2> The type of EStructuralFeature (e.g., EAttribute, EReference) used for creating
@@ -73,17 +75,19 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 	}
 
 	/**
-	 * Template method to set the feature on the given owner EObject.
+	 * Orchestrates the common workflow for setting a feature on the given owner
+	 * EObject. This template method is used by the concrete semantic setter methods
+	 * and is not a client-facing operation.
 	 * 
-	 * It checks whether the feature should be set, and delegates to the appropriate
-	 * method for single-valued
+	 * It checks {@link #shouldSetFeature(EObject, EStructuralFeature)} and delegates
+	 * to the appropriate hook for single-valued
 	 * ({@link #setSingleFeature(EObject, EStructuralFeature)}) or multi-valued
 	 * features ({@link #setMultiFeature(EObject, EStructuralFeature)}).
 	 * 
 	 * @param owner   the EObject on which to set the feature
 	 * @param feature the feature to set
 	 */
-	public void setFeature(EObject owner, T1 feature) {
+	protected final void setFeature(EObject owner, T1 feature) {
 		if (!shouldSetFeature(owner, feature)) {
 			return;
 		}
