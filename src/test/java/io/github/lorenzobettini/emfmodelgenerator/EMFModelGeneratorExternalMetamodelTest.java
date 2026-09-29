@@ -38,9 +38,9 @@ class EMFModelGeneratorExternalMetamodelTest {
 
 	private static final String TEST_OUTPUT_DIR = "target/test-output";
 	private static final String EXTERNAL_METAMODELS_DIR =
-			"target/external-metamodels/metamodels";
+			"target/external-metamodels";
 	private static final String EXTERNAL_EXPECTED_OUTPUTS_DIR =
-			"src/test/resources/external-metamodels/expected-outputs";
+			"src/test/resources/expected-external-outputs";
 
 	private EMFModelGenerator generator;
 
