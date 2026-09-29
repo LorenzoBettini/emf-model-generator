@@ -459,12 +459,11 @@ public class EMFModelGenerator {
 
 	public List<EObject> generateAllFrom(EPackage ePackage) {
 		// Collect all instantiable EClasses from the package
-		List<EClass> instantiableClasses = new ArrayList<>();
-		for (var classifier : ePackage.getEClassifiers()) {
-			if (classifier instanceof EClass eClass && EMFUtils.canBeInstantiated(eClass)) {
-				instantiableClasses.add(eClass);
-			}
-		}
+		var instantiableClasses = ePackage.getEClassifiers().stream()
+				.filter(classifier -> classifier instanceof EClass eClass &&
+						EMFUtils.canBeInstantiated(eClass))
+				.map(EClass.class::cast)
+				.toList();
 		
 		// If no instantiable classes found, throw exception
 		if (instantiableClasses.isEmpty()) {
