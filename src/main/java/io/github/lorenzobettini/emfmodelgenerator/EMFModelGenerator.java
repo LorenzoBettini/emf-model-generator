@@ -597,7 +597,11 @@ public class EMFModelGenerator {
 	}
 
 	private List<EObject> modelRoots() {
-		return modelResources().stream()
+		return modelRoots(modelResources());
+	}
+
+	private List<EObject> modelRoots(Collection<Resource> resources) {
+		return resources.stream()
 				.flatMap(resource -> resource.getContents().stream())
 				.toList();
 	}
@@ -736,9 +740,7 @@ public class EMFModelGenerator {
 			for (var resource : reloadedResources) {
 				resource.load(null);
 			}
-			final var roots = reloadedResources.stream()
-					.flatMap(resource -> resource.getContents().stream())
-					.toList();
+			final var roots = modelRoots(reloadedResources);
 			return validateRoots(validatorFactory, roundTripResourceSet, roots);
 		} finally {
 			for (var resource : List.copyOf(roundTripResourceSet.getResources())) {
