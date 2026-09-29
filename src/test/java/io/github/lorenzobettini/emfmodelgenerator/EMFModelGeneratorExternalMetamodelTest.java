@@ -276,11 +276,20 @@ class EMFModelGeneratorExternalMetamodelTest {
 		// allowing Flow -> Invoke to cross-reference the WSDL Definition.
 		generator.generateFromSeveral(definitionClass, processClass);
 
-		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 		var validation = generator.validate();
 		assertThat(validation.isValid())
 				.withFailMessage("BPEL Process validation failed: %s",
 						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
+				ignored -> EMFModelValidator.standard());
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("BPEL-hosted WSDL Definition round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
 								.map(Diagnostic::getMessage)
 								.toList())
 				.isTrue();
