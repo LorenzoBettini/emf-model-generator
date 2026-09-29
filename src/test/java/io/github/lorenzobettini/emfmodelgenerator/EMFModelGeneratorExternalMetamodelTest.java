@@ -208,7 +208,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 	}
 
 	@Test
-	void testGenerateBpelWsdlDefinitionWithSerializableOptionalContainments() throws Exception {
+	void testGenerateBpelWsdlDefinitionSkippingRequiredTransientContainmentsIsValid() throws Exception {
 		// BPEL.ecore contains the WSDL package together with BPEL extension packages
 		// such as "messageproperties". Registering those packages makes additional
 		// ExtensibilityElement subclasses available to the normal polymorphic
@@ -274,6 +274,52 @@ class EMFModelGeneratorExternalMetamodelTest {
 		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
 				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGenerateBpelWsdlDefinitionWithRequiredTransientContainmentsIsValidButNotAfterSaving() throws Exception {
+		var packages = generator.loadEcoreModelPackages(EXTERNAL_METAMODELS_DIR + "/BPEL.ecore");
+
+		assertThat(packages).extracting(EPackage::getName)
+				.containsExactly("model", "ecore", "wsdl", "partnerlinktype",
+						"messageproperties", "xsd");
+		var wsdlPackage = packages.stream()
+				.filter(ePackage -> "wsdl".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var definitionClass = assertEClassExists(wsdlPackage, "Definition");
+
+		generator.getInstancePopulator().setMaxDepth(2);
+		generator.setFilePrefix("bpel_deep_");
+		generator.generateFromSeveral(definitionClass);
+
+		// The messageproperties.PropertyAlias.wsdlPart has
+		// PropertyAlias.wsdlPart : wsdl::Part [1..1] but it's TRANSIENT
+		// So, the generated model in memory would be valid with the required features set,
+		// but the generated XMI file is not valid because the wsdlPart is not serialized.
+		// This is specific of BPEL that provides a custom implementation to deal with that.
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BPEL-hosted WSDL Definition validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
+				ignored -> EMFModelValidator.standard());
+		var diagnosticList = roundTripValidation.flattenedDiagnostics();
+		assertThat(roundTripValidation.isValid())
+				.isFalse();
+
+		// verify that error messages are related to missing required transient features
+		assertThat(diagnosticList).
+			extracting(Diagnostic::getMessage)
+			.anySatisfy(message -> assertThat(message).containsAnyOf("wsdlPart", "PropertyAlias"));
+		var generatedFileName = "bpel_deep_wsdl_Definition_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
 	}
 
 	private boolean hasRequiredTransientFeature(EClass eClass) {
