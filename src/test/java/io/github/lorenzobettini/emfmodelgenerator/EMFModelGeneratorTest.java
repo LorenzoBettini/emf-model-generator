@@ -135,7 +135,7 @@ class EMFModelGeneratorTest {
 		assertNotNull(ageValue, "Age attribute should be set");
 		assertThat(ageValue).isEqualTo(20);
 	}
-	
+
 	@Test
 	void testGenerateFromEPackage() throws Exception {
 		// Load the simple.ecore model
@@ -160,7 +160,7 @@ class EMFModelGeneratorTest {
 		// Compare with expected output
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "simple_Person_1.xmi", "simple_Person_from_package.xmi");
 	}
-	
+
 	/**
 	 * The Ecore could be improved because Employees can end up being
 	 * their own managers.
@@ -222,7 +222,7 @@ class EMFModelGeneratorTest {
 				"company_Employee_1.xmi",
 				"company_Employee_1.xmi");
 	}
-	
+
 	@Test
 	void testGenerateWithReferences() throws Exception {
 		// Load the references.ecore model
@@ -267,7 +267,7 @@ class EMFModelGeneratorTest {
 		Object empName = employee.eGet(employee.eClass().getEStructuralFeature("name"));
 		assertThat(empName).isEqualTo("Employee_name_1");
 	}
-	
+
 	@Test
 	void testGenerateWithDifferentDataTypes() throws Exception {
 		// Load the datatypes.ecore model
@@ -322,7 +322,7 @@ class EMFModelGeneratorTest {
 			.hasSize(2)
 			.containsExactly("DataHolder_tags_1", "DataHolder_tags_2");
 	}
-	
+
 	@Test
 	void testOutputDirectoryConfiguration() throws Exception {
 		// Test custom output directory
