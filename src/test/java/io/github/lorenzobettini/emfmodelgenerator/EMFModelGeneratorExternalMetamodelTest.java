@@ -207,6 +207,59 @@ class EMFModelGeneratorExternalMetamodelTest {
 				generatedFileName, generatedFileName);
 	}
 
+	/**
+	 * See also {@link #testGenerateBpelWsdlDefinitionSkippingRequiredTransientContainmentsIsValid()}
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	void testGenerateDeepBpelProcess() throws Exception {
+		var packages = generator.loadEcoreModelPackages(EXTERNAL_METAMODELS_DIR + "/BPEL.ecore");
+		var modelPackage = packages.stream()
+				.filter(ePackage -> "model".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var processClass = assertEClassExists(modelPackage, "Process");
+
+		var populator = generator.getInstancePopulator();
+
+		// Skip optional containment candidates whose validity depends on required transient state.
+		// Example: The messageproperties.PropertyAlias.wsdlPart has
+		// PropertyAlias.wsdlPart : wsdl::Part [1..1] but it's TRANSIENT
+		// So, the generated model in memory would be valid with the required features set,
+		// but the generated XMI file is not valid because the wsdlPart is not serialized.
+		// This is specific of BPEL that provides a custom implementation to deal with that.
+		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public EObject createValue(final EObject owner, final EReference reference) {
+				var value = super.createValue(owner, reference);
+				if (value == null || reference.getLowerBound() > 0) {
+					return value;
+				}
+				return hasRequiredTransientFeature(value.eClass()) ? null : value;
+			}
+		});
+
+		populator.setMaxDepth(3);
+
+		generator.setFilePrefix("bpel_deep_");
+		generator.generateFrom(processClass);
+
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BPEL Process validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "bpel_deep_model_Process_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
 	@Test
 	void testGenerateBpelWsdlDefinitionSkippingRequiredTransientContainmentsIsValid() throws Exception {
 		// BPEL.ecore contains the WSDL package together with BPEL extension packages
