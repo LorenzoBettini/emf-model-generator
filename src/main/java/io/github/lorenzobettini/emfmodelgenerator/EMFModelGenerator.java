@@ -21,6 +21,8 @@ import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
 
+import io.github.lorenzobettini.emfmodelgenerator.EMFModelValidator.Factory;
+
 /**
  * Main entry point for programmatically generating EMF model instances.
  * 
@@ -557,7 +559,7 @@ public class EMFModelGenerator {
 			final EMFModelValidator.Factory validatorFactory,
 			final ResourceSet resourceSet,
 			final Collection<? extends EObject> roots) {
-		Objects.requireNonNull(validatorFactory, "validatorFactory");
+		requireValidatorFactoryNonNull(validatorFactory);
 		try (var validator = Objects.requireNonNull(validatorFactory.create(resourceSet),
 				"Validator factory returned null")) {
 			return Objects.requireNonNull(validator.validateAll(roots),
@@ -624,7 +626,11 @@ public class EMFModelGenerator {
 	 * @throws NullPointerException if {@code validatorFactory} is {@code null}
 	 */
 	public void enableValidationBeforeSave(final EMFModelValidator.Factory validatorFactory) {
-		validationBeforeSaveFactory = Objects.requireNonNull(validatorFactory, "validatorFactory");
+		validationBeforeSaveFactory = requireValidatorFactoryNonNull(validatorFactory);
+	}
+
+	private static Factory requireValidatorFactoryNonNull(final EMFModelValidator.Factory validatorFactory) {
+		return Objects.requireNonNull(validatorFactory, "validatorFactory");
 	}
 
 	/**
@@ -729,7 +735,7 @@ public class EMFModelGenerator {
 			final Map<Object, Object> options,
 			final EMFModelValidator.Factory validatorFactory)
 			throws IOException {
-		Objects.requireNonNull(validatorFactory, "validatorFactory");
+		requireValidatorFactoryNonNull(validatorFactory);
 		final var savedResources = saveModelResources(options);
 		final var roundTripResourceSet = createRoundTripResourceSet();
 		try {
