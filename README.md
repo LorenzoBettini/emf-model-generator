@@ -231,9 +231,10 @@ generator.save();
 
 ### Example 5: Post-Generation Validation
 
-Generation populates structural features where suitable values are available. Validation is a
-separate post-generation step: `validate()` uses standard EMF validation and returns the complete
-diagnostic tree for every model root in the generator's non-Ecore resources.
+Generation populates structural features where suitable values are available. In-memory validation
+is a separate post-generation step: `validate()` uses standard EMF validation on the current
+objects and returns the complete diagnostic tree for every model root in the generator's non-Ecore
+resources. It does not serialize or reload those objects.
 
 ```java
 generator.generateFrom(personClass);
@@ -263,6 +264,33 @@ generator.enableValidationBeforeSave();
 generator.generateFrom(personClass);
 generator.save(); // writes nothing and throws if validation fails
 ```
+
+To validate what was actually persisted, use round-trip validation. This runs the normal save path,
+reloads exactly the resources just written into a fresh `ResourceSet`, resolves them together, and
+validates every reconstructed root:
+
+```java
+generator.generateFrom(personClass);
+var roundTrip = generator.saveAndValidateRoundTrip();
+if (!roundTrip.isValid()) {
+    roundTrip.rejectedDiagnostics().forEach(diagnostic ->
+        System.err.println(diagnostic.getMessage()));
+}
+```
+
+The options overload forwards the same save options accepted by `save(options)`:
+
+```java
+var roundTrip = generator.saveAndValidateRoundTrip(
+    Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+```
+
+These workflows answer different questions: `validate()` checks the current in-memory graph;
+validation-before-save optionally rejects that graph before anything is written; and
+`saveAndValidateRoundTrip()` checks the graph reconstructed from the saved files. Round-trip
+validation can therefore detect required transient state that made the in-memory graph valid but
+was intentionally omitted from XMI. It happens after saving, so an invalid result does not remove
+the files already written.
 
 Alternative validation implementations are supplied without a dependency-injection framework. A
 factory receives the exact `ResourceSet` used by the generator as optional construction context.
@@ -740,8 +768,9 @@ The generator uses predictable patterns for sample data:
 - If no assignable target exists, a non-containment reference remains unchanged. This is valid for
   an optional reference, but a required reference then fails standard EMF validation.
 - Generation does not by itself guarantee structural validity. Call `validate()` or
-  `validateOrThrow()`, or opt in with `enableValidationBeforeSave()` when invalid candidates must
-  not be serialized.
+  `validateOrThrow()` for the in-memory objects, opt in with `enableValidationBeforeSave()` when
+  invalid candidates must not be serialized, or call `saveAndValidateRoundTrip()` to validate the
+  model reconstructed from the files just written.
 - With an externally supplied `ResourceSet`, validation and saving both cover all non-Ecore resources in that set.
 - Standard validation checks structural EMF constraints. OCL and other domain-specific invariants
   remain outside the core library and can be integrated through `EMFModelValidator.Factory`.

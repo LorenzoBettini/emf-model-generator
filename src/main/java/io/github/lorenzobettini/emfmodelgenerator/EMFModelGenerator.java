@@ -17,6 +17,7 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
 
@@ -82,6 +83,11 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * generator.enableValidationBeforeSave();
  * generator.save();
  * }
+ * To validate the serialized form instead, save and reload the generated resources in a fresh
+ * resource set:
+ * {@snippet :
+ * EMFValidationResult roundTripResult = generator.saveAndValidateRoundTrip();
+ * }
  * A custom implementation can be supplied through {@link EMFModelValidator.Factory}:
  * {@snippet :
  * EMFModelValidator.Factory factory = resourceSet ->
@@ -95,6 +101,7 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * @see #unloadEcoreModels()
  * @see #generateFrom(EClass)
  * @see #save()
+ * @see #saveAndValidateRoundTrip()
  *
  * @author Lorenzo Bettini
  */
@@ -515,6 +522,9 @@ public class EMFModelGenerator {
 	/**
 	 * Performs post-generation validation of all model roots using standard EMF validation.
 	 *
+	 * <p>This method validates the current in-memory objects. It does not save or reload them.
+	 * Use {@link #saveAndValidateRoundTrip()} to validate the serialized form.</p>
+	 *
 	 * <p>Validation covers every root in every non-Ecore resource in this generator's
 	 * resource set. When an external {@link ResourceSet} was supplied, this includes
 	 * its existing non-Ecore resources, matching the scope of {@link #save()}.</p>
@@ -529,24 +539,33 @@ public class EMFModelGenerator {
 	 * Validates all model roots using a validator created for this generator's exact
 	 * resource set.
 	 *
-	 * <p>Validation covers every root in every non-Ecore resource in this generator's
-	 * resource set, preserving resource and root order.</p>
+	 * <p>Validation covers the current in-memory roots in every non-Ecore resource in this
+	 * generator's resource set, preserving resource and root order. It does not save or reload
+	 * them.</p>
 	 *
 	 * @param validatorFactory the factory used to create one validator for this call
 	 * @return the aggregate validation result
 	 * @throws NullPointerException if the factory, validator, or result is {@code null}
 	 */
 	public EMFValidationResult validate(final EMFModelValidator.Factory validatorFactory) {
+		return validateRoots(validatorFactory, sharedResourceSet, modelRoots());
+	}
+
+	private static EMFValidationResult validateRoots(
+			final EMFModelValidator.Factory validatorFactory,
+			final ResourceSet resourceSet,
+			final Collection<? extends EObject> roots) {
 		Objects.requireNonNull(validatorFactory, "validatorFactory");
-		try (var validator = Objects.requireNonNull(validatorFactory.create(sharedResourceSet),
+		try (var validator = Objects.requireNonNull(validatorFactory.create(resourceSet),
 				"Validator factory returned null")) {
-			return Objects.requireNonNull(validator.validateAll(modelRoots()),
+			return Objects.requireNonNull(validator.validateAll(roots),
 					"Validator returned a null result");
 		}
 	}
 
 	/**
 	 * Validates all model roots with standard EMF validation and throws when invalid.
+	 * This checks the current in-memory objects and does not save or reload them.
 	 *
 	 * @throws EMFValidationException if validation is not valid
 	 */
@@ -555,7 +574,8 @@ public class EMFModelGenerator {
 	}
 
 	/**
-	 * Validates all model roots with a custom validator and throws when invalid.
+	 * Validates all current in-memory model roots with a custom validator and throws when invalid.
+	 * This method does not save or reload them.
 	 *
 	 * @param validatorFactory the factory used to create one validator for this call
 	 * @throws NullPointerException if the factory, validator, or result is {@code null}
@@ -648,6 +668,74 @@ public class EMFModelGenerator {
 		and the generated model fails validation
 	 */
 	public void save(final Map<Object, Object> options) throws IOException {
+		saveModelResources(options);
+	}
+
+	/**
+	 * Saves all generated models, reloads exactly the saved resources in a fresh resource set,
+	 * and validates every reloaded root using standard EMF validation.
+	 *
+	 * <p>All resources are created and loaded together before references are resolved and
+	 * validation begins, so references between saved resources can resolve. The returned result
+	 * describes only the reconstructed objects, not the current in-memory objects. Temporary
+	 * reload resources are unloaded and are never added to this generator's resource set.</p>
+	 *
+	 * <p>If validation before saving is enabled, it runs first with its configured validator and
+	 * can prevent serialization in the same way as {@link #save()}. Round-trip validation happens
+	 * after a successful save; an invalid result does not remove files already written.</p>
+	 *
+	 * @return the aggregate standard-validation result for the reloaded roots
+	 * @throws IOException if the files cannot be written or reloaded
+	 * @throws EMFValidationException if validation before saving is enabled and the current
+	 * model fails validation
+	 */
+	public EMFValidationResult saveAndValidateRoundTrip() throws IOException {
+		return saveAndValidateRoundTrip(null);
+	}
+
+	/**
+	 * Saves all generated models with custom options, reloads exactly the saved resources in a
+	 * fresh resource set, and validates every reloaded root using standard EMF validation.
+	 *
+	 * <p>The save options are forwarded unchanged to the normal save path. All saved resources are
+	 * loaded together before references are resolved and validation begins. The returned result
+	 * describes only the reconstructed objects. Temporary reload resources are unloaded and are
+	 * never added to this generator's resource set.</p>
+	 *
+	 * <p>If validation before saving is enabled, it runs before any serialization. Round-trip
+	 * validation happens after a successful save; an invalid result does not remove files already
+	 * written.</p>
+	 *
+	 * @param options the save options to pass to EMF resources, or null for default options
+	 * @return the aggregate standard-validation result for the reloaded roots
+	 * @throws IOException if the files cannot be written or reloaded
+	 * @throws EMFValidationException if validation before saving is enabled and the current
+	 * model fails validation
+	 */
+	public EMFValidationResult saveAndValidateRoundTrip(final Map<Object, Object> options)
+			throws IOException {
+		final var savedResources = saveModelResources(options);
+		final var roundTripResourceSet = createRoundTripResourceSet();
+		try {
+			final var reloadedResources = savedResources.stream()
+					.map(Resource::getURI)
+					.map(roundTripResourceSet::createResource)
+					.toList();
+			for (var resource : reloadedResources) {
+				resource.load(null);
+			}
+			final var roots = reloadedResources.stream()
+					.flatMap(resource -> resource.getContents().stream())
+					.toList();
+			return validateRoots(STANDARD_VALIDATOR_FACTORY, roundTripResourceSet, roots);
+		} finally {
+			for (var resource : List.copyOf(roundTripResourceSet.getResources())) {
+				resource.unload();
+			}
+		}
+	}
+
+	private List<Resource> saveModelResources(final Map<Object, Object> options) throws IOException {
 		if (validationBeforeSaveFactory != null) {
 			validateOrThrow(validationBeforeSaveFactory);
 		}
@@ -657,8 +745,24 @@ public class EMFModelGenerator {
 		Path outputPath = Paths.get(outputDir);
 		Files.createDirectories(outputPath);
 
-		for (Resource resource : modelResources()) {
+		final var resources = List.copyOf(modelResources());
+		for (Resource resource : resources) {
 			resource.save(options);
 		}
+		return resources;
+	}
+
+	private ResourceSet createRoundTripResourceSet() {
+		final var result = new ResourceSetImpl();
+		result.getPackageRegistry().putAll(sharedResourceSet.getPackageRegistry());
+		final var sourceRegistry = sharedResourceSet.getResourceFactoryRegistry();
+		final var targetRegistry = result.getResourceFactoryRegistry();
+		targetRegistry.getExtensionToFactoryMap()
+				.putAll(sourceRegistry.getExtensionToFactoryMap());
+		targetRegistry.getProtocolToFactoryMap()
+				.putAll(sourceRegistry.getProtocolToFactoryMap());
+		targetRegistry.getContentTypeToFactoryMap()
+				.putAll(sourceRegistry.getContentTypeToFactoryMap());
+		return result;
 	}
 }
