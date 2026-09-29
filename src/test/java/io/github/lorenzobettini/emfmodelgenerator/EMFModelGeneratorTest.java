@@ -4472,4 +4472,27 @@ class EMFModelGeneratorTest {
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
 				generatedFileName, generatedFileName);
 	}
+
+	@Test
+	void testGenerateConnectedWsdlDefinitionDeep() throws Exception {
+		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/WSDL.ecore");
+		var wsdlPackage = packages.stream()
+				.filter(ePackage -> "wsdl".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var definitionClass = assertEClassExists(wsdlPackage, "Definition");
+
+		var populator = generator.getInstancePopulator();
+		populator.setMaxDepth(2);
+		generator.setFilePrefix("wsdl_deep_");
+
+		generator.generateFrom(definitionClass);
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+		assertGenerationIsValid("Connected WSDL Definition validation failed: %s");
+
+		var generatedFileName = "wsdl_deep_wsdl_Definition_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
 }
