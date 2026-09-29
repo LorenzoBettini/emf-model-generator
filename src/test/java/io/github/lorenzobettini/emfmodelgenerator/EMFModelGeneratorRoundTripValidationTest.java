@@ -253,7 +253,7 @@ class EMFModelGeneratorRoundTripValidationTest {
 	}
 
 	@Test
-	void nullValidatorAndResultRetainValidationHelperSemantics() throws IOException {
+	void nullValidatorAndResultRetainValidationHelperSemantics() {
 		generator = newGenerator("nulls");
 
 		assertThatNullPointerException()
