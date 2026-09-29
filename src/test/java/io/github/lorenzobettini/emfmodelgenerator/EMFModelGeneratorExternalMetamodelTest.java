@@ -622,15 +622,20 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.findFirst()
 				.orElseThrow();
 		var definitionClass = assertEClassExists(wsdlPackage, "Definition");
+		var xsdSchemaExtensibilityElementClass = assertEClassExists(wsdlPackage, "XSDSchemaExtensibilityElement");
+		var schemaReference = assertEReferenceExists(xsdSchemaExtensibilityElementClass, "schema");
 
 		var populator = generator.getInstancePopulator();
-		// Exclude child containment of optional WSDL extensibility elements that would require
-		// copied XSD model generation.
+
+		// Skip the optional XSDSchema containment. A dynamically instantiated
+		// XSDSchema requires XSD runtime-derived state (for example rootContainer,
+		// rootVersion, and schemaForSchema) that cannot be populated through ordinary
+		// reflective assignment. Omitting this optional branch keeps the generated
+		// WSDL model structurally valid while leaving the rest of the generation generic.
 		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
 			@Override
-			public Collection<EObject> setContainmentReference(final EObject owner,
-					final EReference reference) {
-				if (owner.eClass().getName().equals("XSDSchemaExtensibilityElement")) {
+			public Collection<EObject> setContainmentReference(final EObject owner, final EReference reference) {
+				if (reference == schemaReference) {
 					return List.of();
 				}
 				return super.setContainmentReference(owner, reference);
@@ -657,15 +662,20 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.findFirst()
 				.orElseThrow();
 		var definitionClass = assertEClassExists(wsdlPackage, "Definition");
+		var xsdSchemaExtensibilityElementClass = assertEClassExists(wsdlPackage, "XSDSchemaExtensibilityElement");
+		var schemaReference = assertEReferenceExists(xsdSchemaExtensibilityElementClass, "schema");
 
 		var populator = generator.getInstancePopulator();
-		// Exclude child containment of optional WSDL extensibility elements that would require
-		// copied XSD model generation.
+
+		// Skip the optional XSDSchema containment. A dynamically instantiated
+		// XSDSchema requires XSD runtime-derived state (for example rootContainer,
+		// rootVersion, and schemaForSchema) that cannot be populated through ordinary
+		// reflective assignment. Omitting this optional branch keeps the generated
+		// WSDL model structurally valid while leaving the rest of the generation generic.
 		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
 			@Override
-			public Collection<EObject> setContainmentReference(final EObject owner,
-					final EReference reference) {
-				if (owner.eClass().getName().equals("XSDSchemaExtensibilityElement")) {
+			public Collection<EObject> setContainmentReference(final EObject owner, final EReference reference) {
+				if (reference == schemaReference) {
 					return List.of();
 				}
 				return super.setContainmentReference(owner, reference);
