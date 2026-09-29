@@ -213,7 +213,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 	 * @throws Exception
 	 */
 	@Test
-	void testGenerateDeepBpelProcess() throws Exception {
+	void testGenerateCustomizedBpelProcessWithFlowAndWsdlDefinition() throws Exception {
 		var packages = generator.loadEcoreModelPackages(EXTERNAL_METAMODELS_DIR + "/BPEL.ecore");
 		var modelPackage = packages.stream()
 				.filter(ePackage -> "model".equals(ePackage.getName()))
@@ -229,6 +229,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 		var definitionClass = assertEClassExists(wsdlPackage, "Definition");
 
 		var populator = generator.getInstancePopulator();
+		var maxDepth = 3;
 
 		// Skip optional containment candidates whose validity depends on required transient state.
 		// Example: The messageproperties.PropertyAlias.wsdlPart has
@@ -240,10 +241,25 @@ class EMFModelGeneratorExternalMetamodelTest {
 			@Override
 			public EObject createValue(final EObject owner, final EReference reference) {
 				var value = super.createValue(owner, reference);
+
 				if (value == null || reference.getLowerBound() > 0) {
 					return value;
 				}
-				return hasRequiredTransientFeature(value.eClass()) ? null : value;
+
+				// Do not create optional objects whose required transient state
+				// would be lost during serialization.
+				if (hasRequiredTransientFeature(value.eClass())) {
+					return null;
+				}
+
+				// Do not create an optional object at the depth frontier when that
+				// object would require another contained object beyond the frontier.
+				if (containmentDepth(owner) + 1 >= maxDepth
+						&& hasRequiredContainmentFeature(value.eClass())) {
+					return null;
+				}
+
+				return value;
 			}
 		});
 
@@ -253,10 +269,11 @@ class EMFModelGeneratorExternalMetamodelTest {
 				processActivity,
 				owner -> EcoreUtil.create(flowClass));
 
-		populator.setMaxDepth(3);
+		populator.setMaxDepth(maxDepth);
 
-		generator.setFilePrefix("bpel_deep_");
+		generator.setFilePrefix("bpel_flow_");
 		// First create the WSDL candidate universe.
+		// allowing Flow -> Invoke to cross-reference the WSDL Definition.
 		generator.generateFromSeveral(definitionClass, processClass);
 
 		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
@@ -268,10 +285,30 @@ class EMFModelGeneratorExternalMetamodelTest {
 								.toList())
 				.isTrue();
 
-		var generatedFileName = "bpel_deep_model_Process_1.xmi";
-		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		var generatedProcessFileName = "bpel_flow_model_Process_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedProcessFileName)).exists();
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
-				generatedFileName, generatedFileName);
+				generatedProcessFileName, generatedProcessFileName);
+		var generatedDefinitionFileName = "bpel_flow_wsdl_Definition_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedDefinitionFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedDefinitionFileName, generatedDefinitionFileName);
+	}
+
+	private boolean hasRequiredContainmentFeature(final EClass eClass) {
+		return eClass.getEAllReferences().stream()
+				.filter(EReference::isContainment)
+				.anyMatch(reference -> reference.getLowerBound() > 0);
+	}
+
+	private int containmentDepth(final EObject object) {
+		int depth = 0;
+		var current = object;
+		while (current.eContainer() != null) {
+			depth++;
+			current = current.eContainer();
+		}
+		return depth;
 	}
 
 	@Test
