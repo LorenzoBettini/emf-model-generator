@@ -260,7 +260,14 @@ class EMFModelGeneratorExternalMetamodelTest {
 								.toList())
 				.isTrue();
 
-		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("BPEL-hosted WSDL Definition round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
 
 		var generatedFileName = "bpel_deep_wsdl_Definition_1.xmi";
 		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
