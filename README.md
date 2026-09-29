@@ -278,11 +278,13 @@ if (!roundTrip.isValid()) {
 }
 ```
 
-The options overload forwards the same save options accepted by `save(options)`:
+The general overload forwards the same save options accepted by `save(options)` and accepts a
+validator factory for the reconstructed graph:
 
 ```java
 var roundTrip = generator.saveAndValidateRoundTrip(
-    Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+    Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
+    resourceSet -> new MyProjectModelValidator(resourceSet));
 ```
 
 These workflows answer different questions: `validate()` checks the current in-memory graph;
@@ -290,7 +292,9 @@ validation-before-save optionally rejects that graph before anything is written;
 `saveAndValidateRoundTrip()` checks the graph reconstructed from the saved files. Round-trip
 validation can therefore detect required transient state that made the in-memory graph valid but
 was intentionally omitted from XMI. It happens after saving, so an invalid result does not remove
-the files already written.
+the files already written. A custom factory passed to round-trip validation receives the fresh
+`ResourceSet` and applies only to the reconstructed graph. It is independent of any factory
+configured by `enableValidationBeforeSave(...)` for the current graph.
 
 Alternative validation implementations are supplied without a dependency-injection framework. A
 factory receives the exact `ResourceSet` used by the generator as optional construction context.

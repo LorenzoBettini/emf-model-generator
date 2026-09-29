@@ -87,6 +87,8 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
  * resource set:
  * {@snippet :
  * EMFValidationResult roundTripResult = generator.saveAndValidateRoundTrip();
+ * EMFValidationResult customRoundTripResult = generator.saveAndValidateRoundTrip(
+ *     options, resourceSet -> new MyProjectModelValidator(resourceSet));
  * }
  * A custom implementation can be supplied through {@link EMFModelValidator.Factory}:
  * {@snippet :
@@ -690,30 +692,40 @@ public class EMFModelGenerator {
 	 * model fails validation
 	 */
 	public EMFValidationResult saveAndValidateRoundTrip() throws IOException {
-		return saveAndValidateRoundTrip(null);
+		return saveAndValidateRoundTrip(null, STANDARD_VALIDATOR_FACTORY);
 	}
 
 	/**
 	 * Saves all generated models with custom options, reloads exactly the saved resources in a
-	 * fresh resource set, and validates every reloaded root using standard EMF validation.
+	 * fresh resource set, and validates every reloaded root using a validator created by the
+	 * supplied factory.
 	 *
 	 * <p>The save options are forwarded unchanged to the normal save path. All saved resources are
 	 * loaded together before references are resolved and validation begins. The returned result
 	 * describes only the reconstructed objects. Temporary reload resources are unloaded and are
 	 * never added to this generator's resource set.</p>
 	 *
-	 * <p>If validation before saving is enabled, it runs before any serialization. Round-trip
-	 * validation happens after a successful save; an invalid result does not remove files already
-	 * written.</p>
+	 * <p>The factory receives the fresh resource set containing the reloaded resources, not this
+	 * generator's resource set. If validation before saving is enabled, its separately configured
+	 * factory validates the current in-memory graph before serialization. The supplied factory
+	 * applies only after a successful save to the reconstructed graph; an invalid round-trip result
+	 * does not remove files already written.</p>
 	 *
 	 * @param options the save options to pass to EMF resources, or null for default options
-	 * @return the aggregate standard-validation result for the reloaded roots
+	 * @param validatorFactory the factory used to create one validator for the fresh round-trip
+	 * resource set
+	 * @return the supplied validator's result for the reconstructed model only
+	 * @throws NullPointerException if the factory, validator, or result is {@code null}; a null
+	 * factory is rejected before any save-related filesystem side effect
 	 * @throws IOException if the files cannot be written or reloaded
 	 * @throws EMFValidationException if validation before saving is enabled and the current
 	 * model fails validation
 	 */
-	public EMFValidationResult saveAndValidateRoundTrip(final Map<Object, Object> options)
+	public EMFValidationResult saveAndValidateRoundTrip(
+			final Map<Object, Object> options,
+			final EMFModelValidator.Factory validatorFactory)
 			throws IOException {
+		Objects.requireNonNull(validatorFactory, "validatorFactory");
 		final var savedResources = saveModelResources(options);
 		final var roundTripResourceSet = createRoundTripResourceSet();
 		try {
@@ -727,7 +739,7 @@ public class EMFModelGenerator {
 			final var roots = reloadedResources.stream()
 					.flatMap(resource -> resource.getContents().stream())
 					.toList();
-			return validateRoots(STANDARD_VALIDATOR_FACTORY, roundTripResourceSet, roots);
+			return validateRoots(validatorFactory, roundTripResourceSet, roots);
 		} finally {
 			for (var resource : List.copyOf(roundTripResourceSet.getResources())) {
 				resource.unload();

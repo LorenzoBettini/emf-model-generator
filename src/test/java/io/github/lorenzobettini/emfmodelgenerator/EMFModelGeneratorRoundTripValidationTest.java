@@ -4,16 +4,22 @@ import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertECla
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.assertEReferenceExists;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.emf.common.util.BasicDiagnostic;
 import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 import org.junit.jupiter.api.AfterEach;
@@ -69,7 +75,8 @@ class EMFModelGeneratorRoundTripValidationTest {
 		generator.generateFrom(assertEClassExists(model, "Person"));
 
 		var result = generator.saveAndValidateRoundTrip(
-				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
+				ignored -> EMFModelValidator.standard());
 
 		assertThat(result.isValid()).isTrue();
 		assertThat(temporaryDirectory.resolve("valid/simple_Person_1.xmi"))
@@ -189,6 +196,138 @@ class EMFModelGeneratorRoundTripValidationTest {
 		assertThat(result.diagnostic().getChildren()).isEmpty();
 		assertThat(temporaryDirectory.resolve("empty")).isDirectory().isEmptyDirectory();
 		assertThat(generator.getResourceSet().getResources()).isEmpty();
+	}
+
+	@Test
+	void customValidatorReceivesFreshResourceSetAndReloadedRoots() throws IOException {
+		generator = newGenerator("custom-validator");
+		var model = generator.loadEcoreModel(INPUTS + "/simple.ecore");
+		var originalRoot = generator.generateFrom(assertEClassExists(model, "Person"));
+		var expectedResult = validResult("custom");
+		var validator = new RecordingValidator(expectedResult);
+		var factoryCalls = new AtomicInteger();
+		var suppliedResourceSets = new java.util.ArrayList<ResourceSet>();
+
+		var result = generator.saveAndValidateRoundTrip(null, resourceSet -> {
+			factoryCalls.incrementAndGet();
+			suppliedResourceSets.add(resourceSet);
+			return validator;
+		});
+
+		assertThat(result).isSameAs(expectedResult);
+		assertThat(factoryCalls).hasValue(1);
+		assertThat(suppliedResourceSets).singleElement()
+				.isNotSameAs(generator.getResourceSet());
+		assertThat(validator.validatedRoots).singleElement()
+				.isNotSameAs(originalRoot)
+				.matches(root -> root.eClass() == originalRoot.eClass());
+		assertThat(validator.closed).isTrue();
+	}
+
+	@Test
+	void customValidatorIsClosedForInvalidResultAndFailure() throws IOException {
+		generator = newGenerator("custom-lifecycle");
+		var invalidResult = invalidResult();
+		var invalidValidator = new RecordingValidator(invalidResult);
+
+		assertThat(generator.saveAndValidateRoundTrip(null, ignored -> invalidValidator))
+				.isSameAs(invalidResult);
+		assertThat(invalidValidator.closed).isTrue();
+
+		var failingValidator = new RecordingValidator(validResult("unused"));
+		failingValidator.failure = new IllegalStateException("validation failed");
+		assertThatThrownBy(() -> generator.saveAndValidateRoundTrip(null,
+				ignored -> failingValidator))
+				.isSameAs(failingValidator.failure);
+		assertThat(failingValidator.closed).isTrue();
+	}
+
+	@Test
+	void nullFactoryIsRejectedBeforeFilesystemSideEffects() {
+		generator = newGenerator("null-factory");
+
+		assertThatNullPointerException()
+				.isThrownBy(() -> generator.saveAndValidateRoundTrip(null, null))
+				.withMessage("validatorFactory");
+		assertThat(temporaryDirectory.resolve("null-factory")).doesNotExist();
+	}
+
+	@Test
+	void nullValidatorAndResultRetainValidationHelperSemantics() throws IOException {
+		generator = newGenerator("nulls");
+
+		assertThatNullPointerException()
+				.isThrownBy(() -> generator.saveAndValidateRoundTrip(null, ignored -> null))
+				.withMessage("Validator factory returned null");
+
+		var validator = new RecordingValidator(null);
+		assertThatNullPointerException()
+				.isThrownBy(() -> generator.saveAndValidateRoundTrip(null, ignored -> validator))
+				.withMessage("Validator returned a null result");
+		assertThat(validator.closed).isTrue();
+	}
+
+	@Test
+	void preSaveAndRoundTripFactoriesUseTheirRespectiveResourceSets() throws IOException {
+		generator = newGenerator("separate-factories");
+		var preSaveResourceSets = new java.util.ArrayList<ResourceSet>();
+		var roundTripResourceSets = new java.util.ArrayList<ResourceSet>();
+		generator.enableValidationBeforeSave(resourceSet -> {
+			preSaveResourceSets.add(resourceSet);
+			return new RecordingValidator(validResult("pre-save"));
+		});
+
+		generator.saveAndValidateRoundTrip(null, resourceSet -> {
+			roundTripResourceSets.add(resourceSet);
+			return new RecordingValidator(validResult("round-trip"));
+		});
+
+		assertThat(preSaveResourceSets).containsExactly(generator.getResourceSet());
+		assertThat(roundTripResourceSets).singleElement()
+				.isNotSameAs(generator.getResourceSet());
+		assertThat(roundTripResourceSets.getFirst()).isNotSameAs(preSaveResourceSets.getFirst());
+	}
+
+	private static EMFValidationResult validResult(final String message) {
+		return new EMFValidationResult(
+				new BasicDiagnostic(Diagnostic.OK, "test", 0, message, null),
+				Diagnostic.ERROR, EMFValidationKind.VALID);
+	}
+
+	private static EMFValidationResult invalidResult() {
+		return new EMFValidationResult(
+				new BasicDiagnostic(Diagnostic.ERROR, "test", 0, "invalid", null),
+				Diagnostic.ERROR, EMFValidationKind.VALIDATION_FAILURE);
+	}
+
+	private static final class RecordingValidator implements EMFModelValidator {
+		private final EMFValidationResult result;
+		private List<EObject> validatedRoots;
+		private boolean closed;
+		private RuntimeException failure;
+
+		private RecordingValidator(final EMFValidationResult result) {
+			this.result = result;
+		}
+
+		@Override
+		public EMFValidationResult validate(final EObject root) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public EMFValidationResult validateAll(final Collection<? extends EObject> roots) {
+			validatedRoots = List.copyOf(roots);
+			if (failure != null) {
+				throw failure;
+			}
+			return result;
+		}
+
+		@Override
+		public void close() {
+			closed = true;
+		}
 	}
 
 	private EMFModelGenerator newGenerator(final String directory) {
