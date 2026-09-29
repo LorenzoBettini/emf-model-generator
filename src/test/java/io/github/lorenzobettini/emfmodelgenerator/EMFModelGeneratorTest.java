@@ -4483,7 +4483,19 @@ class EMFModelGeneratorTest {
 		var definitionClass = assertEClassExists(wsdlPackage, "Definition");
 
 		var populator = generator.getInstancePopulator();
-		populator.setMaxDepth(2);
+		// Exclude child containment of optional WSDL extensibility elements that would require
+		// copied XSD model generation.
+		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public Collection<EObject> setContainmentReference(final EObject owner,
+					final EReference reference) {
+				if (owner.eClass().getName().equals("XSDSchemaExtensibilityElement")) {
+					return List.of();
+				}
+				return super.setContainmentReference(owner, reference);
+			}
+		});
+		populator.setMaxDepth(3);
 		generator.setFilePrefix("wsdl_deep_");
 
 		generator.generateFrom(definitionClass);
@@ -4494,5 +4506,39 @@ class EMFModelGeneratorTest {
 		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
 				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGenerateConnectedWsdlDefinitionWithDefaultDepthIsValid() throws Exception {
+		var packages = generator.loadEcoreModelPackages(TEST_INPUTS_DIR + "/WSDL.ecore");
+		var wsdlPackage = packages.stream()
+				.filter(ePackage -> "wsdl".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var definitionClass = assertEClassExists(wsdlPackage, "Definition");
+
+		var populator = generator.getInstancePopulator();
+		// Exclude child containment of optional WSDL extensibility elements that would require
+		// copied XSD model generation.
+		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public Collection<EObject> setContainmentReference(final EObject owner,
+					final EReference reference) {
+				if (owner.eClass().getName().equals("XSDSchemaExtensibilityElement")) {
+					return List.of();
+				}
+				return super.setContainmentReference(owner, reference);
+			}
+		});
+		populator.setMaxDepth(5);
+		generator.setFilePrefix("wsdl_deep_default_");
+
+		generator.generateFrom(definitionClass);
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+		assertGenerationIsValid("Connected WSDL Definition validation failed: %s");
+
+		var generatedFileName = "wsdl_deep_default_wsdl_Definition_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		// avoid asserting against expected output because the generated model is large
 	}
 }
