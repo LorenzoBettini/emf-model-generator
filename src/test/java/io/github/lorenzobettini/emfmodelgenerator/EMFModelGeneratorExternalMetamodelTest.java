@@ -219,7 +219,14 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.filter(ePackage -> "model".equals(ePackage.getName()))
 				.findFirst()
 				.orElseThrow();
+		var wsdlPackage = packages.stream()
+				.filter(ePackage -> "wsdl".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
 		var processClass = assertEClassExists(modelPackage, "Process");
+		var flowClass = assertEClassExists(modelPackage, "Flow");
+		var processActivity = assertEReferenceExists(processClass, "activity");
+		var definitionClass = assertEClassExists(wsdlPackage, "Definition");
 
 		var populator = generator.getInstancePopulator();
 
@@ -240,10 +247,17 @@ class EMFModelGeneratorExternalMetamodelTest {
 			}
 		});
 
+		// Make the required Process activity a Flow so that Links are generated
+		// naturally inside the BPEL process itself.
+		populator.functionForContainmentReference(
+				processActivity,
+				owner -> EcoreUtil.create(flowClass));
+
 		populator.setMaxDepth(3);
 
 		generator.setFilePrefix("bpel_deep_");
-		generator.generateFrom(processClass);
+		// First create the WSDL candidate universe.
+		generator.generateFromSeveral(definitionClass, processClass);
 
 		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 		var validation = generator.validate();
