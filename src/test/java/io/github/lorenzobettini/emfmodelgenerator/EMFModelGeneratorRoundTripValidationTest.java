@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -54,7 +55,7 @@ class EMFModelGeneratorRoundTripValidationTest {
 
 		assertThat(result.isValid()).isFalse();
 		assertThat(result.rejectedDiagnostics())
-				.extracting(diagnostic -> diagnostic.getMessage())
+				.extracting(Diagnostic::getMessage)
 				.anySatisfy(message -> assertThat(message).contains("target"));
 		assertThat(temporaryDirectory.resolve("transient/roundtrip_Root_1.xmi"))
 				.exists()
