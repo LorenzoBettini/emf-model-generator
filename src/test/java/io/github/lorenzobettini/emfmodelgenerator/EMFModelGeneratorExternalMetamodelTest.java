@@ -207,6 +207,157 @@ class EMFModelGeneratorExternalMetamodelTest {
 				generatedFileName, generatedFileName);
 	}
 
+	/**
+	 * Generates a non-trivial BPEL process together with the WSDL model needed to
+	 * satisfy BPEL's required cross-references, and verifies that both models remain
+	 * valid after an XMI round trip.
+	 *
+	 * @see #testGenerateBpelWsdlDefinitionSkippingRequiredTransientContainmentsIsValid()
+	 * @throws Exception
+	 */
+	@Test
+	void testGenerateCustomizedBpelProcessWithFlowAndWsdlDefinition() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/BPEL.ecore");
+		var modelPackage = packages.stream()
+				.filter(ePackage -> "model".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+		var wsdlPackage = packages.stream()
+				.filter(ePackage -> "wsdl".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var processClass = assertEClassExists(modelPackage, "Process");
+		var flowClass = assertEClassExists(modelPackage, "Flow");
+		var processActivity = assertEReferenceExists(processClass, "activity");
+		var definitionClass = assertEClassExists(wsdlPackage, "Definition");
+
+		var populator = generator.getInstancePopulator();
+		var maxDepth = 3;
+
+		/*
+		 * BPEL.ecore combines BPEL with WSDL and several extension packages.
+		 * Polymorphic containment may therefore select optional objects whose
+		 * structural requirements cannot safely be satisfied by ordinary reflective
+		 * generation.
+		 *
+		 * There are two cases to exclude:
+		 *
+		 * 1. Some optional candidate classes have required transient features.
+		 *    Such features can make the in-memory object valid, but they are not
+		 *    serialized; consequently, the model becomes invalid when reloaded.
+		 *    For example, messageproperties::PropertyAlias has the required,
+		 *    transient wsdlPart reference.
+		 *
+		 * 2. An optional object created exactly at maxDepth may itself have a
+		 *    required containment. The object would be created at the depth frontier,
+		 *    while its mandatory child could not be generated. For example, an
+		 *    optional CompensationHandler requires an Activity.
+		 *
+		 * In both cases it is valid to omit the optional outer containment. Required
+		 * containments themselves are never suppressed by this policy.
+		 */
+		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public EObject createValue(final EObject owner, final EReference reference) {
+				var value = super.createValue(owner, reference);
+
+				if (value == null || reference.getLowerBound() > 0) {
+					return value;
+				}
+
+				// Required transient state would be lost during XMI serialization.
+				if (hasRequiredTransientFeature(value.eClass())) {
+					return null;
+				}
+
+				// At the depth frontier, do not create an optional object whose own
+				// mandatory containment would necessarily remain unpopulated.
+				if (containmentDepth(owner) + 1 >= maxDepth
+						&& hasRequiredContainmentFeature(value.eClass())) {
+					return null;
+				}
+
+				return value;
+			}
+		});
+
+		/*
+		 * Process.activity is required and polymorphic. Select Flow deliberately
+		 * because Flow contains BPEL Link objects. These provide normal generated
+		 * candidates for the required Source.Link and Target.Link cross-references,
+		 * instead of creating unrelated Link roots merely to satisfy those references.
+		 */
+		populator.functionForContainmentReference(
+				processActivity,
+				owner -> EcoreUtil.create(flowClass));
+
+		populator.setMaxDepth(maxDepth);
+		generator.setFilePrefix("bpel_flow_");
+
+		/*
+		 * Several generated BPEL elements, in particular PartnerActivity subclasses
+		 * and OnEvent, have required non-containment references to WSDL Message,
+		 * PortType, and Operation objects. Since cross-references select existing
+		 * compatible objects rather than creating their targets, generate a WSDL
+		 * Definition as a supporting root together with the Process. Its containment
+		 * hierarchy supplies the WSDL objects that the ordinary cross-reference
+		 * population phase can then select.
+		 */
+		generator.generateFromSeveral(definitionClass, processClass);
+
+		// First verify the generated in-memory models.
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BPEL Process validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		/*
+		 * In-memory validity is not sufficient for this metamodel because transient
+		 * state can disappear during serialization. Save, reload, and validate again
+		 * to ensure that the actual persisted BPEL/WSDL models are valid as well.
+		 */
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
+				ignored -> EMFModelValidator.standard());
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("BPEL/WSDL round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedProcessFileName = "bpel_flow_model_Process_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedProcessFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedProcessFileName, generatedProcessFileName);
+
+		var generatedDefinitionFileName = "bpel_flow_wsdl_Definition_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedDefinitionFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedDefinitionFileName, generatedDefinitionFileName);
+	}
+
+	private boolean hasRequiredContainmentFeature(final EClass eClass) {
+		return eClass.getEAllReferences().stream()
+				.filter(EReference::isContainment)
+				.anyMatch(reference -> reference.getLowerBound() > 0);
+	}
+
+	private int containmentDepth(final EObject object) {
+		int depth = 0;
+		var current = object;
+		while (current.eContainer() != null) {
+			depth++;
+			current = current.eContainer();
+		}
+		return depth;
+	}
+
 	@Test
 	void testGenerateBpelWsdlDefinitionSkippingRequiredTransientContainmentsIsValid() throws Exception {
 		// BPEL.ecore contains the WSDL package together with BPEL extension packages
