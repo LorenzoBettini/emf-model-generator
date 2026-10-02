@@ -279,6 +279,30 @@ class EMFContainmentReferenceSetterTest {
 	}
 
 	@Test
+	void testSetSingleFeatureWithoutTrackingDoesNotFail() {
+		final EReference reference = createContainmentReference("child", false);
+		final EObject owner = createOwner();
+
+		setter.setSingleFeature(owner, reference);
+
+		final EObject child = (EObject) owner.eGet(reference);
+		assertThat(child).isNotNull();
+		assertThat(child.eClass()).isEqualTo(containedClass);
+		assertThat(child.eContainer()).isEqualTo(owner);
+	}
+
+	@Test
+	void testSetMultiFeatureWithoutTrackingDoesNotFail() {
+		final EReference reference = createContainmentReference("children", true);
+		final EObject owner = createOwner();
+
+		setter.setMultiFeature(owner, reference);
+
+		final List<EObject> children = EMFUtils.getAsEObjectsList(owner, reference);
+		assertThat(children).hasSize(2).allMatch(child -> child.eClass().equals(containedClass));
+	}
+
+	@Test
 	void testSetContainmentReference_MultiValued_ContainersAreSet() {
 		EReference reference = createContainmentReference("children", true);
 
