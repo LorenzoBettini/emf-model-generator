@@ -8,9 +8,11 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 
 /**
- * Base class for setting configurable features on EMF EObjects.
+ * Base class for concrete setters of configurable features on EMF EObjects.
  * Supports setting maximum counts for multi-valued features and associating
- * operations with features.
+ * operations with features. Client code uses the semantic operations exposed by
+ * the concrete setters; subclasses share the protected template workflow and
+ * customize it through its hook methods.
  * 
  * @param <T1> The type of EStructuralFeature (e.g., EAttribute, EReference) used for setting.
  * @param <T2> The type of EStructuralFeature (e.g., EAttribute, EReference) used for creating
@@ -19,7 +21,8 @@ import org.eclipse.emf.ecore.EStructuralFeature;
  *
  * @author Lorenzo Bettini
  */
-public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature, T2 extends EStructuralFeature, V> {
+public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature,
+		T2 extends EStructuralFeature, V> extends EMFCountConfigurableFeatureSetter<T1> {
 
 	/**
 	 * Function interface for feature operations.
@@ -28,50 +31,10 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 	public static interface FeatureFunction<R> extends Function<EObject, R> {
 	}
 
-	private int defaultMaxCount;
-	private Map<T1, Integer> featureMaxCountMap;
 	private Map<T2, FeatureFunction<V>> featureFunctionMap;
 
 	protected EMFConfigurableFeatureSetter(int defaultMaxCount) {
-		this.defaultMaxCount = defaultMaxCount;
-	}
-
-	/**
-	 * Set the default maximum count of values to generate for multi-valued features.
-	 * Used when no specific count has been configured for a feature via
-	 * {@link #setMaxCountFor(EStructuralFeature, int)}.
-	 *
-	 * @param defaultMaxCount the default maximum count
-	 */
-	public void setDefaultMaxCount(int defaultMaxCount) {
-		this.defaultMaxCount = defaultMaxCount;
-	}
-
-	/**
-	 * Returns the maximum count of values to set for the given feature on the given
-	 * owner.
-	 * 
-	 * @param owner   the owner EObject
-	 * @param feature the feature for which to get the max count
-	 * @return the maximum count of values to generate for the feature
-	 */
-	protected int getMaxCountFor(EObject owner, T1 feature) {
-		return (featureMaxCountMap == null)
-				? defaultMaxCount
-				: featureMaxCountMap.getOrDefault(feature, defaultMaxCount);
-	}
-
-	/**
-	 * Sets the maximum count of values to set for the given feature.
-	 * 
-	 * @param feature  the feature to configure
-	 * @param maxCount the maximum count of values to generate
-	 */
-	public void setMaxCountFor(T1 feature, int maxCount) {
-		if (featureMaxCountMap == null) {
-			featureMaxCountMap = new HashMap<>();
-		}
-		featureMaxCountMap.put(feature, maxCount);
+		super(defaultMaxCount);
 	}
 
 	/**
@@ -112,17 +75,19 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 	}
 
 	/**
-	 * Template method to set the feature on the given owner EObject.
+	 * Orchestrates the common workflow for setting a feature on the given owner
+	 * EObject. This template method is used by the concrete semantic setter methods
+	 * and is not a client-facing operation.
 	 * 
-	 * It checks whether the feature should be set, and delegates to the appropriate
-	 * method for single-valued
+	 * It checks {@link #shouldSetFeature(EObject, EStructuralFeature)} and delegates
+	 * to the appropriate hook for single-valued
 	 * ({@link #setSingleFeature(EObject, EStructuralFeature)}) or multi-valued
 	 * features ({@link #setMultiFeature(EObject, EStructuralFeature)}).
 	 * 
 	 * @param owner   the EObject on which to set the feature
 	 * @param feature the feature to set
 	 */
-	public void setFeature(EObject owner, T1 feature) {
+	protected final void setFeature(EObject owner, T1 feature) {
 		if (!shouldSetFeature(owner, feature)) {
 			return;
 		}

@@ -267,6 +267,48 @@ class EMFCrossReferenceSetterTest {
 	// ========== Single-valued reference tests ==========
 
 	@Test
+	void shouldSelectValueWithoutAssigningIt() {
+		final EReference reference = createNonContainmentReference("ref", false);
+		final EObject owner = createOwner();
+		final EObject candidate = createExistingInstance(referencedClass);
+
+		assertThat(setter.selectValue(owner, reference)).isSameAs(candidate);
+		assertThat(owner.eIsSet(reference)).isFalse();
+	}
+
+	@Test
+	void shouldSelectCustomValueWithoutAssigningIt() {
+		final EReference reference = createNonContainmentReference("ref", false);
+		final EObject owner = createOwner();
+		final EObject customCandidate = createExistingInstance(referencedClass);
+		setter.setFunctionFor(reference, ignored -> customCandidate);
+
+		assertThat(setter.selectValue(owner, reference)).isSameAs(customCandidate);
+		assertThat(owner.eIsSet(reference)).isFalse();
+	}
+
+	@Test
+	void shouldFallBackWhenCustomSelectionReturnsNull() {
+		final EReference reference = createNonContainmentReference("ref", false);
+		final EObject owner = createOwner();
+		final EObject defaultCandidate = createExistingInstance(referencedClass);
+		setter.setFunctionFor(reference, ignored -> null);
+
+		assertThat(setter.selectValue(owner, reference)).isSameAs(defaultCandidate);
+		assertThat(owner.eIsSet(reference)).isFalse();
+	}
+
+	@Test
+	void shouldFilterSelfCycleWhenSelectingValue() {
+		final EReference reference = createNonContainmentReference("self", false);
+		reference.setEType(ownerClass);
+		final EObject owner = createOwner();
+
+		assertThat(setter.selectValue(owner, reference)).isNull();
+		assertThat(owner.eIsSet(reference)).isFalse();
+	}
+
+	@Test
 	void shouldNotSetSingleValuedReferenceWhenNoExistingInstance() {
 		EReference reference = createNonContainmentReference("ref", false);
 		EObject owner = createOwner();
@@ -449,6 +491,34 @@ class EMFCrossReferenceSetterTest {
 	}
 
 	// ========== Opposite reference constraint tests ==========
+
+	@Test
+	void shouldFilterFullOppositeWhenSelectingValueWithoutAssignment() {
+		final EClass targetClass = ECORE_FACTORY.createEClass();
+		targetClass.setName("Target");
+		testPackage.getEClassifiers().add(targetClass);
+
+		final EReference reference = ECORE_FACTORY.createEReference();
+		reference.setName("target");
+		reference.setEType(targetClass);
+		ownerClass.getEStructuralFeatures().add(reference);
+
+		final EReference opposite = ECORE_FACTORY.createEReference();
+		opposite.setName("owner");
+		opposite.setEType(ownerClass);
+		targetClass.getEStructuralFeatures().add(opposite);
+		reference.setEOpposite(opposite);
+		opposite.setEOpposite(reference);
+
+		final EObject invalidTarget = createExistingInstance(targetClass);
+		invalidTarget.eSet(opposite, EcoreUtil.create(ownerClass));
+		final EObject validTarget = createExistingInstance(targetClass);
+		final EObject owner = createOwner();
+
+		assertThat(setter.selectValue(owner, reference)).isSameAs(validTarget);
+		assertThat(owner.eIsSet(reference)).isFalse();
+		assertThat(invalidTarget.eGet(opposite)).isNotNull();
+	}
 
 	@Test
 	void shouldSkipExistingInstanceWithMultiValuedOppositeAtUpperBound() {
@@ -1053,10 +1123,10 @@ class EMFCrossReferenceSetterTest {
 
 		EObject owner = createOwner();
 
-		// Create a custom setter that allows cycles
+		// Create a custom setter that allows direct self-references
 		var customSetter = new EMFCrossReferenceSetter() {
 			@Override
-			protected boolean allowCycleFor(EObject owner, EReference reference) {
+			protected boolean allowSelfReferenceFor(EObject owner, EReference reference) {
 				return true;
 			}
 		};
@@ -1081,10 +1151,10 @@ class EMFCrossReferenceSetterTest {
 
 		EObject owner = createOwner();
 
-		// Create a custom setter that allows cycles
+		// Create a custom setter that allows direct self-references
 		var customSetter = new EMFCrossReferenceSetter() {
 			@Override
-			protected boolean allowCycleFor(EObject owner, EReference reference) {
+			protected boolean allowSelfReferenceFor(EObject owner, EReference reference) {
 				return true;
 			}
 		};
@@ -1113,10 +1183,10 @@ class EMFCrossReferenceSetterTest {
 
 		EObject owner = createOwner();
 
-		// Create a custom setter that allows cycles
+		// Create a custom setter that allows direct self-references
 		var customSetter = new EMFCrossReferenceSetter() {
 			@Override
-			protected boolean allowCycleFor(EObject owner, EReference reference) {
+			protected boolean allowSelfReferenceFor(EObject owner, EReference reference) {
 				return true;
 			}
 		};
@@ -1276,7 +1346,7 @@ class EMFCrossReferenceSetterTest {
 	}
 
 	@Test
-	void testSetAllowCyclePolicy() {
+	void shouldAllowDirectSelfReferenceWithPolicy() {
 		// Create reference with the same type as owner (allowing self-reference)
 		EReference selfReference = ECORE_FACTORY.createEReference();
 		selfReference.setName("self");
@@ -1285,15 +1355,33 @@ class EMFCrossReferenceSetterTest {
 		
 		EObject owner = createOwner();
 		
-		// By default, cycles are not allowed
+		// By default, direct self-references are not allowed
 		setter.setCrossReference(owner, selfReference);
 		assertThat(owner.eGet(selfReference)).isNull();
 		
-		// Set a cycle policy that allows cycles
-		setter.setAllowCyclePolicy((o, ref) -> true);
+		// Set a policy that allows direct self-references
+		setter.setSelfReferencePolicy((o, ref) -> true);
 		
 		setter.setCrossReference(owner, selfReference);
 		assertThat(owner.eGet(selfReference)).isEqualTo(owner);
+	}
+
+	@Test
+	void shouldNotTreatLongerCyclesAsDirectSelfReferences() {
+		EReference reference = ECORE_FACTORY.createEReference();
+		reference.setName("next");
+		reference.setEType(ownerClass);
+		ownerClass.getEStructuralFeatures().add(reference);
+
+		EObject first = createOwner();
+		EObject second = createOwner();
+		first.eSet(reference, second);
+		setter.setFunctionFor(reference, owner -> first);
+
+		setter.setCrossReference(second, reference);
+
+		assertThat(second.eGet(reference)).isSameAs(first);
+		assertThat(first.eGet(reference)).isSameAs(second);
 	}
 
 }

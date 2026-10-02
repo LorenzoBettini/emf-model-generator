@@ -12,10 +12,12 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.EcoreFactory;
 import org.eclipse.emf.ecore.EcorePackage;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.emf.ecore.util.FeatureMapUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -343,6 +345,20 @@ class EMFUtilsTest {
 		assertThat(EMFUtils.isFeatureMap(featureMapAttr))
 				.as("Feature map attribute should be detected as feature map")
 				.isTrue();
+	}
+
+	@Test
+	void testIsFeatureMapWithEquivalentFeatureMapEntryDataType() {
+		var equivalentEntryType = ECORE_FACTORY.createEDataType();
+		equivalentEntryType.setName("EFeatureMapEntry");
+		equivalentEntryType.setInstanceClassName("org.eclipse.emf.ecore.util.FeatureMap$Entry");
+		var featureMapAttr = ECORE_FACTORY.createEAttribute();
+		featureMapAttr.setName("featureMapAttribute");
+		featureMapAttr.setEType(equivalentEntryType);
+
+		assertThat(FeatureMapUtil.isFeatureMap(featureMapAttr)).isTrue();
+		assertThat(EMFUtils.isFeatureMap(featureMapAttr)).isTrue();
+		assertThat(EMFUtils.isValidAttribute(featureMapAttr)).isFalse();
 	}
 
 	@Test
@@ -2473,8 +2489,41 @@ class EMFUtilsTest {
 		assertThat(groupMembers)
 			.as("Should find sections and figures as group members")
 			.hasSize(2)
-			.extracting(EReference::getName)
-			.containsExactlyInAnyOrder("sections", "figures");
+			.extracting(EStructuralFeature::getName)
+			.containsExactly("sections", "figures");
+	}
+
+	@Test
+	void testFindFeatureMapGroupMembers_WithMixedRealFeatureMap() {
+		final var pkg = loadEcoreModel("src/test/resources/inputs", "featuremap_mixed.ecore");
+		final var documentClass = assertEClassExists(pkg, "Document");
+		final var groupAttribute = assertEAttributeExists(documentClass, "group");
+
+		final var groupMembers = EMFUtils.findFeatureMapGroupMembers(groupAttribute);
+
+		assertThat(FeatureMapUtil.isFeatureMap(groupAttribute)).isTrue();
+		assertThat(groupMembers)
+			.extracting(EStructuralFeature::getName)
+			.containsExactly("text", "child", "related");
+		assertThat(groupMembers.get(0))
+			.isInstanceOf(EAttribute.class);
+		assertThat(groupMembers.get(1))
+			.isInstanceOfSatisfying(EReference.class,
+				reference -> assertThat(reference.isContainment()).isTrue());
+		assertThat(groupMembers.get(2))
+			.isInstanceOfSatisfying(EReference.class,
+				reference -> {
+					assertThat(reference.isContainment()).isFalse();
+					assertThat(reference.getEReferenceType().getName()).isEqualTo("Target");
+				});
+
+		final var targets = documentClass.getEStructuralFeature("targets");
+		assertThat(targets)
+			.isInstanceOfSatisfying(EReference.class,
+				reference -> {
+					assertThat(reference.isContainment()).isTrue();
+					assertThat(reference.getEReferenceType().getName()).isEqualTo("Target");
+				});
 	}
 
 	@Test
@@ -2560,26 +2609,30 @@ class EMFUtilsTest {
 
 	@Test
 	void testFindFeatureMapGroupMembers_IncludesInheritedReferences() {
-		// Test that getEAllReferences() is used, so inherited references are included
-		EPackage pkg = loadEcoreModel("src/test/resources/inputs", "featuremap-example.ecore");
-		
-		EClass documentClass = assertEClassExists(pkg, "Document");
-		EAttribute contentGroupAttr = assertEAttributeExists(documentClass, "contentGroup");
-		
-		createResourceSet();
-		EClass extendedDocClass = ECORE_FACTORY.createEClass();
-		extendedDocClass.setName("ExtendedDocument");
-		extendedDocClass.getESuperTypes().add(documentClass);
-		pkg.getEClassifiers().add(extendedDocClass);
-		
-		// The subclass should find the same group members as the parent
-		var groupMembers = EMFUtils.findFeatureMapGroupMembers(contentGroupAttr);
-		
-		assertThat(groupMembers)
-			.as("Should find inherited references that are part of the group")
-			.hasSize(2)
-			.extracting(EReference::getName)
-			.containsExactlyInAnyOrder("sections", "figures");
+		final var resourceSet = createResourceSet();
+		final var pkg = createEPackageInResource(resourceSet, "test", "test.ecore");
+		final var baseClass = ECORE_FACTORY.createEClass();
+		baseClass.setName("Base");
+		pkg.getEClassifiers().add(baseClass);
+		final var inheritedMember = ECORE_FACTORY.createEAttribute();
+		inheritedMember.setName("inheritedMember");
+		inheritedMember.setEType(EcorePackage.Literals.ESTRING);
+		baseClass.getEStructuralFeatures().add(inheritedMember);
+
+		final var subclass = ECORE_FACTORY.createEClass();
+		subclass.setName("Subclass");
+		subclass.getESuperTypes().add(baseClass);
+		pkg.getEClassifiers().add(subclass);
+		final var featureMapAttribute = ECORE_FACTORY.createEAttribute();
+		featureMapAttribute.setName("group");
+		featureMapAttribute.setEType(EcorePackage.Literals.EFEATURE_MAP_ENTRY);
+		subclass.getEStructuralFeatures().add(featureMapAttribute);
+		org.eclipse.emf.ecore.util.ExtendedMetaData.INSTANCE
+			.setGroup(inheritedMember, featureMapAttribute);
+
+		assertThat(EMFUtils.findFeatureMapGroupMembers(featureMapAttribute))
+			.as("Should find inherited structural features that are part of the group")
+			.containsExactly(inheritedMember);
 	}
 
 	@Test
@@ -2648,7 +2701,7 @@ class EMFUtilsTest {
 		assertThat(groupMembers)
 			.as("Should only find references belonging to the specific feature map")
 			.hasSize(1)
-			.extracting(EReference::getName)
+			.extracting(EStructuralFeature::getName)
 			.containsExactly("ref1");
 		
 		// Query for members of featureMap2 - should only find ref2, not ref1
@@ -2657,7 +2710,7 @@ class EMFUtilsTest {
 		assertThat(groupMembers2)
 			.as("Should only find references belonging to the second feature map")
 			.hasSize(1)
-			.extracting(EReference::getName)
+			.extracting(EStructuralFeature::getName)
 			.containsExactly("ref2");
 	}
 }

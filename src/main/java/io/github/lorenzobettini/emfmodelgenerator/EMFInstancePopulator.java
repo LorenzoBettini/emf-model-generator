@@ -9,18 +9,41 @@ import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFAttributeSetter.EMFAttributeValueFunction;
 import io.github.lorenzobettini.emfmodelgenerator.EMFContainmentReferenceSetter.EMFContainmentReferenceValueFunction;
 import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter.EMFCrossReferenceValueFunction;
-import io.github.lorenzobettini.emfmodelgenerator.EMFFeatureMapSetter.EMFFeatureMapValueFunction;
+import io.github.lorenzobettini.emfmodelgenerator.EMFFeatureMapSetter.FeatureMapPlan;
 
 /**
  * Populates existing EMF {@link EObject EObjects} with sample data.
  * This includes setting attribute values and populating both containment
  * and cross references, with support for configurable multi-valued
- * counts and maximum depth for recursive population.
- * It also handles feature maps, which allow heterogeneous collections.
+ * counts and maximum depth for recursive containment expansion.
+ *
+ * <p>A FeatureMap is an ordered heterogeneous group: its members may be
+ * attributes, containment references, or non-containment references. The
+ * {@link EMFFeatureMapSetter} coordinator owns the total entry count, the
+ * frozen member order, and entry insertion, while one value at a time is
+ * obtained through the ordinary semantic setters
+ * ({@link EMFAttributeSetter#generateValue(EObject, org.eclipse.emf.ecore.EAttribute)},
+ * {@link EMFContainmentReferenceSetter#createValue(EObject, EReference)},
+ * {@link EMFCrossReferenceSetter#selectValue(EObject, EReference)}).</p>
+ *
+ * <p>FeatureMap group members use the same customization as ordinary features:
+ * {@link #functionForAttribute(EAttribute, EMFAttributeValueFunction)},
+ * {@link #functionForContainmentReference(EReference, EMFContainmentReferenceValueFunction)},
+ * and {@link #functionForCrossReference(EReference, EMFCrossReferenceValueFunction)}.
+ * Replacing an ordinary setter also replaces the delegate used for the
+ * corresponding FeatureMap member kind; replacing the FeatureMap setter installs
+ * all three currently configured ordinary setters into it.</p>
+ *
+ * <p>FeatureMap plans are frozen before ordinary attribute population. Attribute
+ * members materialize independently of depth, containment members only when
+ * containment expansion is still allowed, and non-containment members after all
+ * containment expansion, before ordinary cross-references, preserving the frozen
+ * order. Maximum depth therefore limits containment creation only.</p>
  *
  * <p>This class performs only the population step: callers create the root objects and, when
  * required, put them in resources and save those resources themselves. For example, an object
@@ -79,6 +102,9 @@ public class EMFInstancePopulator {
 		this.crossReferenceSetter = new EMFCrossReferenceSetter();
 		this.containmentReferenceSetter = new EMFContainmentReferenceSetter();
 		this.featureMapSetter = new EMFFeatureMapSetter();
+		featureMapSetter.setAttributeSetter(attributeSetter);
+		featureMapSetter.setContainmentReferenceSetter(containmentReferenceSetter);
+		featureMapSetter.setCrossReferenceSetter(crossReferenceSetter);
 	}
 
 	/**
@@ -109,7 +135,7 @@ public class EMFInstancePopulator {
 	}
 
 	/**
-	 * Returns the feature map setter used for populating EMF feature maps.
+	 * Returns the feature map coordinator used for populating EMF feature maps.
 	 *
 	 * @return the feature map setter
 	 */
@@ -118,39 +144,49 @@ public class EMFInstancePopulator {
 	}
 
 	/**
-	 * Replace the attribute setter.
+	 * Replace the attribute setter. The replacement also becomes the delegate
+	 * used for attribute FeatureMap group members.
 	 *
 	 * @param attributeSetter the attribute setter to use
 	 */
 	public void setAttributeSetter(EMFAttributeSetter attributeSetter) {
 		this.attributeSetter = attributeSetter;
+		featureMapSetter.setAttributeSetter(attributeSetter);
 	}
 
 	/**
-	 * Replace the cross-reference setter.
+	 * Replace the cross-reference setter. The replacement also becomes the delegate
+	 * used for non-containment FeatureMap group members.
 	 *
 	 * @param crossReferenceSetter the cross-reference setter to use
 	 */
 	public void setCrossReferenceSetter(EMFCrossReferenceSetter crossReferenceSetter) {
 		this.crossReferenceSetter = crossReferenceSetter;
+		featureMapSetter.setCrossReferenceSetter(crossReferenceSetter);
 	}
 
 	/**
-	 * Replace the containment reference setter.
+	 * Replace the containment reference setter. The replacement also becomes the
+	 * delegate used for containment FeatureMap group members.
 	 *
 	 * @param containmentReferenceSetter the containment reference setter to use
 	 */
 	public void setContainmentReferenceSetter(EMFContainmentReferenceSetter containmentReferenceSetter) {
 		this.containmentReferenceSetter = containmentReferenceSetter;
+		featureMapSetter.setContainmentReferenceSetter(containmentReferenceSetter);
 	}
 
 	/**
-	 * Replace the feature map setter.
+	 * Replace the feature map setter. All three currently installed ordinary
+	 * setters are injected into the replacement as its value delegates.
 	 *
 	 * @param featureMapSetter the feature map setter to use
 	 */
 	public void setFeatureMapSetter(EMFFeatureMapSetter featureMapSetter) {
 		this.featureMapSetter = featureMapSetter;
+		featureMapSetter.setAttributeSetter(attributeSetter);
+		featureMapSetter.setContainmentReferenceSetter(containmentReferenceSetter);
+		featureMapSetter.setCrossReferenceSetter(crossReferenceSetter);
 	}
 
 	/**
@@ -199,21 +235,10 @@ public class EMFInstancePopulator {
 	}
 
 	/**
-	 * Set a custom function for generating values for the given feature map group member.
-	 * 
-	 * @param groupMember the feature map group member EReference for which to set the function
-	 * @param function    the function to generate values for the group member
-	 */
-	public void functionForFeatureMapGroupMember(EReference groupMember,
-			EMFFeatureMapValueFunction function) {
-		featureMapSetter.setFunctionFor(groupMember, function);
-	}
-
-	/**
 	 * Set the strategy for selecting instantiable subclasses when creating instances
 	 * for types in containment references.
 	 * 
-	 * @param strategy the candidate selector strategy
+	 * @param strategy the heterogeneous structural-feature selector strategy
 	 */
 	public void setInstantiableSubclassSelectorStrategy(EMFCandidateSelectorStrategy<EClass, EClass> strategy) {
 		containmentReferenceSetter.setInstantiableSubclassSelectorStrategy(strategy);
@@ -242,22 +267,26 @@ public class EMFInstancePopulator {
 	 * 
 	 * @param strategy the candidate selector strategy
 	 */
-	public void setGroupMemberSelectorStrategy(EMFCandidateSelectorStrategy<EAttribute, EReference> strategy) {
+	public void setGroupMemberSelectorStrategy(
+			EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> strategy) {
 		featureMapSetter.setGroupMemberSelectorStrategy(strategy);
 	}
 
 	/**
-	 * Set the cycle policy for determining whether self-references are allowed in cross references.
+	 * Set the policy for determining whether direct self-references are allowed in cross references.
 	 * 
-	 * @param cyclePolicy the cycle policy to use
+	 * @param policy the self-reference policy to use
 	 */
-	public void setAllowCyclePolicy(EMFCrossReferenceSetter.CyclePolicy cyclePolicy) {
-		crossReferenceSetter.setAllowCyclePolicy(cyclePolicy);
+	public void setSelfReferencePolicy(EMFCrossReferenceSetter.SelfReferencePolicy policy) {
+		crossReferenceSetter.setSelfReferencePolicy(policy);
 	}
 
 	/**
-	 * Set the maximum recursion depth for populating containment references.
-	 * Attributes are always populated regardless of depth.
+	 * Set the maximum recursion depth for containment expansion.
+	 * Attributes are always populated regardless of depth. FeatureMap attribute
+	 * members are also populated at the depth boundary, and eligible FeatureMap
+	 * cross-references are still populated later; only containment creation,
+	 * ordinary or through a FeatureMap, is suppressed there.
 	 * A root is at depth {@code 0}; with a maximum depth of {@code 1}, its direct
 	 * contained objects are created and have their attributes populated, but their
 	 * containment references are not expanded.
@@ -347,7 +376,10 @@ public class EMFInstancePopulator {
 	/**
 	 * Populate the given EObjects with sample data.
 	 * This includes setting attribute values and populating both containment
-	 * and cross references, up to the configured maximum depth.
+	 * and cross references, up to the configured maximum containment depth.
+	 * FeatureMap attribute and containment members materialize during structural
+	 * population; FeatureMap cross-references materialize after containment
+	 * expansion and before ordinary cross-references.
 	 *
 	 * <p>All roots are populated before cross-references are assigned. Supply related roots together
 	 * so that each one can be selected as a cross-reference candidate for the others:</p>
@@ -366,14 +398,18 @@ public class EMFInstancePopulator {
 	 * @param rootInstances the EObjects to populate
 	 */
 	public void populateEObjects(EObject... rootInstances) {
-		var createdEObjects = new ArrayList<EObject>();
+		final var createdEObjects = new ArrayList<EObject>();
+		final var featureMapPlans = new ArrayList<FeatureMapPlan>();
 		for (var root : rootInstances) {
-			createdEObjects.addAll(populateEObject(root, 0));
+			createdEObjects.addAll(populateEObject(root, 0, featureMapPlans));
 		}
 
 		// reset cross reference setter state
 		// so that candidates for cross-references are recomputed
 		crossReferenceSetter.reset();
+		for (var plan : featureMapPlans) {
+			featureMapSetter.materializeCrossReferences(plan);
+		}
 
 		// after having populated all containments up to max depth, populate cross references
 		// for all root instances...
@@ -393,17 +429,21 @@ public class EMFInstancePopulator {
 	 * @param depth  the current depth of recursion
 	 * @return the list of created EObjects during population
 	 */
-	private Collection<EObject> populateEObject(EObject eObject, int depth) {
-		var createdEObjects = new ArrayList<EObject>();
+	private Collection<EObject> populateEObject(final EObject eObject, final int depth,
+			final Collection<FeatureMapPlan> featureMapPlans) {
+		final var createdEObjects = new ArrayList<EObject>();
+		final var currentFeatureMapPlans = createFeatureMapPlans(eObject);
+		featureMapPlans.addAll(currentFeatureMapPlans);
 		// attributes are populated always
 		populateAttributes(eObject);
+		materializeFeatureMaps(currentFeatureMapPlans, depth < maxDepth, createdEObjects);
 		if (depth < maxDepth) {
-			populateFeatureMaps(eObject, createdEObjects);
 			populateContainmentReferences(eObject, createdEObjects);
 			// recursively populate created EObjects
-			var recursiveCreatedEObjects = new ArrayList<EObject>();
+			final var recursiveCreatedEObjects = new ArrayList<EObject>();
 			for (var createdEObject : createdEObjects) {
-				recursiveCreatedEObjects.addAll(populateEObject(createdEObject, depth + 1));
+				recursiveCreatedEObjects.addAll(
+						populateEObject(createdEObject, depth + 1, featureMapPlans));
 			}
 			createdEObjects.addAll(recursiveCreatedEObjects);
 		}
@@ -418,11 +458,18 @@ public class EMFInstancePopulator {
 		}
 	}
 
-	private void populateFeatureMaps(EObject eObject, Collection<EObject> createdEObjects) {
-		for (var attribute : eObject.eClass().getEAllAttributes()) {
-			if (EMFUtils.isFeatureMap(attribute)) {
-				createdEObjects.addAll(featureMapSetter.setFeatureMap(eObject, attribute));
-			}
+	private Collection<FeatureMapPlan> createFeatureMapPlans(final EObject eObject) {
+		return eObject.eClass().getEAllAttributes().stream()
+				.filter(EMFUtils::isFeatureMap)
+				.map(attribute -> featureMapSetter.createPlan(eObject, attribute))
+				.toList();
+	}
+
+	private void materializeFeatureMaps(final Collection<FeatureMapPlan> plans,
+			final boolean containmentAllowed, final Collection<EObject> createdEObjects) {
+		for (var plan : plans) {
+			createdEObjects.addAll(
+					featureMapSetter.materializeStructuralFeatures(plan, containmentAllowed));
 		}
 	}
 

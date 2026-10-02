@@ -11,11 +11,11 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
-import org.eclipse.emf.ecore.EcorePackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.util.ExtendedMetaData;
+import org.eclipse.emf.ecore.util.FeatureMapUtil;
 
 /**
  * Utility class for EMF models: validation, checks, and other utility methods.
@@ -83,8 +83,7 @@ public final class EMFUtils {
 	 * @return true if the feature is a feature map, false otherwise
 	 */
 	public static boolean isFeatureMap(final EStructuralFeature feature) {
-		return feature instanceof EAttribute attribute &&
-				attribute.getEAttributeType() == EcorePackage.Literals.EFEATURE_MAP_ENTRY;
+		return feature instanceof EAttribute && FeatureMapUtil.isFeatureMap(feature);
 	}
 
 	private static boolean isValidCommon(final EStructuralFeature feature) {
@@ -405,23 +404,26 @@ public final class EMFUtils {
 	}
 
 	/**
-	 * Find all references that are part of the given feature map group.
-	 * These are references with ExtendedMetaData annotation pointing to the feature map.
+	 * Find all structural features that are part of the given feature map group.
+	 * These are features with an ExtendedMetaData annotation pointing to the feature map.
+	 * Group members may be attributes, containment references, or non-containment
+	 * references.
 	 *
 	 * @param featureMapAttribute the feature map attribute
-	 * @return list of references that are part of the group
+	 * @return structural features that are part of the group, in EMF feature order
 	 */
-	public static List<EReference> findFeatureMapGroupMembers(final EAttribute featureMapAttribute) {
-		final var groupMembers = new java.util.ArrayList<EReference>();
+	public static List<EStructuralFeature> findFeatureMapGroupMembers(
+			final EAttribute featureMapAttribute) {
+		final var groupMembers = new java.util.ArrayList<EStructuralFeature>();
 		final var extendedMetaData = ExtendedMetaData.INSTANCE;
 		final var eClass = featureMapAttribute.getEContainingClass();
 		
-		// Iterate through all references to find group members
-		for (var reference : eClass.getEAllReferences()) {
+		// Iterate through all structural features to find group members
+		for (var feature : eClass.getEAllStructuralFeatures()) {
 			// Check if this feature is part of the feature map group
-			final EStructuralFeature group = extendedMetaData.getGroup(reference);
+			final EStructuralFeature group = extendedMetaData.getGroup(feature);
 			if (group != null && group.equals(featureMapAttribute)) {
-				groupMembers.add(reference);
+				groupMembers.add(feature);
 			}
 		}
 		

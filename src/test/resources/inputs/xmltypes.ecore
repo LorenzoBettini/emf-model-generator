@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    name="xmltypes"
+    nsURI="http://www.example.org/xmltypes"
+    nsPrefix="xmltypes">
+  <eClassifiers xsi:type="ecore:EClass" name="XMLTypesHolder">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="anySimpleType" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//AnySimpleType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="anyURI" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//AnyURI"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="base64Binary" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Base64Binary"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="boolean" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Boolean"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="booleanObject" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//BooleanObject"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="byte" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Byte"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="byteObject" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//ByteObject"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="date" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Date"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="dateTime" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//DateTime"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="decimal" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Decimal"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="double" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Double"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="doubleObject" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//DoubleObject"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="duration" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Duration"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="entities" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//ENTITIES"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="entitiesBase" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//ENTITIESBase"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="entity" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//ENTITY"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="float" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Float"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="floatObject" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//FloatObject"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="gDay" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//GDay"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="gMonth" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//GMonth"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="gMonthDay" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//GMonthDay"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="gYear" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//GYear"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="gYearMonth" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//GYearMonth"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="hexBinary" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//HexBinary"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="id" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//ID"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="idref" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//IDREF"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="idrefs" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//IDREFS"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="idrefsBase" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//IDREFSBase"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="int" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Int"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="integer" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Integer"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="intObject" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//IntObject"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="language" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Language"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="long" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Long"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="longObject" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//LongObject"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Name"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="ncName" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//NCName"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="negativeInteger" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//NegativeInteger"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="nmtoken" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//NMTOKEN"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="nmtokens" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//NMTOKENS"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="nmtokensBase" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//NMTOKENSBase"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="nonNegativeInteger" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//NonNegativeInteger"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="nonPositiveInteger" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//NonPositiveInteger"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="normalizedString" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//NormalizedString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="notation" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//NOTATION"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="positiveInteger" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//PositiveInteger"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="qName" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//QName"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="short" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Short"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="shortObject" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//ShortObject"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="string" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//String"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="time" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Time"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="token" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//Token"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unsignedByte" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//UnsignedByte"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unsignedByteObject" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//UnsignedByteObject"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unsignedInt" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//UnsignedInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unsignedIntObject" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//UnsignedIntObject"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unsignedLong" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//UnsignedLong"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unsignedShort" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//UnsignedShort"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unsignedShortObject" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2003/XMLType#//UnsignedShortObject"/>
+  </eClassifiers>
+</ecore:EPackage>

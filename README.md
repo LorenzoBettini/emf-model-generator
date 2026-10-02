@@ -19,10 +19,12 @@ post-generation validation API.
   interfaces, and configured multiplicities where suitable values are available
 - **Post-Generation Validation**: validate candidates with standard EMF validation immediately or
   opt in to validation before saving
-- **Flexible Configuration**: customize depth, multiplicities, per-feature functions, cycle policy, candidate selectors, and setter implementations
+- **Flexible Configuration**: customize depth, multiplicities, per-feature functions,
+  direct self-reference policy, candidate selectors, and setter implementations
 - **Resource Management**: load Ecore files, register packages, create resources, save generated XMI, and unload metamodels
 - **File Naming Customization**: configure file prefixes and extensions globally, per package, or per class
-- **Feature Map Support**: populate EMF feature maps using ExtendedMetaData group members
+- **Feature Map Support**: populate heterogeneous EMF feature maps (attribute, containment,
+  and non-containment group members) using ExtendedMetaData group members
 - **OSGi Compatible**: includes OSGi bundle metadata
 
 ## Requirements
@@ -519,7 +521,9 @@ generator.save();
 
 ### Example 13: Function-Based Customization for Individual Features
 
-Configure specific functions for individual attributes, containments, cross-references, or feature-map group members:
+Configure specific functions for individual attributes, containments, and cross-references.
+The same functions also apply when the configured feature appears as a FeatureMap group
+member; there is no FeatureMap-specific function API:
 
 ```java
 import io.github.lorenzobettini.emfmodelgenerator.EMFInstancePopulator;
@@ -536,15 +540,12 @@ populator.functionForContainmentReference(shelfReference,
 populator.functionForCrossReference(authorsReference,
     owner -> findPreferredAuthor(owner));
 
-populator.functionForFeatureMapGroupMember(writersReference,
-    owner -> EcoreUtil.create(writerClass));
-
 generator.generateFrom(myClass);
 generator.save();
 ```
 
 If a custom cross-reference function returns `null`, the default cross-reference selection is used.
-For containment references and feature-map group members, a returned object is used only when it is
+For containment references, a returned object is used only when it is
 not already contained by another object; otherwise, default instance creation is used so the object is
 not moved from its current container. Returned objects are recursively populated by the populator.
 
@@ -562,6 +563,18 @@ populator.setFeatureMapMaxCountFor(featureMapAttribute, 5);
 generator.generateFrom(documentClass);
 generator.save();
 ```
+
+A FeatureMap is an ordered heterogeneous group. The FeatureMap coordinator owns the total
+entry count and the frozen member order, while each value is obtained through the ordinary
+semantic setters (`generateValue`, `createValue`, `selectValue`). Group members may be
+attributes, containment references, or non-containment references, and they are customized
+with `functionForAttribute`, `functionForContainmentReference`, and `functionForCrossReference`.
+Replacing an ordinary setter in the populator also replaces the delegate used for the
+corresponding FeatureMap member kind.
+
+Materialization happens in phases: attribute members first, containment members while
+containment expansion is still allowed, and non-containment members after all containment
+expansion and before ordinary cross-references, preserving the frozen order.
 
 ### Example 15: Generate Related Models in One ResourceSet
 
@@ -648,7 +661,7 @@ populator.setCrossReferenceDefaultMaxCount(2);
 populator.setAttributeDefaultMaxCount(2);
 populator.setFeatureMapDefaultMaxCount(4);
 
-// Configure maximum depth for recursive containment and feature-map population
+// Configure maximum depth for recursive containment expansion
 populator.setMaxDepth(4);
 
 populator.populateEObjects(library);
@@ -741,7 +754,7 @@ Examples:
 - **`EMFAttributeSetter`**: Sets attribute values (extendable)
 - **`EMFContainmentReferenceSetter`**: Creates and sets containment references (extendable)
 - **`EMFCrossReferenceSetter`**: Sets cross-references between objects (extendable)
-- **`EMFFeatureMapSetter`**: Handles EMF feature maps (extendable)
+- **`EMFFeatureMapSetter`**: Coordinates heterogeneous EMF feature maps (extendable)
 - **`EMFModelValidator`**: Contract and factory for standard or custom post-generation validation
 - **`EMFValidationResult`**: Immutable validation outcome retaining the complete EMF diagnostic tree
 - **`EMFUtils`**: Utility methods for EMF operations and validation
@@ -757,6 +770,8 @@ The generator uses predictable patterns for sample data:
 - **Doubles and floats**: start at `20.5` and increase with the per-class/attribute counter
 - **Booleans**: alternate between `true` and `false`
 - **Dates**: start from `2025-01-01` and advance by one day per generated value
+- **XML Schema datatypes**: every built-in EMF `XMLTypePackage` datatype receives a
+  deterministic value satisfying its datatype constraints
 - **Enums**: selected with a deterministic round-robin selector
 - **References**: selected with deterministic round-robin strategies from available assignable instances
 
@@ -764,8 +779,11 @@ The generator uses predictable patterns for sample data:
 
 - Abstract EClasses and interfaces cannot be instantiated directly; use `generateAllFrom(EClass)` to generate their concrete subclasses.
 - Multi-valued feature counts respect lower and upper bounds; a requested count below the lower bound is raised to the lower bound, and a requested count above the upper bound is capped.
-- Maximum containment depth is configurable and defaults to `5`.
-- Feature maps require ExtendedMetaData annotations in the Ecore model.
+- Maximum containment depth is configurable and defaults to `5`. It limits containment
+  creation only: at the depth boundary, ordinary and FeatureMap attributes are still
+  populated, and eligible FeatureMap cross-references can still be populated later.
+- Feature maps require ExtendedMetaData annotations in the Ecore model. Group members may be
+  attributes, containment references, or non-containment references.
 - Container references, which are opposites of containment references, cannot be set directly from the contained side.
 - Cross-references are assigned only among existing compatible instances; the generator does not
   create new objects just to satisfy a non-containment reference.
@@ -785,7 +803,8 @@ Contributions are welcome! Please ensure:
 
 - All new code is covered by tests (aim for 100% coverage)
 - Run the full test suite: `./mvnw clean test`
-- Check coverage: `./mvnw -P jacoco jacoco:report`
+- Produce coverage report: `./mvnw -P jacoco jacoco:report`
+- Ensure 100% code coverage: `./mvnw verify -P jacoco jacoco:check`
 - Code follows the existing style (tabs, max 100 chars per line)
 - Use Java 21 features where appropriate
 

@@ -1,0 +1,1470 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore">
+  <ecore:EPackage name="bpmn" nsURI="http://stp.eclipse.org/bpmn" nsPrefix="bpmn">
+    <eClassifiers xsi:type="ecore:EClass" name="Activity" eSuperTypes="#/0/Vertex #/0/MessageVertex">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="Activity"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="groups" upperBound="-1"
+          eType="#/0/Group" resolveProxies="false" eOpposite="#/0/Group/activities">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="groups"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="lanes" upperBound="-1"
+          eType="#/0/Lane" resolveProxies="false" eOpposite="#/0/Lane/activities">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="lanes"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="activityType" eType="#/0/ActivityType"
+          defaultValueLiteral="Task" unsettable="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="activityType"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="looping" eType="#/2/Boolean"
+          unsettable="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="looping"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eventHandlerFor" eType="#/0/SubProcess"
+          transient="true" eOpposite="#/0/SubProcess/eventHandlers"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="ActivityType">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="ActivityType"/>
+      </eAnnotations>
+      <eLiterals name="Task"/>
+      <eLiterals name="SubProcess" value="1"/>
+      <eLiterals name="EventStartEmpty" value="2"/>
+      <eLiterals name="EventStartMessage" value="3"/>
+      <eLiterals name="EventStartRule" value="4"/>
+      <eLiterals name="EventStartTimer" value="5"/>
+      <eLiterals name="EventStartLink" value="6"/>
+      <eLiterals name="EventStartMultiple" value="7"/>
+      <eLiterals name="EventIntermediateEmpty" value="8"/>
+      <eLiterals name="EventIntermediateMessage" value="9"/>
+      <eLiterals name="EventIntermediateTimer" value="10"/>
+      <eLiterals name="EventIntermediateError" value="11"/>
+      <eLiterals name="EventIntermediateCompensation" value="12"/>
+      <eLiterals name="EventIntermediateRule" value="13"/>
+      <eLiterals name="EventIntermediateLink" value="14"/>
+      <eLiterals name="EventIntermediateMultiple" value="15"/>
+      <eLiterals name="EventIntermediateCancel" value="16"/>
+      <eLiterals name="EventEndEmpty" value="17"/>
+      <eLiterals name="EventEndMessage" value="18"/>
+      <eLiterals name="EventEndError" value="19"/>
+      <eLiterals name="EventEndCompensation" value="20"/>
+      <eLiterals name="EventEndTerminate" value="21"/>
+      <eLiterals name="EventEndLink" value="22"/>
+      <eLiterals name="EventEndMultiple" value="23"/>
+      <eLiterals name="EventEndCancel" value="24"/>
+      <eLiterals name="GatewayDataBasedExclusive" value="25"/>
+      <eLiterals name="GatewayEventBasedExclusive" value="26"/>
+      <eLiterals name="GatewayDataBasedInclusive" value="27"/>
+      <eLiterals name="GatewayParallel" value="28"/>
+      <eLiterals name="GatewayComplex" value="29"/>
+      <eLiterals name="EventStartSignal" value="30"/>
+      <eLiterals name="EventIntermediateSignal" value="31"/>
+      <eLiterals name="EventEndSignal" value="32"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="ActivityTypeObject" instanceClassName="org.eclipse.emf.common.util.Enumerator">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="ActivityType:Object"/>
+        <details key="baseType" value="ActivityType"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Artifact" eSuperTypes="#/0/Identifiable #/0/NamedBpmnObject">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="Artifact"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="associations" upperBound="-1"
+          eType="#/0/Association" containment="true" resolveProxies="false" eOpposite="#/0/Association/source">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="associations"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="artifactsContainer" eType="#/0/ArtifactsContainer"
+          transient="true" eOpposite="#/0/ArtifactsContainer/artifacts"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="ArtifactsContainer" eSuperTypes="#/0/NamedBpmnObject">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="ArtifactsContainer"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="artifacts" upperBound="-1"
+          eType="#/0/Artifact" containment="true" resolveProxies="false" eOpposite="#/0/Artifact/artifactsContainer">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="artifacts"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Association" eSuperTypes="#/1/EModelElement">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="Association"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="direction" eType="#/0/DirectionType"
+          unsettable="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="direction"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="source" eType="#/0/Artifact"
+          transient="true" resolveProxies="false" eOpposite="#/0/Artifact/associations">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="source"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="target" eType="#/0/AssociationTarget"
+          transient="true" resolveProxies="false" eOpposite="#/0/AssociationTarget/associations">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="target"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="AssociationTarget" eSuperTypes="#/0/Identifiable">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="AssociationTarget"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="associations" upperBound="-1"
+          eType="#/0/Association" resolveProxies="false" eOpposite="#/0/Association/target">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="associations"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="BpmnDiagram" eSuperTypes="#/0/Identifiable #/0/ArtifactsContainer">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="BpmnDiagram"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="pools" upperBound="-1"
+          eType="#/0/Pool" containment="true" resolveProxies="false" eOpposite="#/0/Pool/bpmnDiagram">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="pools"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="messages" upperBound="-1"
+          eType="#/0/MessagingEdge" containment="true" resolveProxies="false" eOpposite="#/0/MessagingEdge/bpmnDiagram">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="messages"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="author" eType="#/2/String">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="author"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" eType="#/2/String">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="title"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="DataObject" eSuperTypes="#/0/Artifact">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="DataObject"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="DirectionType">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="direction_._type"/>
+      </eAnnotations>
+      <eLiterals name="None"/>
+      <eLiterals name="To" value="1"/>
+      <eLiterals name="From" value="2"/>
+      <eLiterals name="Both" value="3"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="DirectionTypeObject" instanceClassName="org.eclipse.emf.common.util.Enumerator">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="direction_._type:Object"/>
+        <details key="baseType" value="direction_._type"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Graph" eSuperTypes="#/0/AssociationTarget #/0/ArtifactsContainer">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="Graph"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="vertices" upperBound="-1"
+          eType="#/0/Vertex" containment="true" resolveProxies="false" eOpposite="#/0/Vertex/graph">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="vertices"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="sequenceEdges" upperBound="-1"
+          eType="#/0/SequenceEdge" containment="true" resolveProxies="false" eOpposite="#/0/SequenceEdge/graph">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="sequenceEdges"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Group" eSuperTypes="#/0/Artifact">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="Group"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="activities" upperBound="-1"
+          eType="#/0/Activity" resolveProxies="false" eOpposite="#/0/Activity/groups">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="activities"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Identifiable" eSuperTypes="#/1/EModelElement">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="Identifiable"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="iD" eType="#/2/ID" iD="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="ID"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Lane" eSuperTypes="#/0/AssociationTarget #/0/NamedBpmnObject">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="Lane"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="activities" upperBound="-1"
+          eType="#/0/Activity" resolveProxies="false" eOpposite="#/0/Activity/lanes">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="activities"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="pool" eType="#/0/Pool"
+          transient="true" eOpposite="#/0/Pool/lanes"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="MessageVertex" eSuperTypes="#/0/NamedBpmnObject #/0/Identifiable">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="MessageVertex"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="orderedMessages" unique="false"
+          upperBound="-1" eType="#/1/EFeatureMapEntry">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="group"/>
+          <details key="name" value="orderedMessages:5"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="incomingMessages" upperBound="-1"
+          eType="#/0/MessagingEdge" volatile="true" transient="true" derived="true"
+          eOpposite="#/0/MessagingEdge/target">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="incomingMessages"/>
+          <details key="group" value="#orderedMessages:5"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="outgoingMessages" upperBound="-1"
+          eType="#/0/MessagingEdge" volatile="true" transient="true" derived="true"
+          eOpposite="#/0/MessagingEdge/source">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="outgoingMessages"/>
+          <details key="group" value="#orderedMessages:5"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="MessagingEdge" eSuperTypes="#/0/AssociationTarget #/0/NamedBpmnObject">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="MessagingEdge"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="source" eType="#/0/MessageVertex"
+          eOpposite="#/0/MessageVertex/outgoingMessages">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="source"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="target" eType="#/0/MessageVertex"
+          eOpposite="#/0/MessageVertex/incomingMessages">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="target"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="bpmnDiagram" eType="#/0/BpmnDiagram"
+          transient="true" eOpposite="#/0/BpmnDiagram/messages"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="NamedBpmnObject">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="NamedBpmnObject"/>
+        <details key="kind" value="empty"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="documentation" eType="#/2/String">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="documentation"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="#/2/String">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="name"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="ncname" eType="#/2/String">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="ncname"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Pool" eSuperTypes="#/0/Graph #/0/MessageVertex">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="Pool"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="lanes" upperBound="-1"
+          eType="#/0/Lane" containment="true" resolveProxies="false" eOpposite="#/0/Lane/pool">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="lanes"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="bpmnDiagram" eType="#/0/BpmnDiagram"
+          transient="true" eOpposite="#/0/BpmnDiagram/pools"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="SequenceEdge" eSuperTypes="#/0/AssociationTarget #/0/NamedBpmnObject">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="SequenceEdge"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="conditionType" eType="#/0/SequenceFlowConditionType"
+          unsettable="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="conditionType"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="isDefault" eType="#/2/Boolean"
+          unsettable="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="isDefault"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="source" eType="#/0/Vertex"
+          transient="true" resolveProxies="false" eOpposite="#/0/Vertex/outgoingEdges">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="source"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="target" eType="#/0/Vertex"
+          transient="true" resolveProxies="false" eOpposite="#/0/Vertex/incomingEdges">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="target"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="graph" eType="#/0/Graph"
+          transient="true" eOpposite="#/0/Graph/sequenceEdges"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="SequenceFlowConditionType">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="SequenceFlowConditionType"/>
+      </eAnnotations>
+      <eLiterals name="None"/>
+      <eLiterals name="Expression" value="1"/>
+      <eLiterals name="Default" value="2"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="SequenceFlowConditionTypeObject"
+        instanceClassName="org.eclipse.emf.common.util.Enumerator">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="SequenceFlowConditionType:Object"/>
+        <details key="baseType" value="SequenceFlowConditionType"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="SubProcess" eSuperTypes="#/0/Activity #/0/Graph">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="SubProcess"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eventHandlers" upperBound="-1"
+          eType="#/0/Activity" containment="true" resolveProxies="false" eOpposite="#/0/Activity/eventHandlerFor">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="eventHandlers"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="isTransaction" eType="#/2/Boolean"
+          unsettable="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="isTransaction"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="adhoc" eType="#/2/Boolean"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="TextAnnotation" eSuperTypes="#/0/Artifact">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="TextAnnotation"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Vertex" eSuperTypes="#/0/AssociationTarget">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="Vertex"/>
+        <details key="kind" value="elementOnly"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="outgoingEdges" upperBound="-1"
+          eType="#/0/SequenceEdge" resolveProxies="false" eOpposite="#/0/SequenceEdge/source">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="outgoingEdges"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="incomingEdges" upperBound="-1"
+          eType="#/0/SequenceEdge" resolveProxies="false" eOpposite="#/0/SequenceEdge/target">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="incomingEdges"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="graph" eType="#/0/Graph"
+          transient="true" eOpposite="#/0/Graph/vertices"/>
+    </eClassifiers>
+  </ecore:EPackage>
+  <ecore:EPackage name="ecore" nsURI="http://www.eclipse.org/emf/2002/Ecore" nsPrefix="ecore">
+    <eClassifiers xsi:type="ecore:EClass" name="EAttribute" eSuperTypes="#/1/EStructuralFeature">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+        <details key="constraints" value="ConsistentTransient"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="iD" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eAttributeType" lowerBound="1"
+          eType="#/1/EDataType" changeable="false" volatile="true" transient="true"
+          derived="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EAnnotation" eSuperTypes="#/1/EModelElement">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+        <details key="constraints" value="WellFormedSourceURI"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="source" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="details" upperBound="-1"
+          eType="#/1/EStringToStringMapEntry" containment="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eModelElement" eType="#/1/EModelElement"
+          transient="true" resolveProxies="false" eOpposite="#/1/EModelElement/eAnnotations"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="contents" upperBound="-1"
+          eType="#/1/EObject" containment="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="references" upperBound="-1"
+          eType="#/1/EObject"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EClass" eSuperTypes="#/1/EClassifier">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+        <details key="constraints" value="InterfaceIsAbstract AtMostOneID UniqueFeatureNames UniqueOperationSignatures NoCircularSuperTypes WellFormedMapEntryClass ConsistentSuperTypes DisjointFeatureAndOperationSignatures"/>
+      </eAnnotations>
+      <eOperations name="isSuperTypeOf" eType="#/1/EBoolean">
+        <eParameters name="someClass" eType="#/1/EClass"/>
+      </eOperations>
+      <eOperations name="getFeatureCount" eType="#/1/EInt"/>
+      <eOperations name="getEStructuralFeature" eType="#/1/EStructuralFeature">
+        <eParameters name="featureID" eType="#/1/EInt"/>
+      </eOperations>
+      <eOperations name="getFeatureID" eType="#/1/EInt">
+        <eParameters name="feature" eType="#/1/EStructuralFeature"/>
+      </eOperations>
+      <eOperations name="getEStructuralFeature" eType="#/1/EStructuralFeature">
+        <eParameters name="featureName" eType="#/1/EString"/>
+      </eOperations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="abstract" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="interface" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eSuperTypes" upperBound="-1"
+          eType="#/1/EClass" unsettable="true">
+        <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+          <details key="suppressedIsSetVisibility" value="true"/>
+          <details key="suppressedUnsetVisibility" value="true"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eOperations" upperBound="-1"
+          eType="#/1/EOperation" containment="true" resolveProxies="false" eOpposite="#/1/EOperation/eContainingClass"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eAllAttributes" upperBound="-1"
+          eType="#/1/EAttribute" changeable="false" volatile="true" transient="true"
+          derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eAllReferences" upperBound="-1"
+          eType="#/1/EReference" changeable="false" volatile="true" transient="true"
+          derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eReferences" upperBound="-1"
+          eType="#/1/EReference" changeable="false" volatile="true" transient="true"
+          derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eAttributes" upperBound="-1"
+          eType="#/1/EAttribute" changeable="false" volatile="true" transient="true"
+          derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eAllContainments" upperBound="-1"
+          eType="#/1/EReference" changeable="false" volatile="true" transient="true"
+          derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eAllOperations" upperBound="-1"
+          eType="#/1/EOperation" changeable="false" volatile="true" transient="true"
+          derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eAllStructuralFeatures"
+          upperBound="-1" eType="#/1/EStructuralFeature" changeable="false" volatile="true"
+          transient="true" derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eAllSuperTypes" upperBound="-1"
+          eType="#/1/EClass" changeable="false" volatile="true" transient="true" derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eIDAttribute" eType="#/1/EAttribute"
+          changeable="false" volatile="true" transient="true" derived="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eStructuralFeatures"
+          upperBound="-1" eType="#/1/EStructuralFeature" containment="true" resolveProxies="false"
+          eOpposite="#/1/EStructuralFeature/eContainingClass"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eGenericSuperTypes" upperBound="-1"
+          eType="#/1/EGenericType" unsettable="true" containment="true" resolveProxies="false">
+        <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+          <details key="suppressedIsSetVisibility" value="true"/>
+          <details key="suppressedUnsetVisibility" value="true"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eAllGenericSuperTypes"
+          upperBound="-1" eType="#/1/EGenericType" changeable="false" volatile="true"
+          transient="true" derived="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EClassifier" abstract="true" eSuperTypes="#/1/ENamedElement">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+        <details key="constraints" value="WellFormedInstanceTypeName UniqueTypeParameterNames"/>
+      </eAnnotations>
+      <eOperations name="isInstance" eType="#/1/EBoolean">
+        <eParameters name="object" eType="#/1/EJavaObject"/>
+      </eOperations>
+      <eOperations name="getClassifierID" eType="#/1/EInt"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="instanceClassName" eType="#/1/EString"
+          volatile="true" unsettable="true">
+        <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+          <details key="suppressedIsSetVisibility" value="true"/>
+          <details key="suppressedUnsetVisibility" value="true"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="instanceClass" changeable="false"
+          volatile="true" transient="true" derived="true">
+        <eGenericType eClassifier="#/1/EJavaClass">
+          <eTypeArguments/>
+        </eGenericType>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="defaultValue" eType="#/1/EJavaObject"
+          changeable="false" volatile="true" transient="true" derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="instanceTypeName" eType="#/1/EString"
+          volatile="true" unsettable="true">
+        <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+          <details key="suppressedIsSetVisibility" value="true"/>
+          <details key="suppressedUnsetVisibility" value="true"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="ePackage" eType="#/1/EPackage"
+          changeable="false" transient="true" eOpposite="#/1/EPackage/eClassifiers"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eTypeParameters" upperBound="-1"
+          eType="#/1/ETypeParameter" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EDataType" eSuperTypes="#/1/EClassifier">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="serializable" eType="#/1/EBoolean"
+          defaultValueLiteral="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EEnum" eSuperTypes="#/1/EDataType">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+        <details key="constraints" value="UniqueEnumeratorNames UniqueEnumeratorLiterals"/>
+      </eAnnotations>
+      <eOperations name="getEEnumLiteral" eType="#/1/EEnumLiteral">
+        <eParameters name="name" eType="#/1/EString"/>
+      </eOperations>
+      <eOperations name="getEEnumLiteral" eType="#/1/EEnumLiteral">
+        <eParameters name="value" eType="#/1/EInt"/>
+      </eOperations>
+      <eOperations name="getEEnumLiteralByLiteral" eType="#/1/EEnumLiteral">
+        <eParameters name="literal" eType="#/1/EString"/>
+      </eOperations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eLiterals" upperBound="-1"
+          eType="#/1/EEnumLiteral" containment="true" resolveProxies="false" eOpposite="#/1/EEnumLiteral/eEnum"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EEnumLiteral" eSuperTypes="#/1/ENamedElement">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/1/EInt"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="instance" eType="#/1/EEnumerator"
+          transient="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="literal" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eEnum" eType="#/1/EEnum"
+          changeable="false" transient="true" resolveProxies="false" eOpposite="#/1/EEnum/eLiterals"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EFactory" eSuperTypes="#/1/EModelElement">
+      <eOperations name="create" eType="#/1/EObject">
+        <eParameters name="eClass" eType="#/1/EClass"/>
+      </eOperations>
+      <eOperations name="createFromString" eType="#/1/EJavaObject">
+        <eParameters name="eDataType" eType="#/1/EDataType"/>
+        <eParameters name="literalValue" eType="#/1/EString"/>
+      </eOperations>
+      <eOperations name="convertToString" eType="#/1/EString">
+        <eParameters name="eDataType" eType="#/1/EDataType"/>
+        <eParameters name="instanceValue" eType="#/1/EJavaObject"/>
+      </eOperations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="ePackage" lowerBound="1"
+          eType="#/1/EPackage" transient="true" resolveProxies="false" eOpposite="#/1/EPackage/eFactoryInstance"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EModelElement" abstract="true" eSuperTypes="#/1/EObject">
+      <eOperations name="getEAnnotation" eType="#/1/EAnnotation">
+        <eParameters name="source" eType="#/1/EString"/>
+      </eOperations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eAnnotations" upperBound="-1"
+          eType="#/1/EAnnotation" containment="true" resolveProxies="false" eOpposite="#/1/EAnnotation/eModelElement"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="ENamedElement" abstract="true" eSuperTypes="#/1/EModelElement">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+        <details key="constraints" value="WellFormedName"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="#/1/EString"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EObject">
+      <eOperations name="eClass" eType="#/1/EClass"/>
+      <eOperations name="eIsProxy" eType="#/1/EBoolean"/>
+      <eOperations name="eResource" eType="#/1/EResource"/>
+      <eOperations name="eContainer" eType="#/1/EObject"/>
+      <eOperations name="eContainingFeature" eType="#/1/EStructuralFeature"/>
+      <eOperations name="eContainmentFeature" eType="#/1/EReference"/>
+      <eOperations name="eContents">
+        <eGenericType eClassifier="#/1/EEList">
+          <eTypeArguments eClassifier="#/1/EObject"/>
+        </eGenericType>
+      </eOperations>
+      <eOperations name="eAllContents">
+        <eGenericType eClassifier="#/1/ETreeIterator">
+          <eTypeArguments eClassifier="#/1/EObject"/>
+        </eGenericType>
+      </eOperations>
+      <eOperations name="eCrossReferences">
+        <eGenericType eClassifier="#/1/EEList">
+          <eTypeArguments eClassifier="#/1/EObject"/>
+        </eGenericType>
+      </eOperations>
+      <eOperations name="eGet" eType="#/1/EJavaObject">
+        <eParameters name="feature" eType="#/1/EStructuralFeature"/>
+      </eOperations>
+      <eOperations name="eGet" eType="#/1/EJavaObject">
+        <eParameters name="feature" eType="#/1/EStructuralFeature"/>
+        <eParameters name="resolve" eType="#/1/EBoolean"/>
+      </eOperations>
+      <eOperations name="eSet">
+        <eParameters name="feature" eType="#/1/EStructuralFeature"/>
+        <eParameters name="newValue" eType="#/1/EJavaObject"/>
+      </eOperations>
+      <eOperations name="eIsSet" eType="#/1/EBoolean">
+        <eParameters name="feature" eType="#/1/EStructuralFeature"/>
+      </eOperations>
+      <eOperations name="eUnset">
+        <eParameters name="feature" eType="#/1/EStructuralFeature"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EOperation" eSuperTypes="#/1/ETypedElement">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+        <details key="constraints" value="UniqueParameterNames UniqueTypeParameterNames NoRepeatingVoid"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eContainingClass" eType="#/1/EClass"
+          changeable="false" transient="true" resolveProxies="false" eOpposite="#/1/EClass/eOperations"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eTypeParameters" upperBound="-1"
+          eType="#/1/ETypeParameter" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eParameters" upperBound="-1"
+          eType="#/1/EParameter" containment="true" resolveProxies="false" eOpposite="#/1/EParameter/eOperation"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eExceptions" upperBound="-1"
+          eType="#/1/EClassifier" unsettable="true">
+        <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+          <details key="suppressedIsSetVisibility" value="true"/>
+          <details key="suppressedUnsetVisibility" value="true"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eGenericExceptions" upperBound="-1"
+          eType="#/1/EGenericType" unsettable="true" containment="true" resolveProxies="false">
+        <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+          <details key="suppressedIsSetVisibility" value="true"/>
+          <details key="suppressedUnsetVisibility" value="true"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EPackage" eSuperTypes="#/1/ENamedElement">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+        <details key="constraints" value="WellFormedNsURI WellFormedNsPrefix UniqueSubpackageNames UniqueClassifierNames UniqueNsURIs"/>
+      </eAnnotations>
+      <eOperations name="getEClassifier" eType="#/1/EClassifier">
+        <eParameters name="name" eType="#/1/EString"/>
+      </eOperations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="nsURI" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="nsPrefix" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eFactoryInstance" lowerBound="1"
+          eType="#/1/EFactory" transient="true" resolveProxies="false" eOpposite="#/1/EFactory/ePackage"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eClassifiers" upperBound="-1"
+          eType="#/1/EClassifier" containment="true" eOpposite="#/1/EClassifier/ePackage"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eSubpackages" upperBound="-1"
+          eType="#/1/EPackage" containment="true" eOpposite="#/1/EPackage/eSuperPackage"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eSuperPackage" eType="#/1/EPackage"
+          changeable="false" transient="true" eOpposite="#/1/EPackage/eSubpackages"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EParameter" eSuperTypes="#/1/ETypedElement">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eOperation" eType="#/1/EOperation"
+          changeable="false" transient="true" resolveProxies="false" eOpposite="#/1/EOperation/eParameters"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EReference" eSuperTypes="#/1/EStructuralFeature">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+        <details key="constraints" value="ConsistentOpposite SingleContainer ConsistentKeys ConsistentUnique"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="containment" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="container" eType="#/1/EBoolean"
+          changeable="false" volatile="true" transient="true" derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="resolveProxies" eType="#/1/EBoolean"
+          defaultValueLiteral="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eOpposite" eType="#/1/EReference"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eReferenceType" lowerBound="1"
+          eType="#/1/EClass" changeable="false" volatile="true" transient="true" derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eKeys" upperBound="-1"
+          eType="#/1/EAttribute"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EStructuralFeature" abstract="true"
+        eSuperTypes="#/1/ETypedElement">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+        <details key="constraints" value="ValidDefaultValueLiteral"/>
+      </eAnnotations>
+      <eOperations name="getFeatureID" eType="#/1/EInt"/>
+      <eOperations name="getContainerClass">
+        <eGenericType eClassifier="#/1/EJavaClass">
+          <eTypeArguments/>
+        </eGenericType>
+      </eOperations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="changeable" eType="#/1/EBoolean"
+          defaultValueLiteral="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="volatile" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="transient" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="defaultValueLiteral"
+          eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="defaultValue" eType="#/1/EJavaObject"
+          changeable="false" volatile="true" transient="true" derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="unsettable" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="derived" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eContainingClass" eType="#/1/EClass"
+          changeable="false" transient="true" resolveProxies="false" eOpposite="#/1/EClass/eStructuralFeatures"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="ETypedElement" abstract="true" eSuperTypes="#/1/ENamedElement">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+        <details key="constraints" value="ValidLowerBound ValidUpperBound ConsistentBounds ValidType"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="ordered" eType="#/1/EBoolean"
+          defaultValueLiteral="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="unique" eType="#/1/EBoolean"
+          defaultValueLiteral="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="lowerBound" eType="#/1/EInt"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="upperBound" eType="#/1/EInt"
+          defaultValueLiteral="1"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="many" eType="#/1/EBoolean"
+          changeable="false" volatile="true" transient="true" derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="required" eType="#/1/EBoolean"
+          changeable="false" volatile="true" transient="true" derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eType" eType="#/1/EClassifier"
+          volatile="true" unsettable="true">
+        <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+          <details key="suppressedIsSetVisibility" value="true"/>
+          <details key="suppressedUnsetVisibility" value="true"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eGenericType" eType="#/1/EGenericType"
+          volatile="true" unsettable="true" containment="true" resolveProxies="false">
+        <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+          <details key="suppressedIsSetVisibility" value="true"/>
+          <details key="suppressedUnsetVisibility" value="true"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EBigDecimal" instanceClassName="java.math.BigDecimal">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#decimal"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EBigInteger" instanceClassName="java.math.BigInteger">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#integer"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EBoolean" instanceClassName="boolean">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#boolean"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EBooleanObject" instanceClassName="java.lang.Boolean">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="EBoolean"/>
+        <details key="name" value="EBoolean:Object"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EByte" instanceClassName="byte">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#byte"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EByteArray" instanceClassName="byte[]">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#hexBinary"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EByteObject" instanceClassName="java.lang.Byte">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="EByte"/>
+        <details key="name" value="EByte:Object"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EChar" instanceClassName="char"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="ECharacterObject" instanceClassName="java.lang.Character">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="EChar"/>
+        <details key="name" value="EChar:Object"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EDate" instanceClassName="java.util.Date"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="EDiagnosticChain" instanceClassName="org.eclipse.emf.common.util.DiagnosticChain"
+        serializable="false"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="EDouble" instanceClassName="double">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#double"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EDoubleObject" instanceClassName="java.lang.Double">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="EDouble"/>
+        <details key="name" value="EDouble:Object"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EEList" instanceClassName="org.eclipse.emf.common.util.EList"
+        serializable="false">
+      <eTypeParameters name="E"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EEnumerator" instanceClassName="org.eclipse.emf.common.util.Enumerator"
+        serializable="false"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="EFeatureMap" instanceClassName="org.eclipse.emf.ecore.util.FeatureMap"
+        serializable="false"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="EFeatureMapEntry" instanceClassName="org.eclipse.emf.ecore.util.FeatureMap$Entry"
+        serializable="false"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="EFloat" instanceClassName="float">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#float"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EFloatObject" instanceClassName="java.lang.Float">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="EFloat"/>
+        <details key="name" value="EFloat:Object"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EInt" instanceClassName="int">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#int"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EIntegerObject" instanceClassName="java.lang.Integer">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="EInt"/>
+        <details key="name" value="EInt:Object"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EJavaClass" instanceClassName="java.lang.Class">
+      <eTypeParameters name="T"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EJavaObject" instanceClassName="java.lang.Object"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="ELong" instanceClassName="long">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#long"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="ELongObject" instanceClassName="java.lang.Long">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="ELong"/>
+        <details key="name" value="ELong:Object"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EMap" instanceClassName="java.util.Map"
+        serializable="false">
+      <eTypeParameters name="K"/>
+      <eTypeParameters name="V"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EResource" instanceClassName="org.eclipse.emf.ecore.resource.Resource"
+        serializable="false"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="EResourceSet" instanceClassName="org.eclipse.emf.ecore.resource.ResourceSet"
+        serializable="false"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="EShort" instanceClassName="short">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#short"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EShortObject" instanceClassName="java.lang.Short">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="EShort"/>
+        <details key="name" value="EShort:Object"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EString" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#string"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EStringToStringMapEntry" instanceClassName="java.util.Map$Entry">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="key" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/1/EString"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="ETreeIterator" instanceClassName="org.eclipse.emf.common.util.TreeIterator"
+        serializable="false">
+      <eTypeParameters name="E"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="EGenericType" eSuperTypes="#/1/EObject">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+        <details key="constraints" value="ConsistentType ConsistentBounds ConsistentArguments"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eUpperBound" eType="#/1/EGenericType"
+          containment="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eTypeArguments" upperBound="-1"
+          eType="#/1/EGenericType" containment="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eRawType" lowerBound="1"
+          eType="#/1/EClassifier" changeable="false" transient="true" derived="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eLowerBound" eType="#/1/EGenericType"
+          containment="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eTypeParameter" eType="#/1/ETypeParameter"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eClassifier" eType="#/1/EClassifier"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="ETypeParameter" eSuperTypes="#/1/ENamedElement">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eBounds" upperBound="-1"
+          eType="#/1/EGenericType" containment="true" resolveProxies="false"/>
+    </eClassifiers>
+  </ecore:EPackage>
+  <ecore:EPackage name="type" nsURI="http://www.eclipse.org/emf/2003/XMLType" nsPrefix="ecore.xml.type">
+    <eClassifiers xsi:type="ecore:EDataType" name="AnySimpleType" instanceClassName="java.lang.Object">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="anySimpleType"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="AnyType">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="anyType"/>
+        <details key="kind" value="mixed"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="mixed" unique="false"
+          upperBound="-1" eType="#/1/EFeatureMapEntry">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="elementWildcard"/>
+          <details key="name" value=":mixed"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="any" unique="false" upperBound="-1"
+          eType="#/1/EFeatureMapEntry" volatile="true" transient="true" derived="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="elementWildcard"/>
+          <details key="wildcards" value="##any"/>
+          <details key="name" value=":1"/>
+          <details key="processing" value="lax"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="anyAttribute" unique="false"
+          upperBound="-1" eType="#/1/EFeatureMapEntry">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attributeWildcard"/>
+          <details key="wildcards" value="##any"/>
+          <details key="name" value=":2"/>
+          <details key="processing" value="lax"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="AnyURI" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="anyURI"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Base64Binary" instanceClassName="byte[]">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="base64Binary"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Boolean" instanceClassName="boolean">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="boolean"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="BooleanObject" instanceClassName="java.lang.Boolean">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="boolean:Object"/>
+        <details key="baseType" value="boolean"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Byte" instanceClassName="byte">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="byte"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="ByteObject" instanceClassName="java.lang.Byte">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="byte:Object"/>
+        <details key="baseType" value="byte"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Date" instanceClassName="javax.xml.datatype.XMLGregorianCalendar">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="date"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="DateTime" instanceClassName="javax.xml.datatype.XMLGregorianCalendar">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="dateTime"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Decimal" instanceClassName="java.math.BigDecimal">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="decimal"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Double" instanceClassName="double">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="double"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="DoubleObject" instanceClassName="java.lang.Double">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="double:Object"/>
+        <details key="baseType" value="double"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Duration" instanceClassName="javax.xml.datatype.Duration">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="duration"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="ENTITIES" instanceClassName="java.util.List">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="ENTITIES"/>
+        <details key="baseType" value="ENTITIES_._base"/>
+        <details key="minLength" value="1"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="ENTITIESBase" instanceClassName="java.util.List">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="ENTITIES_._base"/>
+        <details key="itemType" value="ENTITY"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="ENTITY" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="ENTITY"/>
+        <details key="baseType" value="NCName"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Float" instanceClassName="float">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="float"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="FloatObject" instanceClassName="java.lang.Float">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="float:Object"/>
+        <details key="baseType" value="float"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="GDay" instanceClassName="javax.xml.datatype.XMLGregorianCalendar">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="gDay"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="GMonth" instanceClassName="javax.xml.datatype.XMLGregorianCalendar">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="gMonth"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="GMonthDay" instanceClassName="javax.xml.datatype.XMLGregorianCalendar">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="gMonthDay"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="GYear" instanceClassName="javax.xml.datatype.XMLGregorianCalendar">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="gYear"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="GYearMonth" instanceClassName="javax.xml.datatype.XMLGregorianCalendar">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="gYearMonth"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="HexBinary" instanceClassName="byte[]">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="hexBinary"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="ID" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="ID"/>
+        <details key="baseType" value="NCName"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="IDREF" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="IDREF"/>
+        <details key="baseType" value="NCName"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="IDREFS" instanceClassName="java.util.List">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="IDREFS"/>
+        <details key="baseType" value="IDREFS_._base"/>
+        <details key="minLength" value="1"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="IDREFSBase" instanceClassName="java.util.List">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="IDREFS_._base"/>
+        <details key="itemType" value="IDREF"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Int" instanceClassName="int">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="int"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Integer" instanceClassName="java.math.BigInteger">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="integer"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="IntObject" instanceClassName="java.lang.Integer">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="int:Object"/>
+        <details key="baseType" value="int"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Language" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="language"/>
+        <details key="baseType" value="token"/>
+        <details key="pattern" value="[a-zA-Z]{1,8}(-[a-zA-Z0-9]{1,8})*"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Long" instanceClassName="long">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="long"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="LongObject" instanceClassName="java.lang.Long">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="long:Object"/>
+        <details key="baseType" value="long"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Name" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="Name"/>
+        <details key="baseType" value="token"/>
+        <details key="pattern" value="\i\c*"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="NCName" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="NCName"/>
+        <details key="baseType" value="Name"/>
+        <details key="pattern" value="[\i-[:]][\c-[:]]*"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="NegativeInteger" instanceClassName="java.math.BigInteger">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="negativeInteger"/>
+        <details key="baseType" value="nonPositiveInteger"/>
+        <details key="maxInclusive" value="-1"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="NMTOKEN" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="NMTOKEN"/>
+        <details key="baseType" value="token"/>
+        <details key="pattern" value="\c+"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="NMTOKENS" instanceClassName="java.util.List">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="NMTOKENS"/>
+        <details key="baseType" value="NMTOKENS_._base"/>
+        <details key="minLength" value="1"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="NMTOKENSBase" instanceClassName="java.util.List">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="NMTOKENS_._base"/>
+        <details key="itemType" value="NMTOKEN"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="NonNegativeInteger" instanceClassName="java.math.BigInteger">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="nonNegativeInteger"/>
+        <details key="baseType" value="integer"/>
+        <details key="minInclusive" value="0"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="NonPositiveInteger" instanceClassName="java.math.BigInteger">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="nonPositiveInteger"/>
+        <details key="baseType" value="integer"/>
+        <details key="maxInclusive" value="0"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="NormalizedString" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="normalizedString"/>
+        <details key="baseType" value="string"/>
+        <details key="whiteSpace" value="replace"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="NOTATION" instanceClassName="javax.xml.namespace.QName">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="NOTATION"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="PositiveInteger" instanceClassName="java.math.BigInteger">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="positiveInteger"/>
+        <details key="baseType" value="nonNegativeInteger"/>
+        <details key="minInclusive" value="1"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="ProcessingInstruction">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="processingInstruction_._type"/>
+        <details key="kind" value="empty"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="data" eType="#/2/String">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="data"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="target" lowerBound="1"
+          eType="#/2/String">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="target"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="QName" instanceClassName="javax.xml.namespace.QName">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="QName"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Short" instanceClassName="short">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="short"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="ShortObject" instanceClassName="java.lang.Short">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="short:Object"/>
+        <details key="baseType" value="short"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="SimpleAnyType" eSuperTypes="#/2/AnyType">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="simpleAnyType"/>
+        <details key="kind" value="simple"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="rawValue" eType="#/2/String"
+          volatile="true" transient="true" derived="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="name" value=":3"/>
+          <details key="kind" value="simple"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/2/AnySimpleType"
+          volatile="true" transient="true" derived="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="name" value=":4"/>
+          <details key="kind" value="simple"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="instanceType" lowerBound="1"
+          eType="#/1/EDataType" resolveProxies="false">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="name" value=":5"/>
+          <details key="kind" value="simple"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="String" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="string"/>
+        <details key="whiteSpace" value="preserve"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Time" instanceClassName="javax.xml.datatype.XMLGregorianCalendar">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="time"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="Token" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="token"/>
+        <details key="baseType" value="normalizedString"/>
+        <details key="whiteSpace" value="collapse"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="UnsignedByte" instanceClassName="short">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="unsignedByte"/>
+        <details key="maxInclusive" value="255"/>
+        <details key="minInclusive" value="0"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="UnsignedByteObject" instanceClassName="java.lang.Short">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="unsignedByte:Object"/>
+        <details key="baseType" value="unsignedByte"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="UnsignedInt" instanceClassName="long">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="unsignedInt"/>
+        <details key="maxInclusive" value="4294967295"/>
+        <details key="minInclusive" value="0"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="UnsignedIntObject" instanceClassName="java.lang.Long">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="unsignedInt:Object"/>
+        <details key="baseType" value="unsignedInt"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="UnsignedLong" instanceClassName="java.math.BigInteger">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="unsignedLong"/>
+        <details key="baseType" value="nonNegativeInteger"/>
+        <details key="maxInclusive" value="18446744073709551615"/>
+        <details key="minInclusive" value="0"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="UnsignedShort" instanceClassName="int">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="unsignedShort"/>
+        <details key="maxInclusive" value="65535"/>
+        <details key="minInclusive" value="0"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="UnsignedShortObject" instanceClassName="java.lang.Integer">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value="unsignedShort:Object"/>
+        <details key="baseType" value="unsignedShort"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XMLTypeDocumentRoot">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="name" value=""/>
+        <details key="kind" value="mixed"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="mixed" unique="false"
+          upperBound="-1" eType="#/1/EFeatureMapEntry">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="elementWildcard"/>
+          <details key="name" value=":mixed"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="xMLNSPrefixMap" upperBound="-1"
+          eType="#/1/EStringToStringMapEntry" transient="true" containment="true"
+          resolveProxies="false">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="xmlns:prefix"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="xSISchemaLocation" upperBound="-1"
+          eType="#/1/EStringToStringMapEntry" transient="true" containment="true"
+          resolveProxies="false">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="attribute"/>
+          <details key="name" value="xsi:schemaLocation"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="cDATA" unique="false"
+          upperBound="-2" eType="#/2/String" volatile="true" transient="true" derived="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="cDATA"/>
+          <details key="namespace" value="##targetNamespace"/>
+        </eAnnotations>
+        <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+          <details key="suppressedGetVisibility" value="true"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="comment" unique="false"
+          upperBound="-2" eType="#/2/String" volatile="true" transient="true" derived="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="comment"/>
+          <details key="namespace" value="##targetNamespace"/>
+        </eAnnotations>
+        <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+          <details key="suppressedGetVisibility" value="true"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="processingInstruction"
+          upperBound="-2" eType="#/2/ProcessingInstruction" volatile="true" transient="true"
+          derived="true" containment="true" resolveProxies="false">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="processingInstruction"/>
+          <details key="namespace" value="##targetNamespace"/>
+        </eAnnotations>
+        <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+          <details key="suppressedGetVisibility" value="true"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="text" unique="false"
+          upperBound="-2" eType="#/2/String" volatile="true" transient="true" derived="true">
+        <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+          <details key="kind" value="element"/>
+          <details key="name" value="text"/>
+          <details key="namespace" value="##targetNamespace"/>
+        </eAnnotations>
+        <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+          <details key="suppressedGetVisibility" value="true"/>
+        </eAnnotations>
+      </eStructuralFeatures>
+    </eClassifiers>
+  </ecore:EPackage>
+</xmi:XMI>

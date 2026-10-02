@@ -1,0 +1,1281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore">
+  <ecore:EPackage name="wsdl" nsURI="http://www.eclipse.org/wsdl/2003/WSDL" nsPrefix="wsdl">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="The WSDL model contains classes for the Web Services Description Language (WSDL).&#xD;&#xA;&#xD;&#xA;WSDL describes network services as sets of endpoints operating on messages. The operations and messages are described abstractly, and then bound to a concrete network protocol and message format to define an endpoint.&#xD;&#xA;&#xD;&#xA;WSDL describes the formats of the messages exchanged by the services, and supports the XML Schemas specification as its canonical type system. This package uses an XML Schema Infoset model package (see the XSD package) to describe the abstract message formats.&#xD;&#xA;&#xD;&#xA;The model contains the following diagrams, named after the corresponding chapters in the WSDL 1 specification (http://www.w3.org/TR/2001/NOTE-wsdl-20010315)&#xD;&#xA;- 2 Definition, shows the WSDL definition element and the WSDL document structure&#xD;&#xA;- 2 Naming and Linking, shows the namespace and import mechanism&#xD;&#xA;- 2.3 Extensibility, shows the WSDL extensibility mechanism&#xD;&#xA;- 2.2 Types, shows the use of XML Schema types in WSDL&#xD;&#xA;- 2.3 Messages, 2.4 PortTypes, 2.5 Bindings and 2.7 Services, show the major WSDL elements and their relations.&#xD;&#xA;&#xD;&#xA;The WSDL classes extend the javax.wsdl interfaces defined by JSR 110. Classes with interface and datatype stereotypes are used to represent these non-MOF interfaces."/>
+    </eAnnotations>
+    <eClassifiers xsi:type="ecore:EClass" name="WSDLElement" abstract="true">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL language element."/>
+      </eAnnotations>
+      <eOperations name="getEnclosingDefinition" eType="#/0/Definition"/>
+      <eOperations name="setEnclosingDefinition">
+        <eParameters name="definition" eType="#/0/Definition"/>
+      </eOperations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="documentationElement"
+          eType="#/0/DOMElement"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="element" eType="#/0/DOMElement"
+          transient="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="PortType" eSuperTypes="#/0/ExtensibleElement #/0/IPortType">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL portType element of the WSDL specification version 1 and an Interface component of the WSDL specification version 1.2. A port type or Interface is a named set of abstract operations and the abstract messages involved."/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="qName" eType="#/0/QName"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="undefined" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eOperations" upperBound="-1"
+          eType="#/0/Operation" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Operation" eSuperTypes="#/0/ExtensibleElement #/0/IOperation">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL operation element. A WSDL operation is an abstract description of an action supported by a service."/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="style" eType="#/0/OperationType"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="undefined" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eInput" eType="#/0/Input"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eOutput" eType="#/0/Output"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eFaults" upperBound="-1"
+          eType="#/0/Fault" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eParameterOrdering" upperBound="-1"
+          eType="#/0/Part"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Message" eSuperTypes="#/0/ExtensibleElement #/0/IMessage">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL message element. A WSDL message is an abstract, typed definition of the data being communicated."/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="qName" eType="#/0/QName"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="undefined" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eParts" upperBound="-1"
+          eType="#/0/Part" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Part" eSuperTypes="#/0/ExtensibleElement #/0/IPart">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL part element. Parts describe the logical abstract content of a message. Each part is associated with a type from some type system. "/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="elementName" eType="#/0/QName"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="typeName" eType="#/0/QName"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="typeDefinition" eType="#/2/XSDTypeDefinition"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="elementDeclaration" eType="#/2/XSDElementDeclaration"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eMessage" eType="#/0/Message"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Binding" eSuperTypes="#/0/ExtensibleElement #/0/IBinding">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL binding element. A binding defines message format and protocol details for operations and messages defined by a particular portType. There may be any number of bindings for a given portType."/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="qName" eType="#/0/QName"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="undefined" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="ePortType" lowerBound="1"
+          eType="#/0/PortType"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eBindingOperations" upperBound="-1"
+          eType="#/0/BindingOperation" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="BindingOperation" eSuperTypes="#/0/ExtensibleElement #/0/IBindingOperation">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL operation element within a binding. An operation element within a binding specifies binding information for the operation with the same name within the binding's portType. "/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eOperation" lowerBound="1"
+          eType="#/0/Operation"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eBindingInput" eType="#/0/BindingInput"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eBindingOutput" eType="#/0/BindingOutput"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eBindingFaults" upperBound="-1"
+          eType="#/0/BindingFault" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Service" eSuperTypes="#/0/ExtensibleElement #/0/IService">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL service element. A service groups a set of related ports together."/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="qName" eType="#/0/QName"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="undefined" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="ePorts" upperBound="-1"
+          eType="#/0/Port" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Port" eSuperTypes="#/0/ExtensibleElement #/0/IPort">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL port element. A port defines an individual endpoint by specifying a single address for a binding"/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eBinding" lowerBound="1"
+          eType="#/0/Binding"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="ExtensibilityElement" eSuperTypes="#/0/WSDLElement #/0/IExtensibilityElement">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL extensibility element. WSDL allows extensibility elements representing a specific technology under various elements defined by WSDL."/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="required" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="elementType" eType="#/0/QName"
+          transient="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Definition" eSuperTypes="#/0/ExtensibleElement #/0/IDefinition">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL definitions element. The WSDL definitions element is the root element of a WSDL document."/>
+      </eAnnotations>
+      <eOperations name="getDocument" eType="#/0/DOMDocument"/>
+      <eOperations name="setDocument">
+        <eParameters name="document" eType="#/0/DOMDocument"/>
+      </eOperations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="targetNamespace" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="location" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="qName" eType="#/0/QName"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="encoding" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eImports" upperBound="-1"
+          eType="#/0/Import" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eTypes" eType="#/0/Types"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eMessages" upperBound="-1"
+          eType="#/0/Message" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="ePortTypes" upperBound="-1"
+          eType="#/0/PortType" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eBindings" upperBound="-1"
+          eType="#/0/Binding" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eServices" upperBound="-1"
+          eType="#/0/Service" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eNamespaces" upperBound="-1"
+          eType="#/0/Namespace" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Import" eSuperTypes="#/0/ExtensibleElement #/0/IImport">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents WSDL import element. WSDL allows associating a namespace with a document location using an import element."/>
+      </eAnnotations>
+      <eOperations name="getSchema" eType="#/2/XSDSchema"/>
+      <eOperations name="setSchema">
+        <eParameters name="schema" eType="#/2/XSDSchema"/>
+      </eOperations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="namespaceURI" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="locationURI" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eDefinition" eType="#/0/Definition"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eSchema" eType="#/2/XSDSchema"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="ExtensibleElement" abstract="true"
+        eSuperTypes="#/0/WSDLElement #/0/IElementExtensible #/0/IAttributeExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value=" WSDL allows elements representing a specific technology (referred to here as extensibility elements) under various elements defined by WSDL. This class represents a WSDL point of extensibility."/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eExtensibilityElements"
+          upperBound="-1" eType="#/0/ExtensibilityElement" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Input" eSuperTypes="#/0/MessageReference #/0/IInput">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL input element. An input element specifies the abstract message format for the input of the operation."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Output" eSuperTypes="#/0/MessageReference #/0/IOutput">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL output element. An output element specifies the abstract message format for the output of the operation."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Fault" eSuperTypes="#/0/MessageReference #/0/IFault">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL fault element. Fault elements specify the abstract message format for any error messages that may be output as the result of the operation "/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="BindingInput" eSuperTypes="#/0/ExtensibleElement #/0/IBindingInput">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL input element within a operation within a binding. An input element within an operation within a binding specifies binding information for the input of the operation. "/>
+      </eAnnotations>
+      <eOperations name="getInput" eType="#/0/IInput"/>
+      <eOperations name="setInput">
+        <eParameters name="input" eType="#/0/IInput"/>
+      </eOperations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eInput" lowerBound="1"
+          eType="#/0/Input"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="BindingOutput" eSuperTypes="#/0/ExtensibleElement #/0/IBindingOutput">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL output element within a operation within a binding. An output element within an operation within a binding specifies binding information for the output of the operation. "/>
+      </eAnnotations>
+      <eOperations name="getOutput" eType="#/0/IOutput"/>
+      <eOperations name="setOutput">
+        <eParameters name="output" eType="#/0/IOutput"/>
+      </eOperations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eOutput" lowerBound="1"
+          eType="#/0/Output"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="BindingFault" eSuperTypes="#/0/ExtensibleElement #/0/IBindingFault">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL fault element within a operation within a binding. A fault element within an operation within a binding specifies binding information for the fault with the same name. "/>
+      </eAnnotations>
+      <eOperations name="getFault" eType="#/0/IFault"/>
+      <eOperations name="setFault">
+        <eParameters name="fault" eType="#/0/IFault"/>
+      </eOperations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eFault" lowerBound="1"
+          eType="#/0/Fault"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="QName" instanceClassName="javax.xml.namespace.QName">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.QName class. A QName is a fully qualified name."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Namespace">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a namespace and the corresponding namespace prefix used in a WSDL document."/>
+      </eAnnotations>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="URI" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="prefix" eType="#/1/EString"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="OperationType" instanceClassName="javax.wsdl.OperationType">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="ONE_WAY=1&#xD;&#xA;REQUEST_RESPONSE=2&#xD;&#xA;SOLICIT_RESPONSE=3&#xD;&#xA;NOTIFICATION=4"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IPortType" instanceClassName="javax.wsdl.PortType"
+        abstract="true" interface="true" eSuperTypes="#/0/IAttributeExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.PortType non-MOF interface."/>
+      </eAnnotations>
+      <eOperations name="addOperation">
+        <eParameters name="operation" eType="#/0/IOperation"/>
+      </eOperations>
+      <eOperations name="getOperation" eType="#/0/IOperation">
+        <eParameters name="name" eType="#/1/EString"/>
+        <eParameters name="inputName" eType="#/1/EString"/>
+        <eParameters name="outputName" eType="#/1/EString"/>
+      </eOperations>
+      <eOperations name="getOperations" eType="#/0/IList"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IOperation" instanceClassName="javax.wsdl.Operation"
+        abstract="true" interface="true" eSuperTypes="#/0/IElementExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Operation non-MOF interface."/>
+      </eAnnotations>
+      <eOperations name="addFault">
+        <eParameters name="fault" eType="#/0/IFault"/>
+      </eOperations>
+      <eOperations name="getFault" eType="#/0/IFault">
+        <eParameters name="name" eType="#/1/EString"/>
+      </eOperations>
+      <eOperations name="getFaults" eType="#/0/IMap"/>
+      <eOperations name="getParameterOrdering" eType="#/0/IList"/>
+      <eOperations name="setParameterOrdering">
+        <eParameters name="parameterOrder" eType="#/0/IList"/>
+      </eOperations>
+      <eOperations name="getInput" eType="#/0/IInput"/>
+      <eOperations name="setInput">
+        <eParameters name="input" eType="#/0/IInput"/>
+      </eOperations>
+      <eOperations name="getOutput" eType="#/0/IOutput"/>
+      <eOperations name="setOutput">
+        <eParameters name="output" eType="#/0/IOutput"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IInput" instanceClassName="javax.wsdl.Input"
+        abstract="true" interface="true" eSuperTypes="#/0/IAttributeExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Input non-MOF interface."/>
+      </eAnnotations>
+      <eOperations name="getMessage" eType="#/0/IMessage"/>
+      <eOperations name="setMessage">
+        <eParameters name="message" eType="#/0/IMessage"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IOutput" instanceClassName="javax.wsdl.Output"
+        abstract="true" interface="true" eSuperTypes="#/0/IAttributeExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Output non-MOF interface."/>
+      </eAnnotations>
+      <eOperations name="getMessage" eType="#/0/IMessage"/>
+      <eOperations name="setMessage">
+        <eParameters name="message" eType="#/0/IMessage"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IFault" instanceClassName="javax.wsdl.Fault"
+        abstract="true" interface="true" eSuperTypes="#/0/IAttributeExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Fault non-MOF interface."/>
+      </eAnnotations>
+      <eOperations name="getMessage" eType="#/0/IMessage"/>
+      <eOperations name="setMessage">
+        <eParameters name="message" eType="#/0/IMessage"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IMessage" instanceClassName="javax.wsdl.Message"
+        abstract="true" interface="true" eSuperTypes="#/0/IElementExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Message non-MOF interface"/>
+      </eAnnotations>
+      <eOperations name="addPart">
+        <eParameters name="part" eType="#/0/IPart"/>
+      </eOperations>
+      <eOperations name="getPart" eType="#/0/IPart">
+        <eParameters name="name" eType="#/1/EString"/>
+      </eOperations>
+      <eOperations name="getParts" eType="#/0/IMap"/>
+      <eOperations name="getOrderedParts" eType="#/0/IList">
+        <eParameters name="partOrder" eType="#/0/IList"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IPart" instanceClassName="javax.wsdl.Part"
+        abstract="true" interface="true" eSuperTypes="#/0/IAttributeExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Part non-MOF interface"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IService" instanceClassName="javax.wsdl.Service"
+        abstract="true" interface="true" eSuperTypes="#/0/IElementExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Service non-MOF interface."/>
+      </eAnnotations>
+      <eOperations name="addPort">
+        <eParameters name="port" eType="#/0/IPort"/>
+      </eOperations>
+      <eOperations name="getPorts" eType="#/0/IMap"/>
+      <eOperations name="getPort" eType="#/0/IPort">
+        <eParameters name="name" eType="#/1/EString"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IPort" instanceClassName="javax.wsdl.Port"
+        abstract="true" interface="true" eSuperTypes="#/0/IElementExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Port non-MOF interface."/>
+      </eAnnotations>
+      <eOperations name="getBinding" eType="#/0/IBinding"/>
+      <eOperations name="setBinding">
+        <eParameters name="binding" eType="#/0/IBinding"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IBinding" instanceClassName="javax.wsdl.Binding"
+        abstract="true" interface="true" eSuperTypes="#/0/IElementExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Binding non-MOF interface."/>
+      </eAnnotations>
+      <eOperations name="addBindingOperation">
+        <eParameters name="bindingOperation" eType="#/0/IBindingOperation"/>
+      </eOperations>
+      <eOperations name="getBindingOperation" eType="#/0/IBindingOperation">
+        <eParameters name="name" eType="#/1/EString"/>
+        <eParameters name="inputName" eType="#/1/EString"/>
+        <eParameters name="outputName" eType="#/1/EString"/>
+      </eOperations>
+      <eOperations name="getBindingOperations" eType="#/0/IList"/>
+      <eOperations name="getPortType" eType="#/0/IPortType"/>
+      <eOperations name="setPortType">
+        <eParameters name="portType" eType="#/0/IPortType"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IBindingOperation" instanceClassName="javax.wsdl.BindingOperation"
+        abstract="true" interface="true" eSuperTypes="#/0/IElementExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.BindingOperation non-MOF interface."/>
+      </eAnnotations>
+      <eOperations name="addBindingFault">
+        <eParameters name="bindingFault" eType="#/0/IBindingFault"/>
+      </eOperations>
+      <eOperations name="getBindingFault" eType="#/0/IBindingFault">
+        <eParameters name="name" eType="#/1/EString"/>
+      </eOperations>
+      <eOperations name="getBindingFaults" eType="#/0/IMap"/>
+      <eOperations name="getOperation" eType="#/0/IOperation"/>
+      <eOperations name="setOperation">
+        <eParameters name="operation" eType="#/0/IOperation"/>
+      </eOperations>
+      <eOperations name="getBindingInput" eType="#/0/IBindingInput"/>
+      <eOperations name="setBindingInput">
+        <eParameters name="bindingInput" eType="#/0/IBindingInput"/>
+      </eOperations>
+      <eOperations name="getBindingOutput" eType="#/0/IBindingOutput"/>
+      <eOperations name="setBindingOutput">
+        <eParameters name="bindingOutput" eType="#/0/IBindingOutput"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IBindingInput" instanceClassName="javax.wsdl.BindingInput"
+        abstract="true" interface="true" eSuperTypes="#/0/IElementExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.BindingInput non-MOF interface."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IBindingOutput" instanceClassName="javax.wsdl.BindingOutput"
+        abstract="true" interface="true" eSuperTypes="#/0/IElementExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.BindingOutput non-MOF interface."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IBindingFault" instanceClassName="javax.wsdl.BindingFault"
+        abstract="true" interface="true" eSuperTypes="#/0/IElementExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.BindingFault non-MOF interface."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="DOMElement" instanceClassName="org.w3c.dom.Element">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the org.w3c.dom.Element non-MOF interface."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IExtensibilityElement" instanceClassName="javax.wsdl.extensions.ExtensibilityElement"
+        abstract="true" interface="true">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.ExtensibilityElement non-MOF interface."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IDefinition" instanceClassName="javax.wsdl.Definition"
+        abstract="true" interface="true" eSuperTypes="#/0/IElementExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Definition non-MOF interface."/>
+      </eAnnotations>
+      <eOperations name="addBinding">
+        <eParameters name="binding" eType="#/0/IBinding"/>
+      </eOperations>
+      <eOperations name="addImport">
+        <eParameters name="importDef" eType="#/0/IImport"/>
+      </eOperations>
+      <eOperations name="addMessage">
+        <eParameters name="message" eType="#/0/IMessage"/>
+      </eOperations>
+      <eOperations name="addNamespace">
+        <eParameters name="prefix" eType="#/1/EString"/>
+        <eParameters name="namespaceURI" eType="#/1/EString"/>
+      </eOperations>
+      <eOperations name="addPortType">
+        <eParameters name="portType" eType="#/0/IPortType"/>
+      </eOperations>
+      <eOperations name="addService">
+        <eParameters name="service" eType="#/0/IService"/>
+      </eOperations>
+      <eOperations name="createBindingFault" eType="#/0/IBindingFault"/>
+      <eOperations name="createBindingInput" eType="#/0/IBindingInput"/>
+      <eOperations name="createBindingOutput" eType="#/0/IBindingOutput"/>
+      <eOperations name="createBindingOperation" eType="#/0/IBindingOperation"/>
+      <eOperations name="createBinding" eType="#/0/IBinding"/>
+      <eOperations name="createFault" eType="#/0/IFault"/>
+      <eOperations name="createImport" eType="#/0/IImport"/>
+      <eOperations name="createInput" eType="#/0/IInput"/>
+      <eOperations name="createMessage" eType="#/0/IMessage"/>
+      <eOperations name="createOperation" eType="#/0/IOperation"/>
+      <eOperations name="createOutput" eType="#/0/IOutput"/>
+      <eOperations name="createPart" eType="#/0/IPart"/>
+      <eOperations name="createPort" eType="#/0/IPort"/>
+      <eOperations name="createPortType" eType="#/0/IPortType"/>
+      <eOperations name="createService" eType="#/0/IService"/>
+      <eOperations name="getBinding" eType="#/0/IBinding">
+        <eParameters name="name" eType="#/0/QName"/>
+      </eOperations>
+      <eOperations name="getBindings" eType="#/0/IMap"/>
+      <eOperations name="getImports" eType="#/0/IMap"/>
+      <eOperations name="getImports" eType="#/0/IList">
+        <eParameters name="namespaceURI" eType="#/1/EString"/>
+      </eOperations>
+      <eOperations name="getMessage" eType="#/0/IMessage">
+        <eParameters name="name" eType="#/0/QName"/>
+      </eOperations>
+      <eOperations name="getMessages" eType="#/0/IMap"/>
+      <eOperations name="getNamespace" eType="#/1/EString">
+        <eParameters name="prefix" eType="#/1/EString"/>
+      </eOperations>
+      <eOperations name="getNamespaces" eType="#/0/IMap"/>
+      <eOperations name="getPortType" eType="#/0/IPortType">
+        <eParameters name="name" eType="#/0/QName"/>
+      </eOperations>
+      <eOperations name="getPortTypes" eType="#/0/IMap"/>
+      <eOperations name="getPrefix" eType="#/1/EString">
+        <eParameters name="namespaceURI" eType="#/1/EString"/>
+      </eOperations>
+      <eOperations name="getService" eType="#/0/IService">
+        <eParameters name="name" eType="#/0/QName"/>
+      </eOperations>
+      <eOperations name="getServices" eType="#/0/IMap"/>
+      <eOperations name="getExtensionRegistry" eType="#/0/IExtensionRegistry"/>
+      <eOperations name="setExtensionRegistry">
+        <eParameters name="extensionRegistry" eType="#/0/IExtensionRegistry"/>
+      </eOperations>
+      <eOperations name="getDocumentBaseURI" eType="#/1/EString"/>
+      <eOperations name="setDocumentBaseURI">
+        <eParameters name="documentBase" eType="#/1/EString"/>
+      </eOperations>
+      <eOperations name="createTypes" eType="#/0/ITypes"/>
+      <eOperations name="removeService" eType="#/0/IService">
+        <eParameters name="name" eType="#/0/QName"/>
+      </eOperations>
+      <eOperations name="removeBinding" eType="#/0/IBinding">
+        <eParameters name="name" eType="#/0/QName"/>
+      </eOperations>
+      <eOperations name="removePortType" eType="#/0/IPortType">
+        <eParameters name="name" eType="#/0/QName"/>
+      </eOperations>
+      <eOperations name="removeMessage" eType="#/0/IMessage">
+        <eParameters name="name" eType="#/0/QName"/>
+      </eOperations>
+      <eOperations name="getTypes" eType="#/0/ITypes"/>
+      <eOperations name="setTypes">
+        <eParameters name="types" eType="#/0/ITypes"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IImport" instanceClassName="javax.wsdl.Import"
+        abstract="true" interface="true" eSuperTypes="#/0/IAttributeExtensible">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Import non-MOF interface."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IList" instanceClassName="java.util.List"
+        abstract="true" interface="true">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the non-MOF java.util.List interface."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IMap" instanceClassName="java.util.Map"
+        abstract="true" interface="true">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the non-MOF java.util.Map interface."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IURL" instanceClassName="java.net.URL"
+        abstract="true" interface="true">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the non-MOF java.net.URL interface."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IExtensionRegistry" instanceClassName="javax.wsdl.extensions.ExtensionRegistry"
+        abstract="true" interface="true">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the non-MOF javax.wsdl.extensions.ExtensionRegistry interface."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="Types" eSuperTypes="#/0/ExtensibleElement #/0/ITypes">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents a WSDL types element. The types element encloses data type definitions that are relevant for the exchanged messages."/>
+      </eAnnotations>
+      <eOperations name="getSchemas" eType="#/0/IList"/>
+      <eOperations name="getSchemas" eType="#/0/IList">
+        <eParameters name="namespaceURI" eType="#/1/EString"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IIterator" instanceClassName="java.util.Iterator"
+        abstract="true" interface="true">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the non-MOF java.util.Iterator interface."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="WSDLException" instanceClassName="javax.wsdl.WSDLException">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Exception class."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="ITypes" instanceClassName="javax.wsdl.Types"
+        abstract="true" interface="true">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the javax.wsdl.Types non-MOF interface"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="UnknownExtensibilityElement" eSuperTypes="#/0/ExtensibilityElement">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="children" upperBound="-1"
+          eType="#/0/UnknownExtensibilityElement" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDSchemaExtensibilityElement" eSuperTypes="#/0/ExtensibilityElement #/0/ISchema">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="documentBaseURI" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="schema" eType="#/2/XSDSchema"
+          containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="DOMDocument" instanceClassName="org.w3c.dom.Document">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="This class represents the org.w3c.dom.Document non-MOF interface."/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="MessageReference" abstract="true"
+        eSuperTypes="#/0/ExtensibleElement">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="eMessage" lowerBound="1"
+          eType="#/0/Message"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IElementExtensible" instanceClassName="javax.wsdl.extensions.ElementExtensible"
+        abstract="true" interface="true">
+      <eOperations name="getExtensibilityElements" eType="#/0/IList"/>
+      <eOperations name="addExtensibilityElement">
+        <eParameters name="extElement" eType="#/0/IExtensibilityElement"/>
+      </eOperations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IAttributeExtensible" instanceClassName="javax.wsdl.extensions.AttributeExtensible"
+        abstract="true" interface="true">
+      <eOperations name="getExtensionAttribute" eType="#/0/IObject">
+        <eParameters name="name" eType="#/0/QName"/>
+      </eOperations>
+      <eOperations name="setExtensionAttribute">
+        <eParameters name="name" eType="#/0/QName"/>
+        <eParameters name="value" eType="#/0/IObject"/>
+      </eOperations>
+      <eOperations name="getExtensionAttributes" eType="#/0/IMap"/>
+      <eOperations name="getNativeAttributeNames" eType="#/0/IList"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="IObject" instanceClassName="java.lang.Object"
+        abstract="true" interface="true"/>
+    <eClassifiers xsi:type="ecore:EClass" name="ISchema" instanceClassName="javax.wsdl.extensions.schema.Schema"
+        abstract="true" interface="true" eSuperTypes="#/0/IExtensibilityElement"/>
+  </ecore:EPackage>
+  <ecore:EPackage name="ecore" nsURI="http://www.eclipse.org/emf/2002/Ecore" nsPrefix="ecore">
+    <eClassifiers xsi:type="ecore:EDataType" name="EString" instanceClassName="java.lang.String">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#string"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EBoolean" instanceClassName="boolean">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#boolean"/>
+      </eAnnotations>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="EInt" instanceClassName="int">
+      <eAnnotations source="http:///org/eclipse/emf/ecore/util/ExtendedMetaData">
+        <details key="baseType" value="http://www.w3.org/2001/XMLSchema#int"/>
+      </eAnnotations>
+    </eClassifiers>
+  </ecore:EPackage>
+  <ecore:EPackage name="xsd" nsURI="http://www.eclipse.org/xsd/2002/XSD" nsPrefix="xsd">
+    <eClassifiers xsi:type="ecore:EClass" name="XSDAnnotation" eSuperTypes="#/2/XSDComponent #/2/XSDRedefineContent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="applicationInformation"
+          upperBound="-1" eType="#/2/DOMElement"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="userInformation" upperBound="-1"
+          eType="#/2/DOMElement"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="attributes" upperBound="-1"
+          eType="#/2/DOMAttr"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDAttributeDeclaration" eSuperTypes="#/2/XSDFeature #/2/XSDSchemaContent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="attributeDeclarationReference"
+          eType="#/1/EBoolean" changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="anonymousTypeDefinition"
+          eType="#/2/XSDSimpleTypeDefinition" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="typeDefinition" lowerBound="1"
+          eType="#/2/XSDSimpleTypeDefinition" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="resolvedAttributeDeclaration"
+          lowerBound="1" eType="#/2/XSDAttributeDeclaration" resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDAttributeGroupContent" abstract="true"
+        eSuperTypes="#/2/XSDConcreteComponent"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDAttributeGroupDefinition" eSuperTypes="#/2/XSDRedefinableComponent #/2/XSDAttributeGroupContent #/2/XSDRedefineContent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="attributeGroupDefinitionReference"
+          eType="#/1/EBoolean" changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="contents" upperBound="-1"
+          eType="#/2/XSDAttributeGroupContent" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="attributeUses" upperBound="-1"
+          eType="#/2/XSDAttributeUse" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="attributeWildcardContent"
+          eType="#/2/XSDWildcard" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="attributeWildcard" eType="#/2/XSDWildcard"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="resolvedAttributeGroupDefinition"
+          lowerBound="1" eType="#/2/XSDAttributeGroupDefinition" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="syntheticWildcard" eType="#/2/XSDWildcard"
+          transient="true" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDAttributeUse" eSuperTypes="#/2/XSDComponent #/2/XSDAttributeGroupContent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="required" eType="#/1/EBoolean"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/2/Value"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="constraint" eType="#/2/XSDConstraint"
+          unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="use" eType="#/2/XSDAttributeUseCategory"
+          unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="lexicalValue" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="attributeDeclaration"
+          lowerBound="1" eType="#/2/XSDAttributeDeclaration" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="content" lowerBound="1"
+          eType="#/2/XSDAttributeDeclaration" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDBoundedFacet" eSuperTypes="#/2/XSDFundamentalFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/1/EBoolean"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDCardinalityFacet" eSuperTypes="#/2/XSDFundamentalFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/2/XSDCardinality"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDComplexTypeContent" abstract="true"
+        eSuperTypes="#/2/XSDComponent"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDComplexTypeDefinition" eSuperTypes="#/2/XSDTypeDefinition #/2/XSDScope">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="derivationMethod" eType="#/2/XSDDerivationMethod"
+          defaultValueLiteral="restriction" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="final" upperBound="-1"
+          eType="#/2/XSDComplexFinal"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="abstract" eType="#/1/EBoolean"
+          unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="contentTypeCategory"
+          eType="#/2/XSDContentTypeCategory"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="prohibitedSubstitutions"
+          upperBound="-1" eType="#/2/XSDProhibitedSubstitutions"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="lexicalFinal" upperBound="-1"
+          eType="#/2/XSDComplexFinal" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="block" upperBound="-1"
+          eType="#/2/XSDProhibitedSubstitutions" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="mixed" eType="#/1/EBoolean"
+          unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="contentAnnotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="baseTypeDefinition" lowerBound="1"
+          eType="#/2/XSDTypeDefinition" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="content" eType="#/2/XSDComplexTypeContent"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="contentType" eType="#/2/XSDComplexTypeContent"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="attributeUses" upperBound="-1"
+          eType="#/2/XSDAttributeUse" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="attributeContents" upperBound="-1"
+          eType="#/2/XSDAttributeGroupContent" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="attributeWildcard" eType="#/2/XSDWildcard"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="attributeWildcardContent"
+          eType="#/2/XSDWildcard" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="rootTypeDefinition" lowerBound="1"
+          eType="#/2/XSDTypeDefinition" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="syntheticParticle" eType="#/2/XSDParticle"
+          transient="true" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="syntheticWildcard" eType="#/2/XSDWildcard"
+          transient="true" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDComponent" abstract="true" eSuperTypes="#/2/XSDConcreteComponent"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDConcreteComponent" abstract="true">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="element" eType="#/2/DOMElement"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="container" eType="#/2/XSDConcreteComponent"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="rootContainer" lowerBound="1"
+          eType="#/2/XSDConcreteComponent" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="schema" eType="#/2/XSDSchema"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="diagnostics" upperBound="-1"
+          eType="#/2/XSDDiagnostic" transient="true" containment="true" resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDConstrainingFacet" abstract="true"
+        eSuperTypes="#/2/XSDFacet"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDDiagnostic" eSuperTypes="#/2/XSDConcreteComponent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="severity" eType="#/2/XSDDiagnosticSeverity"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="message" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="locationURI" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="line" eType="#/1/EInt"
+          defaultValueLiteral="1"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="column" eType="#/1/EInt"
+          defaultValueLiteral="1"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="node" eType="#/2/DOMNode"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="annotationURI" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="key" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="substitutions" upperBound="-1"
+          eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="components" lowerBound="1"
+          upperBound="-1" eType="#/2/XSDConcreteComponent" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="primaryComponent" lowerBound="1"
+          eType="#/2/XSDConcreteComponent" volatile="true" transient="true" resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDElementDeclaration" eSuperTypes="#/2/XSDFeature #/2/XSDSchemaContent #/2/XSDTerm">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="nillable" eType="#/1/EBoolean"
+          unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="disallowedSubstitutions"
+          upperBound="-1" eType="#/2/XSDDisallowedSubstitutions"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="substitutionGroupExclusions"
+          upperBound="-1" eType="#/2/XSDSubstitutionGroupExclusions"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="abstract" eType="#/1/EBoolean"
+          unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="lexicalFinal" upperBound="-1"
+          eType="#/2/XSDProhibitedSubstitutions" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="block" upperBound="-1"
+          eType="#/2/XSDDisallowedSubstitutions" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="elementDeclarationReference"
+          eType="#/1/EBoolean" changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="circular" eType="#/1/EBoolean"
+          changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="anonymousTypeDefinition"
+          eType="#/2/XSDTypeDefinition" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="typeDefinition" lowerBound="1"
+          eType="#/2/XSDTypeDefinition" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="identityConstraintDefinitions"
+          upperBound="-1" eType="#/2/XSDIdentityConstraintDefinition" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="resolvedElementDeclaration"
+          lowerBound="1" eType="#/2/XSDElementDeclaration" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="substitutionGroupAffiliation"
+          eType="#/2/XSDElementDeclaration" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="substitutionGroup" upperBound="-1"
+          eType="#/2/XSDElementDeclaration" resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDEnumerationFacet" eSuperTypes="#/2/XSDRepeatableFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" upperBound="-1"
+          eType="#/2/Value"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDFacet" abstract="true" eSuperTypes="#/2/XSDComponent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="lexicalValue" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="facetName" eType="#/1/EString"
+          changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="effectiveValue" eType="#/2/Value"
+          changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="simpleTypeDefinition"
+          eType="#/2/XSDSimpleTypeDefinition" changeable="false" volatile="true" resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDFeature" abstract="true" eSuperTypes="#/2/XSDNamedComponent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/2/Value"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="constraint" eType="#/2/XSDConstraint"
+          unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="form" eType="#/2/XSDForm"
+          unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="lexicalValue" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="global" eType="#/1/EBoolean"
+          changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="featureReference" eType="#/1/EBoolean"
+          changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="scope" eType="#/2/XSDScope"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="resolvedFeature" lowerBound="1"
+          eType="#/2/XSDFeature" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="type" lowerBound="1"
+          eType="#/2/XSDTypeDefinition" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDFixedFacet" abstract="true" eSuperTypes="#/2/XSDConstrainingFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="fixed" eType="#/1/EBoolean"
+          unsettable="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDFractionDigitsFacet" eSuperTypes="#/2/XSDFixedFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/1/EInt"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDFundamentalFacet" abstract="true"
+        eSuperTypes="#/2/XSDFacet"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDIdentityConstraintDefinition" eSuperTypes="#/2/XSDNamedComponent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="identityConstraintCategory"
+          eType="#/2/XSDIdentityConstraintCategory"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="referencedKey" eType="#/2/XSDIdentityConstraintDefinition"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="selector" lowerBound="1"
+          eType="#/2/XSDXPathDefinition" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="fields" lowerBound="1"
+          upperBound="-1" eType="#/2/XSDXPathDefinition" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDImport" eSuperTypes="#/2/XSDSchemaDirective">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="namespace" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDInclude" eSuperTypes="#/2/XSDSchemaCompositor">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDLengthFacet" eSuperTypes="#/2/XSDFixedFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/1/EInt"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDMaxExclusiveFacet" eSuperTypes="#/2/XSDMaxFacet"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDMaxFacet" abstract="true" eSuperTypes="#/2/XSDFixedFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/2/Value"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="inclusive" eType="#/1/EBoolean"
+          changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="exclusive" eType="#/1/EBoolean"
+          changeable="false" volatile="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDMaxInclusiveFacet" eSuperTypes="#/2/XSDMaxFacet"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDMaxLengthFacet" eSuperTypes="#/2/XSDFixedFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/1/EInt"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDMinExclusiveFacet" eSuperTypes="#/2/XSDMinFacet"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDMinFacet" abstract="true" eSuperTypes="#/2/XSDFixedFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/2/Value"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="inclusive" eType="#/1/EBoolean"
+          changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="exclusive" eType="#/1/EBoolean"
+          changeable="false" volatile="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDMinInclusiveFacet" eSuperTypes="#/2/XSDMinFacet"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDMinLengthFacet" eSuperTypes="#/2/XSDFixedFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/1/EInt"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDModelGroup" eSuperTypes="#/2/XSDTerm">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="compositor" eType="#/2/XSDCompositor"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="contents" upperBound="-1"
+          eType="#/2/XSDParticle" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="particles" lowerBound="1"
+          upperBound="-1" eType="#/2/XSDParticle" resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDModelGroupDefinition" eSuperTypes="#/2/XSDRedefinableComponent #/2/XSDParticleContent #/2/XSDRedefineContent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="modelGroupDefinitionReference"
+          eType="#/1/EBoolean" changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="modelGroup" lowerBound="1"
+          eType="#/2/XSDModelGroup" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="resolvedModelGroupDefinition"
+          lowerBound="1" eType="#/2/XSDModelGroupDefinition" resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDNamedComponent" abstract="true"
+        eSuperTypes="#/2/XSDComponent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="targetNamespace" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="aliasName" eType="#/1/EString"
+          changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="uRI" eType="#/1/EString"
+          changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="aliasURI" eType="#/1/EString"
+          changeable="false" volatile="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="qName" eType="#/1/EString"
+          changeable="false" volatile="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDNotationDeclaration" eSuperTypes="#/2/XSDNamedComponent #/2/XSDSchemaContent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="systemIdentifier" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="publicIdentifier" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDNumericFacet" eSuperTypes="#/2/XSDFundamentalFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/1/EBoolean"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDOrderedFacet" eSuperTypes="#/2/XSDFundamentalFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/2/XSDOrdered"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDParticle" eSuperTypes="#/2/XSDComplexTypeContent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="minOccurs" eType="#/1/EInt"
+          defaultValueLiteral="1" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="maxOccurs" eType="#/1/EInt"
+          defaultValueLiteral="1" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="content" lowerBound="1"
+          eType="#/2/XSDParticleContent" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="term" lowerBound="1"
+          eType="#/2/XSDTerm" resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDParticleContent" abstract="true"
+        eSuperTypes="#/2/XSDConcreteComponent"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDPatternFacet" eSuperTypes="#/2/XSDRepeatableFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" upperBound="-1"
+          eType="#/1/EString"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDRedefinableComponent" abstract="true"
+        eSuperTypes="#/2/XSDNamedComponent #/2/XSDRedefineContent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="circular" eType="#/1/EBoolean"
+          changeable="false" volatile="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDRedefineContent" abstract="true"
+        eSuperTypes="#/2/XSDSchemaContent"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDRedefine" eSuperTypes="#/2/XSDSchemaCompositor">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotations" upperBound="-1"
+          eType="#/2/XSDAnnotation" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="contents" upperBound="-1"
+          eType="#/2/XSDRedefineContent" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDRepeatableFacet" abstract="true"
+        eSuperTypes="#/2/XSDConstrainingFacet">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotations" upperBound="-1"
+          eType="#/2/XSDAnnotation" resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDSchema" eSuperTypes="#/2/XSDScope">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="document" eType="#/2/DOMDocument"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="schemaLocation" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="targetNamespace" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="attributeFormDefault"
+          eType="#/2/XSDForm" defaultValueLiteral="unqualified" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="elementFormDefault" eType="#/2/XSDForm"
+          defaultValueLiteral="unqualified" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="finalDefault" upperBound="-1"
+          eType="#/2/XSDProhibitedSubstitutions" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="blockDefault" upperBound="-1"
+          eType="#/2/XSDDisallowedSubstitutions" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="version" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="contents" upperBound="-1"
+          eType="#/2/XSDSchemaContent" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="elementDeclarations"
+          upperBound="-1" eType="#/2/XSDElementDeclaration" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="attributeDeclarations"
+          upperBound="-1" eType="#/2/XSDAttributeDeclaration" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="attributeGroupDefinitions"
+          upperBound="-1" eType="#/2/XSDAttributeGroupDefinition" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="typeDefinitions" upperBound="-1"
+          eType="#/2/XSDTypeDefinition" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="modelGroupDefinitions"
+          upperBound="-1" eType="#/2/XSDModelGroupDefinition" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="identityConstraintDefinitions"
+          upperBound="-1" eType="#/2/XSDIdentityConstraintDefinition" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="notationDeclarations"
+          upperBound="-1" eType="#/2/XSDNotationDeclaration" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotations" upperBound="-1"
+          eType="#/2/XSDAnnotation" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="allDiagnostics" upperBound="-1"
+          eType="#/2/XSDDiagnostic" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="referencingDirectives"
+          upperBound="-1" eType="#/2/XSDSchemaDirective" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="rootVersion" lowerBound="1"
+          eType="#/2/XSDSchema" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="originalVersion" eType="#/2/XSDSchema"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="incorporatedVersions"
+          upperBound="-1" eType="#/2/XSDSchema" transient="true" containment="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="schemaForSchema" lowerBound="1"
+          eType="#/2/XSDSchema" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDSchemaCompositor" abstract="true"
+        eSuperTypes="#/2/XSDSchemaDirective">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="incorporatedSchema" eType="#/2/XSDSchema"
+          resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDSchemaContent" abstract="true"
+        eSuperTypes="#/2/XSDConcreteComponent"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDSchemaDirective" abstract="true"
+        eSuperTypes="#/2/XSDSchemaContent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="schemaLocation" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="resolvedSchema" eType="#/2/XSDSchema"
+          resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDScope" abstract="true" eSuperTypes="#/2/XSDComponent"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDSimpleTypeDefinition" eSuperTypes="#/2/XSDTypeDefinition #/2/XSDComplexTypeContent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="variety" eType="#/2/XSDVariety"
+          unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="final" upperBound="-1"
+          eType="#/2/XSDSimpleFinal"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="lexicalFinal" upperBound="-1"
+          eType="#/2/XSDSimpleFinal" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="validFacets" upperBound="-1"
+          eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="contents" upperBound="-1"
+          eType="#/2/XSDSimpleTypeDefinition" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="facetContents" upperBound="-1"
+          eType="#/2/XSDConstrainingFacet" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="facets" upperBound="-1"
+          eType="#/2/XSDConstrainingFacet" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="memberTypeDefinitions"
+          upperBound="-1" eType="#/2/XSDSimpleTypeDefinition" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="fundamentalFacets" lowerBound="1"
+          upperBound="-1" eType="#/2/XSDFundamentalFacet" transient="true" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="baseTypeDefinition" lowerBound="1"
+          eType="#/2/XSDSimpleTypeDefinition" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="primitiveTypeDefinition"
+          eType="#/2/XSDSimpleTypeDefinition" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="itemTypeDefinition" eType="#/2/XSDSimpleTypeDefinition"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="rootTypeDefinition" lowerBound="1"
+          eType="#/2/XSDSimpleTypeDefinition" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="minFacet" eType="#/2/XSDMinFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="maxFacet" eType="#/2/XSDMaxFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="maxInclusiveFacet" eType="#/2/XSDMaxInclusiveFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="minInclusiveFacet" eType="#/2/XSDMinInclusiveFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="minExclusiveFacet" eType="#/2/XSDMinExclusiveFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="maxExclusiveFacet" eType="#/2/XSDMaxExclusiveFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="lengthFacet" eType="#/2/XSDLengthFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="whiteSpaceFacet" eType="#/2/XSDWhiteSpaceFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="enumerationFacets" upperBound="-1"
+          eType="#/2/XSDEnumerationFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="patternFacets" upperBound="-1"
+          eType="#/2/XSDPatternFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="cardinalityFacet" lowerBound="1"
+          eType="#/2/XSDCardinalityFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="numericFacet" lowerBound="1"
+          eType="#/2/XSDNumericFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="maxLengthFacet" eType="#/2/XSDMaxLengthFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="minLengthFacet" eType="#/2/XSDMinLengthFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="totalDigitsFacet" eType="#/2/XSDTotalDigitsFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="fractionDigitsFacet"
+          eType="#/2/XSDFractionDigitsFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="orderedFacet" lowerBound="1"
+          eType="#/2/XSDOrderedFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="boundedFacet" lowerBound="1"
+          eType="#/2/XSDBoundedFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="effectiveMaxFacet" eType="#/2/XSDMaxFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="effectiveWhiteSpaceFacet"
+          eType="#/2/XSDWhiteSpaceFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="effectiveMaxLengthFacet"
+          eType="#/2/XSDMaxLengthFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="effectiveFractionDigitsFacet"
+          eType="#/2/XSDFractionDigitsFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="effectivePatternFacet"
+          eType="#/2/XSDPatternFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="effectiveEnumerationFacet"
+          eType="#/2/XSDEnumerationFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="effectiveTotalDigitsFacet"
+          eType="#/2/XSDTotalDigitsFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="effectiveMinLengthFacet"
+          eType="#/2/XSDMinLengthFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="effectiveLengthFacet"
+          eType="#/2/XSDLengthFacet" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="effectiveMinFacet" eType="#/2/XSDMinFacet"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="syntheticFacets" upperBound="-1"
+          eType="#/2/XSDFacet" transient="true" containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDTerm" abstract="true" eSuperTypes="#/2/XSDComponent #/2/XSDParticleContent"/>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDTotalDigitsFacet" eSuperTypes="#/2/XSDFixedFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/1/EInt"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDTypeDefinition" abstract="true"
+        eSuperTypes="#/2/XSDRedefinableComponent #/2/XSDRedefineContent">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="derivationAnnotation"
+          eType="#/2/XSDAnnotation" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotations" upperBound="-1"
+          eType="#/2/XSDAnnotation" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="rootType" lowerBound="1"
+          eType="#/2/XSDTypeDefinition" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="baseType" lowerBound="1"
+          eType="#/2/XSDTypeDefinition" changeable="false" volatile="true" transient="true"
+          resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="simpleType" eType="#/2/XSDSimpleTypeDefinition"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="complexType" eType="#/2/XSDParticle"
+          changeable="false" volatile="true" transient="true" resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDWhiteSpaceFacet" eSuperTypes="#/2/XSDFixedFacet">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/2/XSDWhiteSpace"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDWildcard" eSuperTypes="#/2/XSDTerm">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="namespaceConstraintCategory"
+          eType="#/2/XSDNamespaceConstraintCategory"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="namespaceConstraint"
+          upperBound="-1" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="processContents" eType="#/2/XSDProcessContents"
+          unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="lexicalNamespaceConstraint"
+          upperBound="-1" eType="#/1/EString" unsettable="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotations" upperBound="-1"
+          eType="#/2/XSDAnnotation" resolveProxies="false"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EClass" name="XSDXPathDefinition" eSuperTypes="#/2/XSDComponent">
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="variety" eType="#/2/XSDXPathVariety"/>
+      <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="#/1/EString"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="annotation" eType="#/2/XSDAnnotation"
+          containment="true"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EDataType" name="DOMAttr" instanceClassName="org.w3c.dom.Attr"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="DOMDocument" instanceClassName="org.w3c.dom.Document"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="DOMElement" instanceClassName="org.w3c.dom.Element"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="DOMNode" instanceClassName="org.w3c.dom.Node"/>
+    <eClassifiers xsi:type="ecore:EDataType" name="Value" instanceClassName="java.lang.Object"/>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDAttributeUseCategory">
+      <eLiterals name="optional"/>
+      <eLiterals name="prohibited" value="1"/>
+      <eLiterals name="required" value="2"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDCardinality">
+      <eLiterals name="finite"/>
+      <eLiterals name="countablyInfinite" value="1"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDComplexFinal">
+      <eLiterals name="extension"/>
+      <eLiterals name="restriction" value="1"/>
+      <eLiterals name="all" value="2"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDCompositor">
+      <eLiterals name="all"/>
+      <eLiterals name="choice" value="1"/>
+      <eLiterals name="sequence" value="2"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDConstraint">
+      <eLiterals name="default"/>
+      <eLiterals name="fixed" value="1"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDContentTypeCategory">
+      <eLiterals name="empty"/>
+      <eLiterals name="simple" value="1"/>
+      <eLiterals name="mixed" value="2"/>
+      <eLiterals name="elementOnly" value="3"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDDerivationMethod">
+      <eLiterals name="extension"/>
+      <eLiterals name="restriction" value="1"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDDiagnosticSeverity">
+      <eLiterals name="fatal"/>
+      <eLiterals name="error" value="1"/>
+      <eLiterals name="warning" value="2"/>
+      <eLiterals name="information" value="3"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDDisallowedSubstitutions">
+      <eLiterals name="substitution"/>
+      <eLiterals name="extension" value="1"/>
+      <eLiterals name="restriction" value="2"/>
+      <eLiterals name="all" value="3"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDForm">
+      <eLiterals name="qualified"/>
+      <eLiterals name="unqualified" value="1"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDIdentityConstraintCategory">
+      <eLiterals name="key"/>
+      <eLiterals name="keyref" value="1"/>
+      <eLiterals name="unique" value="2"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDNamespaceConstraintCategory">
+      <eLiterals name="any"/>
+      <eLiterals name="not" value="1"/>
+      <eLiterals name="set" value="2"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDOrdered">
+      <eLiterals name="false"/>
+      <eLiterals name="partial" value="1"/>
+      <eLiterals name="total" value="2"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDProcessContents">
+      <eLiterals name="strict"/>
+      <eLiterals name="lax" value="1"/>
+      <eLiterals name="skip" value="2"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDProhibitedSubstitutions">
+      <eLiterals name="extension"/>
+      <eLiterals name="restriction" value="1"/>
+      <eLiterals name="all" value="2"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDSimpleFinal">
+      <eLiterals name="list"/>
+      <eLiterals name="restriction" value="1"/>
+      <eLiterals name="union" value="2"/>
+      <eLiterals name="all" value="3"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDSubstitutionGroupExclusions">
+      <eLiterals name="extension"/>
+      <eLiterals name="restriction" value="1"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDVariety">
+      <eLiterals name="atomic"/>
+      <eLiterals name="list" value="1"/>
+      <eLiterals name="union" value="2"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDWhiteSpace">
+      <eLiterals name="preserve"/>
+      <eLiterals name="replace" value="1"/>
+      <eLiterals name="collapse" value="2"/>
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="XSDXPathVariety">
+      <eLiterals name="selector"/>
+      <eLiterals name="field" value="1"/>
+    </eClassifiers>
+  </ecore:EPackage>
+</xmi:XMI>

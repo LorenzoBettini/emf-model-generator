@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="ASCII"?>
+<bpws:Process
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bpws="http://docs.oasis-open.org/wsbpel/2.0/process/executable"
+    xmlns:plnk="http://docs.oasis-open.org/wsbpel/2.0/plnktype"
+    xsi:schemaLocation="http://docs.oasis-open.org/wsbpel/2.0/process/executable ../external-metamodels/BPEL.ecore#/0 http://docs.oasis-open.org/wsbpel/2.0/plnktype ../external-metamodels/BPEL.ecore#/3"
+    name="Process_name_1"
+    targetNamespace="Process_targetNamespace_1"
+    queryLanguage="Process_queryLanguage_1"
+    expressionLanguage="Process_expressionLanguage_1"
+    suppressJoinFailure="true"
+    variableAccessSerializable="true"
+    abstractProcessProfile="Process_abstractProcessProfile_1">
+  <eExtensibilityElements
+      required="true"/>
+  <eExtensibilityElements
+      xsi:type="plnk:PartnerLinkType"
+      required="true"
+      name="PartnerLinkType_name_1"/>
+  <documentation
+      lang="Documentation_lang_1"
+      source="Documentation_source_1"
+      value="Documentation_value_1"/>
+  <partnerLinks/>
+  <variables/>
+  <activity
+      name="Activity_name_1"
+      suppressJoinFailure="true"/>
+  <faultHandlers/>
+  <eventHandlers/>
+  <correlationSets/>
+  <imports namespace="Import_namespace_1"
+      location="Import_location_1"
+      importType="Import_importType_1"/>
+  <imports namespace="Import_namespace_2"
+      location="Import_location_2"
+      importType="Import_importType_2"/>
+  <extensions/>
+  <messageExchanges/>
+</bpws:Process>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="ASCII"?>
+<bpmn:Graph
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bpmn="http://stp.eclipse.org/bpmn"
+    xsi:schemaLocation="http://stp.eclipse.org/bpmn ../external-metamodels/BPMN.ecore#/0"
+    iD="name1"
+    documentation="Graph_documentation_1"
+    name="Graph_name_1"
+    ncname="Graph_ncname_1">
+  <eAnnotations
+      source="EAnnotation_source_1"
+      references="name1 //@eAnnotations.1"/>
+  <eAnnotations
+      source="EAnnotation_source_2"
+      references="name2 name3"/>
+  <artifacts
+      iD="name2"
+      documentation="Artifact_documentation_1"
+      name="Artifact_name_1"
+      ncname="Artifact_ncname_1"/>
+  <artifacts
+      xsi:type="bpmn:DataObject"
+      iD="name3"
+      documentation="DataObject_documentation_1"
+      name="DataObject_name_1"
+      ncname="DataObject_ncname_1"/>
+  <vertices
+      xsi:type="bpmn:Activity"
+      iD="name4"
+      outgoingEdges="name6"
+      documentation="Activity_documentation_1"
+      name="Activity_name_1"
+      ncname="Activity_ncname_1"
+      activityType="Task"
+      looping="true"/>
+  <vertices
+      xsi:type="bpmn:Activity"
+      iD="name5"
+      incomingEdges="name6"
+      documentation="Activity_documentation_2"
+      name="Activity_name_2"
+      ncname="Activity_ncname_2"
+      activityType="SubProcess"
+      looping="false"/>
+  <sequenceEdges
+      iD="name6"
+      documentation="SequenceEdge_documentation_1"
+      name="SequenceEdge_name_1"
+      ncname="SequenceEdge_ncname_1"
+      conditionType="None"
+      isDefault="true"/>
+</bpmn:Graph>

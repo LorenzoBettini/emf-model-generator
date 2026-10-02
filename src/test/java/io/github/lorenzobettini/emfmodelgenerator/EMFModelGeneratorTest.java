@@ -35,11 +35,13 @@ import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
+import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.EcoreFactory;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
@@ -49,6 +51,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
+import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +69,7 @@ class EMFModelGeneratorTest {
 		diagnostic.getChildren().forEach(child -> diagnostics.addAll(flattenDiagnostics(child)));
 		return diagnostics;
 	}
-	
+
 	@BeforeEach
 	void setUp() throws IOException {
 		generator = new EMFModelGenerator();
@@ -82,7 +85,7 @@ class EMFModelGeneratorTest {
 		}
 		Files.createDirectories(outputPath);
 	}
-	
+
 	@AfterEach
 	void tearDown() {
 		// Clean up registered EPackages
@@ -90,7 +93,7 @@ class EMFModelGeneratorTest {
 		generator.unloadEcoreModels();
 		// Optionally keep output files for inspection
 	}
-	
+
 	@Test
 	void testGenerateFromSimpleEClass() throws Exception {
 		// Load the simple.ecore model
@@ -132,7 +135,7 @@ class EMFModelGeneratorTest {
 		assertNotNull(ageValue, "Age attribute should be set");
 		assertThat(ageValue).isEqualTo(20);
 	}
-	
+
 	@Test
 	void testGenerateFromEPackage() throws Exception {
 		// Load the simple.ecore model
@@ -157,7 +160,7 @@ class EMFModelGeneratorTest {
 		// Compare with expected output
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "simple_Person_1.xmi", "simple_Person_from_package.xmi");
 	}
-	
+
 	/**
 	 * The Ecore could be improved because Employees can end up being
 	 * their own managers.
@@ -219,7 +222,7 @@ class EMFModelGeneratorTest {
 				"company_Employee_1.xmi",
 				"company_Employee_1.xmi");
 	}
-	
+
 	@Test
 	void testGenerateWithReferences() throws Exception {
 		// Load the references.ecore model
@@ -264,7 +267,7 @@ class EMFModelGeneratorTest {
 		Object empName = employee.eGet(employee.eClass().getEStructuralFeature("name"));
 		assertThat(empName).isEqualTo("Employee_name_1");
 	}
-	
+
 	@Test
 	void testGenerateWithDifferentDataTypes() throws Exception {
 		// Load the datatypes.ecore model
@@ -319,7 +322,7 @@ class EMFModelGeneratorTest {
 			.hasSize(2)
 			.containsExactly("DataHolder_tags_1", "DataHolder_tags_2");
 	}
-	
+
 	@Test
 	void testOutputDirectoryConfiguration() throws Exception {
 		// Test custom output directory
@@ -350,7 +353,7 @@ class EMFModelGeneratorTest {
 
 	@Test
 	void testGenerateAttributeValue_FullCoverage() throws Exception {
-		// Load the alltypes.ecore model which exercises all generateAttributeValue branches
+		// Load the alltypes.ecore model which exercises all generateValue branches
 		EPackage ePackage = loadEcoreModel(TEST_INPUTS_DIR, "alltypes.ecore");
 		assertNotNull(ePackage, "alltypes EPackage should be loaded");
 		
@@ -378,6 +381,34 @@ class EMFModelGeneratorTest {
 		
 		// Compare with expected output - this is the main verification
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "alltypes_AllTypesHolder_1.xmi", "alltypes_AllTypesHolder_1.xmi");
+	}
+
+	@Test
+	void shouldGenerateAndSerializeEveryXMLTypeFromEcore() throws Exception {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "xmltypes.ecore");
+		final var holderClass = assertEClassExists(ePackage, "XMLTypesHolder");
+		final var xmlTypes = XMLTypePackage.eINSTANCE.getEClassifiers().stream()
+				.filter(EDataType.class::isInstance)
+				.map(EDataType.class::cast)
+				.toList();
+
+		assertThat(holderClass.getEAllAttributes())
+				.extracting(EAttribute::getEAttributeType)
+				.containsExactlyElementsOf(xmlTypes);
+
+		generator.generateFrom(holderClass);
+		generator.save();
+
+		final var outputFile = new File(
+				TEST_OUTPUT_DIR, "xmltypes_XMLTypesHolder_1.xmi");
+		assertThat(outputFile).exists();
+		final var loadedObject = loadGeneratedModel(outputFile, ePackage);
+		validateModel(loadedObject);
+		assertXMIMatchesExpected(
+				TEST_OUTPUT_DIR,
+				EXPECTED_OUTPUTS_DIR,
+				"xmltypes_XMLTypesHolder_1.xmi",
+				"xmltypes_XMLTypesHolder_1.xmi");
 	}
 
 	/**
@@ -1967,6 +1998,26 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
+	void testLibraryGeneratedFromXsdWithSchemaLocation() throws Exception {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "libraryxsdext.ecore");
+		final var libraryClass = assertEClassExists(ePackage, "Library");
+		generator.setFilePrefix("libraryxsdext_");
+		generator.getInstancePopulator().setFeatureMapDefaultMaxCount(4);
+
+		final var generatedObject = generator.generateFrom(libraryClass);
+		assertNotNull(generatedObject);
+		validateModel(generatedObject);
+
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		final var xmiFile = new File(TEST_OUTPUT_DIR, "libraryxsdext_library_Library_1.xmi");
+		assertThat(xmiFile).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
+				"libraryxsdext_library_Library_1.xmi",
+				"libraryxsdext_library_Library_1.xmi");
+	}
+
+	@Test
 	void testSimpleLibraryWithSchemaLocation() throws Exception {
 		// Load the simplelibrary.ecore model
 		EPackage ePackage = loadEcoreModel(TEST_INPUTS_DIR, "simplelibrary.ecore");
@@ -2464,9 +2515,9 @@ class EMFModelGeneratorTest {
 		// Configure to generate 3 nodes
 		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
 
-		// Allow cycles (self-references) for nodes at specific positions:
+		// Allow direct self-references for nodes at specific positions:
 		// Node 0: yes, Node 1: no, Node 2: yes
-		generator.getInstancePopulator().setAllowCyclePolicy((owner, reference) -> {
+		generator.getInstancePopulator().setSelfReferencePolicy((owner, reference) -> {
 			if ("outgoing".equals(reference.getName()) && "Node".equals(owner.eClass().getName())) {
 				// Get the graph container
 				final var graph = owner.eContainer();
@@ -2474,7 +2525,7 @@ class EMFModelGeneratorTest {
 					final var nodes = EMFUtils.getAsEObjectsList(graph,
 							graph.eClass().getEStructuralFeature("nodes"));
 					final var index = nodes.indexOf(owner);
-					// Allow cycles for nodes at even indices (0, 2, 4, ...)
+					// Allow direct self-references for nodes at even indices (0, 2, 4, ...)
 					return index % 2 == 0;
 				}
 			}
@@ -2488,7 +2539,7 @@ class EMFModelGeneratorTest {
 		assertThat(outputFile).exists();
 
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"graph_Graph_1.xmi", "graph_selective_cycles_Graph_1.xmi");
+				"graph_Graph_1.xmi", "graph_selective_self_references_Graph_1.xmi");
 	}
 
 	@Test
@@ -2645,15 +2696,15 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
-	void shouldPreventSelfReferencesWhenAllowCyclePolicyReturnsFalse() throws IOException {
+	void shouldPreventSelfReferencesWhenSelfReferencePolicyReturnsFalse() throws IOException {
 		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "graph.ecore");
 		final var graphEClass = assertEClassExists(ePackage, "Graph");
 
 		// Configure to generate 3 nodes
 		generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
 
-		// Always return false for allowCyclePolicy - no self-references should be created
-		generator.getInstancePopulator().setAllowCyclePolicy((owner, reference) -> false);
+		// Always return false from the policy: no direct self-references should be created
+		generator.getInstancePopulator().setSelfReferencePolicy((owner, reference) -> false);
 
 		generator.generateFrom(graphEClass);
 		generator.save();
@@ -3297,9 +3348,10 @@ class EMFModelGeneratorTest {
 		
 		var customSetter = new EMFFeatureMapSetter() {
 			@Override
-			public java.util.Collection<EObject> setFeatureMap(EObject owner, EAttribute featureMapAttribute) {
+			public EMFFeatureMapSetter.FeatureMapPlan createPlan(
+					EObject owner, EAttribute featureMapAttribute) {
 				counter.incrementAndGet();
-				return super.setFeatureMap(owner, featureMapAttribute);
+				return super.createPlan(owner, featureMapAttribute);
 			}
 		};
 		
@@ -3325,9 +3377,9 @@ class EMFModelGeneratorTest {
 		var employeesRef = (EReference) libraryClass.getEStructuralFeature("employees");
 		var borrowersRef = (EReference) libraryClass.getEStructuralFeature("borrowers");
 		
-		var customStrategy = new EMFCandidateSelectorStrategy<EAttribute, EReference>() {
+		var customStrategy = new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
 			@Override
-			public EReference getNextCandidate(EObject context, EAttribute type) {
+			public EStructuralFeature getNextCandidate(EObject context, EAttribute type) {
 				return writersRef;
 			}
 
@@ -3394,7 +3446,7 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
-	void testFunctionForFeatureMapGroupMember() {
+	void containmentFunctionCustomizesFeatureMapGroupMember() {
 		generator.setOutputDirectory(TEST_OUTPUT_DIR);
 		var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
 		var libraryClass = assertEClassExists(ePackage, "Library");
@@ -3404,7 +3456,7 @@ class EMFModelGeneratorTest {
 		
 		var counter = new java.util.concurrent.atomic.AtomicInteger(0);
 		
-		generator.getInstancePopulator().functionForFeatureMapGroupMember(writersRef, owner -> {
+		generator.getInstancePopulator().functionForContainmentReference(writersRef, owner -> {
 			counter.incrementAndGet();
 			var writer = EcoreUtil.create(writerClass);
 			writer.eSet(writerClass.getEStructuralFeature("firstName"), "CustomWriter");
@@ -3866,4 +3918,5 @@ class EMFModelGeneratorTest {
 				.extracting(EObject::eClass)
 				.isSameAs(concreteSubtype);
 	}
+
 }

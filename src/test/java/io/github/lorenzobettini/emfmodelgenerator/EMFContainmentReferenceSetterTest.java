@@ -117,7 +117,78 @@ class EMFContainmentReferenceSetterTest {
 		assertThat(owner.eGet(reference)).isNull();
 	}
 
+	@Test
+	void testCreateValue_WithNoInstantiableSubclass() {
+		final EClass abstractClass = ECORE_FACTORY.createEClass();
+		abstractClass.setName("AbstractClass");
+		abstractClass.setAbstract(true);
+		testPackage.getEClassifiers().add(abstractClass);
+		final EReference reference = createContainmentReference("abstractRef", false);
+		reference.setEType(abstractClass);
+		final EObject owner = createOwner();
+
+		assertThat(setter.createValue(owner, reference)).isNull();
+		assertThat(owner.eIsSet(reference)).isFalse();
+	}
+
 	// ========== Single-valued containment reference tests ==========
+
+	@Test
+	void testCreateValueDoesNotAssignDefaultValue() {
+		final EReference reference = createContainmentReference("child", false);
+		final EObject owner = createOwner();
+
+		final EObject created = setter.createValue(owner, reference);
+
+		assertThat(created)
+				.isNotNull()
+				.extracting(EObject::eClass)
+				.isEqualTo(containedClass);
+		assertThat(owner.eIsSet(reference)).isFalse();
+		assertThat(created.eContainer()).isNull();
+	}
+
+	@Test
+	void testCreateValueUsesCustomFunctionWithoutAssignment() {
+		final EReference reference = createContainmentReference("child", false);
+		final EObject owner = createOwner();
+		final EObject customValue = EcoreUtil.create(containedClass);
+		setter.setFunctionFor(reference, ignored -> customValue);
+
+		assertThat(setter.createValue(owner, reference)).isSameAs(customValue);
+		assertThat(owner.eIsSet(reference)).isFalse();
+		assertThat(customValue.eContainer()).isNull();
+	}
+
+	@Test
+	void testCreateValueFallsBackWhenCustomFunctionReturnsNull() {
+		final EReference reference = createContainmentReference("child", false);
+		final EObject owner = createOwner();
+		setter.setFunctionFor(reference, ignored -> null);
+
+		final EObject created = setter.createValue(owner, reference);
+
+		assertThat(created).isNotNull();
+		assertThat(created.eClass()).isEqualTo(containedClass);
+		assertThat(owner.eIsSet(reference)).isFalse();
+	}
+
+	@Test
+	void testCreateValueFallsBackForAlreadyContainedCustomValue() {
+		final EReference reference = createContainmentReference("children", true);
+		final EObject currentOwner = createOwner();
+		final EObject newOwner = createOwner();
+		final EObject contained = EcoreUtil.create(containedClass);
+		EMFUtils.getAsEObjectsList(currentOwner, reference).add(contained);
+		setter.setFunctionFor(reference, ignored -> contained);
+
+		final EObject created = setter.createValue(newOwner, reference);
+
+		assertThat(created).isNotSameAs(contained);
+		assertThat(created.eClass()).isEqualTo(containedClass);
+		assertThat(contained.eContainer()).isSameAs(currentOwner);
+		assertThat(newOwner.eIsSet(reference)).isFalse();
+	}
 
 	@Test
 	void testSetContainmentReference_SingleValued() {
@@ -173,6 +244,62 @@ class EMFContainmentReferenceSetterTest {
 			.allMatch(child -> child.eClass().equals(containedClass))
 			.containsExactlyElementsOf(created);
 		validateModel(owner);
+	}
+
+	@Test
+	void testSetContainmentReferenceReturnsIndependentResultsForEachCall() {
+		final EReference reference = createContainmentReference("children", true);
+		final EObject firstOwner = createOwner();
+		final EObject secondOwner = createOwner();
+
+		final Collection<EObject> firstResult = setter.setContainmentReference(firstOwner, reference);
+		final Collection<EObject> secondResult = setter.setContainmentReference(secondOwner, reference);
+
+		assertThat(firstResult)
+				.isNotSameAs(secondResult)
+				.containsExactlyElementsOf(EMFUtils.getAsEObjectsList(firstOwner, reference));
+		assertThat(secondResult)
+				.containsExactlyElementsOf(EMFUtils.getAsEObjectsList(secondOwner, reference));
+		assertThat(firstResult).doesNotContainAnyElementsOf(secondResult);
+	}
+
+	@Test
+	void testCreateValueBeforeSetContainmentReferenceIsNotIncludedInResult() {
+		final EReference reference = createContainmentReference("children", true);
+		final EObject owner = createOwner();
+		final EObject unassigned = setter.createValue(owner, reference);
+
+		final Collection<EObject> result = setter.setContainmentReference(owner, reference);
+
+		assertThat(result)
+				.hasSize(2)
+				.doesNotContain(unassigned)
+				.containsExactlyElementsOf(EMFUtils.getAsEObjectsList(owner, reference));
+		assertThat(unassigned.eContainer()).isNull();
+	}
+
+	@Test
+	void testSetSingleFeatureWithoutTrackingDoesNotFail() {
+		final EReference reference = createContainmentReference("child", false);
+		final EObject owner = createOwner();
+
+		setter.setSingleFeature(owner, reference);
+
+		final EObject child = (EObject) owner.eGet(reference);
+		assertThat(child).isNotNull();
+		assertThat(child.eClass()).isEqualTo(containedClass);
+		assertThat(child.eContainer()).isEqualTo(owner);
+	}
+
+	@Test
+	void testSetMultiFeatureWithoutTrackingDoesNotFail() {
+		final EReference reference = createContainmentReference("children", true);
+		final EObject owner = createOwner();
+
+		setter.setMultiFeature(owner, reference);
+
+		final List<EObject> children = EMFUtils.getAsEObjectsList(owner, reference);
+		assertThat(children).hasSize(2).allMatch(child -> child.eClass().equals(containedClass));
 	}
 
 	@Test

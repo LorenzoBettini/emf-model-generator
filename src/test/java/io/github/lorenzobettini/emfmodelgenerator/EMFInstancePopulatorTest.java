@@ -9,6 +9,7 @@ import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.validateMo
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,16 +21,55 @@ import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.EcoreFactory;
 import org.eclipse.emf.ecore.EcorePackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.emf.ecore.util.FeatureMap;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
+import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class EMFInstancePopulatorTest {
+	private static final class RecordingFeatureMapSetter extends EMFFeatureMapSetter {
+		private EMFAttributeSetter attributeSetter;
+		private EMFContainmentReferenceSetter containmentReferenceSetter;
+		private EMFCrossReferenceSetter crossReferenceSetter;
+		private int attributeUpdates;
+		private int containmentUpdates;
+		private int crossReferenceUpdates;
+
+		@Override
+		public void setAttributeSetter(final EMFAttributeSetter attributeSetter) {
+			super.setAttributeSetter(attributeSetter);
+			this.attributeSetter = attributeSetter;
+			attributeUpdates++;
+		}
+
+		@Override
+		public void setContainmentReferenceSetter(
+				final EMFContainmentReferenceSetter containmentReferenceSetter) {
+			super.setContainmentReferenceSetter(containmentReferenceSetter);
+			this.containmentReferenceSetter = containmentReferenceSetter;
+			containmentUpdates++;
+		}
+
+		@Override
+		public void setCrossReferenceSetter(final EMFCrossReferenceSetter crossReferenceSetter) {
+			super.setCrossReferenceSetter(crossReferenceSetter);
+			this.crossReferenceSetter = crossReferenceSetter;
+			crossReferenceUpdates++;
+		}
+
+		private void resetUpdates() {
+			attributeUpdates = 0;
+			containmentUpdates = 0;
+			crossReferenceUpdates = 0;
+		}
+	}
 
 	private static final String TEST_INPUTS_DIR = "target/inputs";
 	private static final String TEST_OUTPUT_DIR = "target/test-output";
@@ -135,6 +175,113 @@ class EMFInstancePopulatorTest {
 		assertThat(book.eGet(book.eClass().getEStructuralFeature("title")))
 				.isEqualTo("Book_title_1");
 		
+		validateModel(library);
+	}
+
+	@Test
+	void shouldPopulateLibraryGeneratedFromXsd() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "libraryxsd.ecore");
+		final var library = createInstance(ePackage, "Library");
+		createInstanceInResource(library, "libraryxsd.xmi");
+
+		populator.populateEObjects(library);
+
+		assertThat(library.eGet(library.eClass().getEStructuralFeature("name")))
+				.isEqualTo("Library_name_1");
+
+		final var writers = EMFUtils.getAsEObjectsList(library,
+				library.eClass().getEStructuralFeature("writers"));
+		assertThat(writers).hasSize(2);
+		assertThat(writers.get(0).eGet(
+				writers.get(0).eClass().getEStructuralFeature("name")))
+				.isEqualTo("Writer_name_1");
+
+		final var books = EMFUtils.getAsEObjectsList(library,
+				library.eClass().getEStructuralFeature("books"));
+		assertThat(books).hasSize(2);
+		final var firstBook = books.get(0);
+		assertThat(firstBook.eGet(firstBook.eClass().getEStructuralFeature("title")))
+				.isEqualTo("Book_title_1");
+
+		final var category = (EAttribute) firstBook.eClass()
+				.getEStructuralFeature("category");
+		assertThat(ePackage.getEFactoryInstance().convertToString(
+				category.getEAttributeType(), firstBook.eGet(category)))
+				.isEqualTo("Mystery");
+
+		final var author = (EObject) firstBook.eGet(
+				firstBook.eClass().getEStructuralFeature("author"));
+		assertThat(author).isIn(writers);
+		assertThat(EMFUtils.getAsEObjectsList(author,
+				author.eClass().getEStructuralFeature("books")))
+				.contains(firstBook);
+		final var title = (EAttribute) firstBook.eClass().getEStructuralFeature("title");
+		assertThat(title.getEAttributeType()).isSameAs(XMLTypePackage.Literals.STRING);
+		assertThat(firstBook.eGet(title)).isEqualTo("Book_title_1");
+
+		final var pages = (EAttribute) firstBook.eClass().getEStructuralFeature("pages");
+		assertThat(pages.getEAttributeType()).isSameAs(XMLTypePackage.Literals.INT);
+		assertThat(firstBook.eGet(pages))
+				.isEqualTo(20);
+
+		validateModel(library);
+	}
+
+	@Test
+	void shouldPopulateExtendedLibraryGeneratedFromXsd() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "libraryxsdext.ecore");
+		final var library = createInstance(ePackage, "Library");
+		createInstanceInResource(library, "libraryxsdext.xmi");
+		populator.setFeatureMapDefaultMaxCount(4);
+
+		populator.populateEObjects(library);
+
+		var libraryClass = library.eClass();
+		assertThat(library.eGet(libraryClass.getEStructuralFeature("name")))
+				.isEqualTo("Library_name_1");
+
+		final var writers = EMFUtils.getAsEObjectsList(library,
+				libraryClass.getEStructuralFeature("writer"));
+		assertThat(writers).hasSize(2);
+		assertThat(writers.get(0).eGet(
+				writers.get(0).eClass().getEStructuralFeature("name")))
+				.isEqualTo("Writer_name_1");
+
+		final var books = EMFUtils.getAsEObjectsList(library,
+				libraryClass.getEStructuralFeature("book"));
+		assertThat(books).hasSize(2);
+		final var firstBook = books.get(0);
+		assertThat(firstBook.eGet(firstBook.eClass().getEStructuralFeature("title")))
+				.isEqualTo("Book_title_1");
+
+		final var category = (EAttribute) firstBook.eClass()
+				.getEStructuralFeature("category");
+		assertThat(ePackage.getEFactoryInstance().convertToString(
+				category.getEAttributeType(), firstBook.eGet(category)))
+				.isEqualTo("Mystery");
+
+		final var author = (EObject) firstBook.eGet(
+				firstBook.eClass().getEStructuralFeature("author"));
+		assertThat(author).isIn(writers);
+		assertThat(EMFUtils.getAsEObjectsList(author,
+				author.eClass().getEStructuralFeature("books")))
+				.contains(firstBook);
+
+		final var title = (EAttribute) firstBook.eClass().getEStructuralFeature("title");
+		assertThat(title.getEAttributeType()).isSameAs(XMLTypePackage.Literals.STRING);
+		assertThat(firstBook.eGet(title)).isEqualTo("Book_title_1");
+
+		final var pages = (EAttribute) firstBook.eClass().getEStructuralFeature("pages");
+		assertThat(pages.getEAttributeType()).isSameAs(XMLTypePackage.Literals.INT);
+		assertThat(firstBook.eGet(pages)).isEqualTo(20);
+
+		final var groupFeature = libraryClass.getEStructuralFeature("group");
+		final var group = (FeatureMap) library.eGet(groupFeature);
+
+		assertThat(group).
+			extracting(entry -> entry.getEStructuralFeature().getName())
+			.containsExactly("writer", "book", "writer", "book");
+
 		validateModel(library);
 	}
 
@@ -1366,10 +1513,130 @@ class EMFInstancePopulatorTest {
 	}
 
 	@Test
+	void constructorInjectsAllDefaultSettersIntoFeatureMapSetter()
+			throws ReflectiveOperationException {
+		final var featureMapSetter = populator.getFeatureMapSetter();
+
+		assertThat(readDelegate(featureMapSetter, "attributeSetter"))
+				.isSameAs(populator.getAttributeSetter());
+		assertThat(readDelegate(featureMapSetter, "containmentReferenceSetter"))
+				.isSameAs(populator.getContainmentReferenceSetter());
+		assertThat(readDelegate(featureMapSetter, "crossReferenceSetter"))
+				.isSameAs(populator.getCrossReferenceSetter());
+	}
+
+	private Object readDelegate(final EMFFeatureMapSetter featureMapSetter,
+			final String fieldName) throws ReflectiveOperationException {
+		final var field = EMFFeatureMapSetter.class.getDeclaredField(fieldName);
+		field.setAccessible(true);
+		return field.get(featureMapSetter);
+	}
+
+	@Test
 	void testSetFeatureMapSetter() {
 		final var customSetter = new EMFFeatureMapSetter();
 		populator.setFeatureMapSetter(customSetter);
 		assertThat(populator.getFeatureMapSetter()).isSameAs(customSetter);
+	}
+
+	@Test
+	void setterReplacementsPropagateDirectlyToFeatureMapSetter() {
+		final var featureMapSetter = new RecordingFeatureMapSetter();
+		populator.setFeatureMapSetter(featureMapSetter);
+
+		assertThat(featureMapSetter.attributeSetter).isSameAs(populator.getAttributeSetter());
+		assertThat(featureMapSetter.containmentReferenceSetter)
+				.isSameAs(populator.getContainmentReferenceSetter());
+		assertThat(featureMapSetter.crossReferenceSetter)
+				.isSameAs(populator.getCrossReferenceSetter());
+
+		featureMapSetter.resetUpdates();
+		final var attributeSetter = new EMFAttributeSetter();
+		populator.setAttributeSetter(attributeSetter);
+		assertThat(featureMapSetter.attributeSetter).isSameAs(attributeSetter);
+		assertThat(featureMapSetter.attributeUpdates).isEqualTo(1);
+		assertThat(featureMapSetter.containmentUpdates).isZero();
+		assertThat(featureMapSetter.crossReferenceUpdates).isZero();
+
+		featureMapSetter.resetUpdates();
+		final var containmentSetter = new EMFContainmentReferenceSetter();
+		populator.setContainmentReferenceSetter(containmentSetter);
+		assertThat(featureMapSetter.containmentReferenceSetter).isSameAs(containmentSetter);
+		assertThat(featureMapSetter.attributeUpdates).isZero();
+		assertThat(featureMapSetter.containmentUpdates).isEqualTo(1);
+		assertThat(featureMapSetter.crossReferenceUpdates).isZero();
+
+		featureMapSetter.resetUpdates();
+		final var crossReferenceSetter = new EMFCrossReferenceSetter();
+		populator.setCrossReferenceSetter(crossReferenceSetter);
+		assertThat(featureMapSetter.crossReferenceSetter).isSameAs(crossReferenceSetter);
+		assertThat(featureMapSetter.attributeUpdates).isZero();
+		assertThat(featureMapSetter.containmentUpdates).isZero();
+		assertThat(featureMapSetter.crossReferenceUpdates).isEqualTo(1);
+	}
+
+	@Test
+	void replacementFeatureMapSetterReceivesPreviouslyInstalledOrdinarySetters() {
+		final var attributeSetter = new EMFAttributeSetter();
+		final var containmentSetter = new EMFContainmentReferenceSetter();
+		final var crossReferenceSetter = new EMFCrossReferenceSetter();
+		populator.setAttributeSetter(attributeSetter);
+		populator.setContainmentReferenceSetter(containmentSetter);
+		populator.setCrossReferenceSetter(crossReferenceSetter);
+
+		final var featureMapSetter = new RecordingFeatureMapSetter();
+		populator.setFeatureMapSetter(featureMapSetter);
+
+		assertThat(featureMapSetter.attributeSetter).isSameAs(attributeSetter);
+		assertThat(featureMapSetter.containmentReferenceSetter).isSameAs(containmentSetter);
+		assertThat(featureMapSetter.crossReferenceSetter).isSameAs(crossReferenceSetter);
+		assertThat(featureMapSetter.attributeUpdates).isEqualTo(1);
+		assertThat(featureMapSetter.containmentUpdates).isEqualTo(1);
+		assertThat(featureMapSetter.crossReferenceUpdates).isEqualTo(1);
+	}
+
+	@Test
+	void replacementContainmentSetterCreatesFeatureMapValues() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
+		final var libraryClass = assertEClassExists(ePackage, "Library");
+		final var writerClass = assertEClassExists(ePackage, "Writer");
+		final var peopleAttr = assertEAttributeExists(libraryClass, "people");
+		final var writersRef = assertEReferenceExists(libraryClass, "writers");
+		final var customWriter = EcoreUtil.create(writerClass);
+		customWriter.eSet(writerClass.getEStructuralFeature("firstName"), "ReplacementWriter");
+		final var calls = new AtomicInteger();
+
+		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public EObject createValue(final EObject owner,
+					final EReference containmentReference) {
+				if (owner.eClass() == libraryClass && containmentReference == writersRef) {
+					calls.incrementAndGet();
+					return customWriter;
+				}
+				return super.createValue(owner, containmentReference);
+			}
+		});
+		populator.setGroupMemberSelectorStrategy(
+				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+					@Override
+					public EStructuralFeature getNextCandidate(final EObject context,
+							final EAttribute type) {
+						return writersRef;
+					}
+
+					@Override
+					public boolean hasCandidates(final EObject context, final EAttribute type) {
+						return true;
+					}
+				});
+		populator.setFeatureMapMaxCountFor(peopleAttr, 1);
+
+		final var library = createInstance(ePackage, "Library");
+		populator.getFeatureMapSetter().setFeatureMap(library, peopleAttr);
+
+		assertThat(calls).hasValue(1);
+		assertThat(EMFUtils.getAsEObjectsList(library, writersRef)).containsExactly(customWriter);
 	}
 
 	@Test
@@ -1382,9 +1649,10 @@ class EMFInstancePopulatorTest {
 		final var borrowersRef = assertEReferenceExists(libraryClass, "borrowers");
 		
 		// Create a custom strategy that always returns the writers reference
-		final var customStrategy = new EMFCandidateSelectorStrategy<EAttribute, EReference>() {
+		final var customStrategy =
+				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
 			@Override
-			public EReference getNextCandidate(EObject context, EAttribute type) {
+			public EStructuralFeature getNextCandidate(EObject context, EAttribute type) {
 				return writersRef;
 			}
 
@@ -1478,9 +1746,10 @@ class EMFInstancePopulatorTest {
 		
 		populator.setFeatureMapSetter(new EMFFeatureMapSetter() {
 			@Override
-			public Collection<EObject> setFeatureMap(EObject owner, EAttribute featureMapAttribute) {
+			public FeatureMapPlan createPlan(final EObject owner,
+					final EAttribute featureMapAttribute) {
 				counter.incrementAndGet();
-				return super.setFeatureMap(owner, featureMapAttribute);
+				return super.createPlan(owner, featureMapAttribute);
 			}
 		});
 		
@@ -1502,7 +1771,7 @@ class EMFInstancePopulatorTest {
 	}
 
 	@Test
-	void testFunctionForFeatureMapGroupMember() {
+	void containmentFunctionCustomizesFeatureMapGroupMember() {
 		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "extlibrary.ecore");
 		final var libraryClass = assertEClassExists(ePackage, "Library");
 		final var writerClass = assertEClassExists(ePackage, "Writer");
@@ -1512,8 +1781,7 @@ class EMFInstancePopulatorTest {
 		
 		final var counter = new AtomicInteger(0);
 		
-		// Set a custom function for the writers group member
-		populator.functionForFeatureMapGroupMember(writersRef, owner -> {
+		populator.functionForContainmentReference(writersRef, owner -> {
 			counter.incrementAndGet();
 			final var writer = EcoreUtil.create(writerClass);
 			writer.eSet(writerClass.getEStructuralFeature("firstName"), "CustomWriter");
@@ -1541,6 +1809,336 @@ class EMFInstancePopulatorTest {
 			.noneMatch(employee -> "CustomWriter".equals(employee.eGet(employee.eClass().getEStructuralFeature("firstName"))));
 		
 		validateModel(library);
+	}
+
+	@Test
+	void shouldPopulateMixedFeatureMapStructuralMembersThroughOrdinaryFunctions() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		final var documentClass = assertEClassExists(ePackage, "Document");
+		final var childClass = assertEClassExists(ePackage, "Child");
+		final var group = assertEAttributeExists(documentClass, "group");
+		final var text = assertEAttributeExists(documentClass, "text");
+		final var child = assertEReferenceExists(documentClass, "child");
+		final var related = assertEReferenceExists(documentClass, "related");
+		final var containmentCalls = new AtomicInteger();
+		final var attributeCalls = new AtomicInteger();
+		final var crossReferenceCalls = new AtomicInteger();
+		populator.setFeatureMapMaxCountFor(group, 6);
+		populator.functionForAttribute(text,
+				owner -> "custom-text-" + attributeCalls.incrementAndGet());
+		populator.functionForContainmentReference(child, owner -> {
+			containmentCalls.incrementAndGet();
+			return EcoreUtil.create(childClass);
+		});
+		populator.functionForCrossReference(related, owner -> {
+			crossReferenceCalls.incrementAndGet();
+			return null;
+		});
+		final var document = createInstance(ePackage, "Document");
+		createInstanceInResource(document, "mixed.xmi");
+
+		populator.populateEObjects(document);
+
+		final var featureMap = (FeatureMap) document.eGet(group);
+		assertThat(featureMap)
+				.extracting(entry -> entry.getEStructuralFeature().getName())
+				.containsExactly("text", "child", "related", "text", "child", "related");
+		assertThat(featureMap.stream()
+				.filter(entry -> entry.getEStructuralFeature() == text)
+				.map(FeatureMap.Entry::getValue))
+				.containsExactly("custom-text-1", "custom-text-2");
+		final var children = EMFUtils.getAsEObjectsList(document, child);
+		assertThat(children).hasSize(2)
+				.allSatisfy(value -> {
+					assertThat(value.eContainer()).isSameAs(document);
+					assertThat(value.eGet(childClass.getEStructuralFeature("name")))
+							.isNotNull();
+				});
+		assertThat(containmentCalls).hasValue(2);
+		assertThat(attributeCalls).hasValue(2);
+		assertThat(crossReferenceCalls).hasValue(2);
+		final var targets = EMFUtils.getAsEObjectsList(document,
+				assertEReferenceExists(documentClass, "targets"));
+		assertThat(EMFUtils.getAsEObjectsList(document, related))
+				.containsExactlyElementsOf(targets);
+		assertThat(targets).hasSize(2)
+				.allSatisfy(target -> assertThat(target.eGet(
+						assertEReferenceExists(target.eClass(), "document")))
+						.isSameAs(document));
+		assertThat(document.eContents()).hasSize(4);
+	}
+
+	@Test
+	void customCrossReferenceFunctionPopulatesFeatureMapAtTheDepthBoundary() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		final var documentClass = assertEClassExists(ePackage, "Document");
+		final var targetClass = assertEClassExists(ePackage, "Target");
+		final var group = assertEAttributeExists(documentClass, "group");
+		final var related = assertEReferenceExists(documentClass, "related");
+		final var child = assertEReferenceExists(documentClass, "child");
+		final var targets = assertEReferenceExists(documentClass, "targets");
+		final var calls = new AtomicInteger();
+		final var document = createInstance(ePackage, "Document");
+		final var target = EcoreUtil.create(targetClass);
+		createInstanceInResource(document, "mixed-depth-document.xmi");
+		createInstanceInResource(target, "mixed-depth-target.xmi");
+		populator.setMaxDepth(0);
+		populator.setFeatureMapMaxCountFor(group, 3);
+		populator.functionForCrossReference(related, owner -> {
+			calls.incrementAndGet();
+			return target;
+		});
+
+		populator.populateEObjects(document, target);
+
+		final var featureMap = (FeatureMap) document.eGet(group);
+		assertThat(featureMap)
+				.extracting(entry -> entry.getEStructuralFeature().getName())
+				.containsExactly("text", "related");
+		assertThat(featureMap.getValue(1)).isSameAs(target);
+		assertThat(EMFUtils.getAsEObjectsList(document, related)).containsExactly(target);
+		assertThat(EMFUtils.getAsEObjectsList(document, child)).isEmpty();
+		assertThat(EMFUtils.getAsEObjectsList(document, targets)).isEmpty();
+		assertThat(calls).hasValue(1);
+	}
+
+	@Test
+	void replacementCrossReferenceSetterIsUsedByFeatureMapMaterialization() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		final var documentClass = assertEClassExists(ePackage, "Document");
+		final var targetClass = assertEClassExists(ePackage, "Target");
+		final var group = assertEAttributeExists(documentClass, "group");
+		final var related = assertEReferenceExists(documentClass, "related");
+		final var document = createInstance(ePackage, "Document");
+		final var target = EcoreUtil.create(targetClass);
+		createInstanceInResource(document, "mixed-custom-setter-document.xmi");
+		createInstanceInResource(target, "mixed-custom-setter-target.xmi");
+		final var selectedReferences = new ArrayList<EReference>();
+		populator.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+			@Override
+			public EObject selectValue(final EObject owner, final EReference reference) {
+				selectedReferences.add(reference);
+				return target;
+			}
+		});
+		populator.setMaxDepth(0);
+		populator.setFeatureMapMaxCountFor(group, 3);
+
+		populator.populateEObjects(document);
+
+		assertThat(EMFUtils.getAsEObjectsList(document, related)).containsExactly(target);
+		assertThat(selectedReferences).isNotEmpty();
+		assertThat(selectedReferences.get(0)).isSameAs(related);
+	}
+
+	@Test
+	void featureMapCrossReferencesShareOneResetAndSelectorStateWithOrdinaryReferences() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		final var documentClass = assertEClassExists(ePackage, "Document");
+		final var targetClass = assertEClassExists(ePackage, "Target");
+		final var group = assertEAttributeExists(documentClass, "group");
+		final var related = assertEReferenceExists(documentClass, "related");
+		final var favorite = assertEReferenceExists(documentClass, "favorite");
+		final var document = createInstance(ePackage, "Document");
+		final var firstTarget = EcoreUtil.create(targetClass);
+		final var secondTarget = EcoreUtil.create(targetClass);
+		createInstanceInResource(document, "mixed-phase-document.xmi");
+		createInstanceInResource(firstTarget, "mixed-phase-first-target.xmi");
+		createInstanceInResource(secondTarget, "mixed-phase-second-target.xmi");
+		final var resets = new AtomicInteger();
+		populator.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+			@Override
+			public void reset() {
+				resets.incrementAndGet();
+				super.reset();
+			}
+		});
+		populator.setMaxDepth(0);
+		populator.setFeatureMapMaxCountFor(group, 3);
+
+		populator.populateEObjects(document);
+
+		assertThat(resets).hasValue(1);
+		assertThat(EMFUtils.getAsEObjectsList(document, related))
+				.containsExactly(firstTarget);
+		assertThat(document.eGet(favorite)).isSameAs(secondTarget);
+		assertThat(firstTarget.eGet(assertEReferenceExists(targetClass, "document")))
+				.isSameAs(document);
+	}
+
+	@Test
+	void featureMapCrossReferenceHonorsCycleAndOppositeMultiplicityPolicies() {
+		final var cyclePackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		final var cycleDocumentClass = assertEClassExists(cyclePackage, "Document");
+		final var cycleGroup = assertEAttributeExists(cycleDocumentClass, "group");
+		final var cycleRelated = assertEReferenceExists(cycleDocumentClass, "related");
+		final var targetDocument = assertEReferenceExists(
+				assertEClassExists(cyclePackage, "Target"), "document");
+		cycleRelated.setEOpposite(null);
+		targetDocument.setEOpposite(null);
+		cycleRelated.setEType(cycleDocumentClass);
+		final var cycleDocument = createInstance(cyclePackage, "Document");
+		createInstanceInResource(cycleDocument, "mixed-cycle.xmi");
+		populator.setMaxDepth(0);
+		populator.setFeatureMapMaxCountFor(cycleGroup, 3);
+
+		populator.populateEObjects(cycleDocument);
+
+		assertThat(EMFUtils.getAsEObjectsList(cycleDocument, cycleRelated)).isEmpty();
+
+		final var oppositePackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		final var oppositeDocumentClass = assertEClassExists(oppositePackage, "Document");
+		final var oppositeTargetClass = assertEClassExists(oppositePackage, "Target");
+		final var oppositeGroup = assertEAttributeExists(oppositeDocumentClass, "group");
+		final var oppositeRelated = assertEReferenceExists(oppositeDocumentClass, "related");
+		final var oppositeDocument = assertEReferenceExists(oppositeTargetClass, "document");
+		final var owner = createInstance(oppositePackage, "Document");
+		final var otherOwner = createInstance(oppositePackage, "Document");
+		final var unavailableTarget = EcoreUtil.create(oppositeTargetClass);
+		final var availableTarget = EcoreUtil.create(oppositeTargetClass);
+		unavailableTarget.eSet(oppositeDocument, otherOwner);
+		createInstanceInResource(owner, "mixed-opposite-owner.xmi");
+		createInstanceInResource(otherOwner, "mixed-opposite-other-owner.xmi");
+		createInstanceInResource(unavailableTarget, "mixed-opposite-unavailable.xmi");
+		createInstanceInResource(availableTarget, "mixed-opposite-available.xmi");
+		populator = new EMFInstancePopulator();
+		populator.setMaxDepth(0);
+		populator.setFeatureMapMaxCountFor(oppositeGroup, 3);
+
+		populator.populateEObjects(owner);
+
+		assertThat(EMFUtils.getAsEObjectsList(owner, oppositeRelated))
+				.containsExactly(availableTarget);
+		assertThat(unavailableTarget.eGet(oppositeDocument)).isSameAs(otherOwner);
+		assertThat(availableTarget.eGet(oppositeDocument)).isSameAs(owner);
+	}
+
+	@Test
+	void maxDepthSuppressesOnlyMixedFeatureMapContainmentCreation() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		final var documentClass = assertEClassExists(ePackage, "Document");
+		final var childClass = assertEClassExists(ePackage, "Child");
+		final var group = assertEAttributeExists(documentClass, "group");
+		final var child = assertEReferenceExists(documentClass, "child");
+		final var targets = assertEReferenceExists(documentClass, "targets");
+		final var childCreations = new AtomicInteger();
+		populator.setFeatureMapMaxCountFor(group, 3);
+		populator.setContainmentReferenceSetter(new EMFContainmentReferenceSetter() {
+			@Override
+			public EObject createValue(final EObject owner, final EReference reference) {
+				childCreations.incrementAndGet();
+				return super.createValue(owner, reference);
+			}
+		});
+		populator.setMaxDepth(0);
+		final var document = createInstance(ePackage, "Document");
+
+		populator.populateEObjects(document);
+
+		assertThat((FeatureMap) document.eGet(group))
+				.extracting(entry -> entry.getEStructuralFeature().getName())
+				.containsExactly("text");
+		assertThat(EMFUtils.getAsEObjectsList(document, child)).isEmpty();
+		assertThat(EMFUtils.getAsEObjectsList(document, targets)).isEmpty();
+		assertThat(childCreations).hasValue(0);
+
+		final var childRoot = EcoreUtil.create(childClass);
+		populator.populateEObjects(childRoot);
+		assertThat(childRoot.eGet(childClass.getEStructuralFeature("name"))).isNotNull();
+	}
+
+	@Test
+	void containmentOnlyFeatureMapStillHonorsMaximumDepth() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "libraryxsdext.ecore");
+		final var libraryClass = assertEClassExists(ePackage, "Library");
+		final var group = assertEAttributeExists(libraryClass, "group");
+		final var library = createInstance(ePackage, "Library");
+		populator.setMaxDepth(0);
+
+		populator.populateEObjects(library);
+
+		assertThat((FeatureMap) library.eGet(group)).isEmpty();
+		assertThat(library.eGet(libraryClass.getEStructuralFeature("name"))).isNotNull();
+	}
+
+	@Test
+	void featureMapPlanningPrecedesOrdinaryAttributePopulation() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "libraryxsdext.ecore");
+		final var libraryClass = assertEClassExists(ePackage, "Library");
+		final var name = assertEAttributeExists(libraryClass, "name");
+		final var plannedBeforeName = new AtomicInteger();
+		populator.setFeatureMapSetter(new EMFFeatureMapSetter() {
+			@Override
+			public FeatureMapPlan createPlan(final EObject owner,
+					final EAttribute featureMapAttribute) {
+				if (!owner.eIsSet(name)) {
+					plannedBeforeName.incrementAndGet();
+				}
+				return super.createPlan(owner, featureMapAttribute);
+			}
+		});
+		final var library = createInstance(ePackage, "Library");
+
+		populator.populateEObjects(library);
+
+		assertThat(plannedBeforeName).hasValue(1);
+		assertThat(library.eIsSet(name)).isTrue();
+	}
+
+	@Test
+	void consecutivePopulationCallsDoNotRematerializeEarlierPlans() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		final var documentClass = assertEClassExists(ePackage, "Document");
+		final var group = assertEAttributeExists(documentClass, "group");
+		final var materializedOwners = new ArrayList<EObject>();
+		populator.setFeatureMapDefaultMaxCount(3);
+		populator.setFeatureMapSetter(new EMFFeatureMapSetter() {
+			@Override
+			public Collection<EObject> materializeStructuralFeatures(final FeatureMapPlan plan,
+					final boolean containmentAllowed) {
+				materializedOwners.add(plan.owner());
+				return super.materializeStructuralFeatures(plan, containmentAllowed);
+			}
+		});
+		final var first = createInstance(ePackage, "Document");
+		final var second = createInstance(ePackage, "Document");
+
+		populator.populateEObjects(first);
+		final var firstSize = ((FeatureMap) first.eGet(group)).size();
+		populator.populateEObjects(second);
+
+		assertThat(materializedOwners).containsExactly(first, second);
+		assertThat((FeatureMap) first.eGet(group)).hasSize(firstSize);
+		assertThat((FeatureMap) second.eGet(group)).isNotEmpty();
+	}
+
+	@Test
+	void consecutivePopulationCallsDoNotReusePendingCrossReferencePlans() {
+		final var ePackage = loadEcoreModel(TEST_INPUTS_DIR, "featuremap_mixed.ecore");
+		final var documentClass = assertEClassExists(ePackage, "Document");
+		final var targetClass = assertEClassExists(ePackage, "Target");
+		final var group = assertEAttributeExists(documentClass, "group");
+		final var related = assertEReferenceExists(documentClass, "related");
+		final var first = createInstance(ePackage, "Document");
+		final var second = createInstance(ePackage, "Document");
+		final var target = EcoreUtil.create(targetClass);
+		createInstanceInResource(first, "mixed-first-call.xmi");
+		createInstanceInResource(second, "mixed-second-call.xmi");
+		createInstanceInResource(target, "mixed-later-candidate.xmi");
+		populator.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+			@Override
+			public EObject selectValue(final EObject owner, final EReference reference) {
+				return reference == related && owner == second ? target : null;
+			}
+		});
+		populator.setMaxDepth(0);
+		populator.setFeatureMapMaxCountFor(group, 3);
+
+		populator.populateEObjects(first);
+		populator.populateEObjects(second);
+
+		assertThat(EMFUtils.getAsEObjectsList(first, related)).isEmpty();
+		assertThat(EMFUtils.getAsEObjectsList(second, related)).containsExactly(target);
 	}
 
 	// ============= Tests for setXXXDefaultMaxCount and setXXXMaxCountFor methods =============
@@ -1720,7 +2318,7 @@ class EMFInstancePopulatorTest {
 	}
 
 	@Test
-	void testSetAllowCyclePolicy() {
+	void shouldSetSelfReferencePolicy() {
 		// Create a package and an EClass with a self-reference
 		final var testPkg = EcoreFactory.eINSTANCE.createEPackage();
 		testPkg.setName("testpkg");
@@ -1736,11 +2334,11 @@ class EMFInstancePopulatorTest {
 		selfRef.setEType(nodeClass);
 		nodeClass.getEStructuralFeatures().add(selfRef);
 		
-		// Create node and set custom policy that allows cycles
-		populator.setAllowCyclePolicy((owner, ref) -> true);
+		// Create node and set custom policy that allows direct self-references
+		populator.setSelfReferencePolicy((owner, ref) -> true);
 		
 		final var node = EcoreUtil.create(nodeClass);
-		createInstanceInResource(node, "test_cycle_policy.xmi");
+		createInstanceInResource(node, "test_self_reference_policy.xmi");
 		populator.populateEObjects(node);
 		
 		// Verify the policy was applied - node should reference itself

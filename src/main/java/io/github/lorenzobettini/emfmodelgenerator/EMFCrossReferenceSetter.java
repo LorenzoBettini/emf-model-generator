@@ -19,7 +19,7 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 	private static final int DEFAULT_MULTI_VALUED_COUNT = 2;
 	private EMFCandidateSelectorStrategy<EClass, EObject> candidateSelectorStrategy = new EMFRoundRobinEObjectCandidateSelector();
-	private CyclePolicy cyclePolicy = (owner, reference) -> false;
+	private SelfReferencePolicy selfReferencePolicy = (owner, reference) -> false;
 
 	/**
 	 * Function interface for cross reference operations.
@@ -29,18 +29,22 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	}
 
 	/**
-	 * Functional interface for determining whether cycles (self-references) are allowed.
+	 * Functional interface for determining whether direct self-references are allowed.
+	 *
+	 * <p>This policy concerns only references where the owner and candidate are the same
+	 * EObject (cycles of length one). It does not detect or prevent longer cycles among
+	 * non-containment references.</p>
 	 */
 	@FunctionalInterface
-	public static interface CyclePolicy {
+	public static interface SelfReferencePolicy {
 		/**
 		 * Determines whether an EObject is allowed to reference itself through the given reference.
 		 * 
 		 * @param owner the EObject that would reference itself
-		 * @param reference the reference through which the cycle would be created
+		 * @param reference the reference through which the owner would reference itself
 		 * @return true if the owner is allowed to reference itself, false otherwise
 		 */
-		boolean allowCycleFor(EObject owner, EReference reference);
+		boolean allowSelfReferenceFor(EObject owner, EReference reference);
 	}
 
 	public EMFCrossReferenceSetter() {
@@ -57,12 +61,12 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	}
 
 	/**
-	 * Set the cycle policy for determining whether self-references are allowed.
+	 * Set the policy for determining whether direct self-references are allowed.
 	 * 
-	 * @param cyclePolicy the cycle policy to use
+	 * @param policy the self-reference policy to use
 	 */
-	public void setAllowCyclePolicy(CyclePolicy cyclePolicy) {
-		this.cyclePolicy = cyclePolicy;
+	public void setSelfReferencePolicy(SelfReferencePolicy policy) {
+		this.selfReferencePolicy = policy;
 	}
 
 	/**
@@ -79,14 +83,14 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 	/**
 	 * Determines whether an EObject is allowed to reference itself through the given reference.
-	 * Uses the configured cycle policy.
+	 * Uses the configured self-reference policy.
 	 * 
 	 * @param owner the EObject that would reference itself
-	 * @param reference the reference through which the cycle would be created
+	 * @param reference the reference through which the owner would reference itself
 	 * @return true if the owner is allowed to reference itself, false otherwise
 	 */
-	protected boolean allowCycleFor(EObject owner, EReference reference) {
-		return cyclePolicy.allowCycleFor(owner, reference);
+	protected boolean allowSelfReferenceFor(EObject owner, EReference reference) {
+		return selfReferencePolicy.allowSelfReferenceFor(owner, reference);
 	}
 
 	/**
@@ -122,9 +126,8 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 	@Override
 	protected void setSingleFeature(EObject owner, EReference reference) {
-		EClass eReferenceType = reference.getEReferenceType();
 		// For single-valued references, use an existing assignable instance
-		EObject referencedEObject = nextAssignableExistingInstance(owner, eReferenceType, reference);
+		EObject referencedEObject = selectValue(owner, reference);
 		if (referencedEObject == null) {
 			return;
 		}
@@ -133,7 +136,6 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 	@Override
 	protected void setMultiFeature(EObject owner, EReference reference) {
-		EClass eReferenceType = reference.getEReferenceType();
 		final var list = EMFUtils.getAsList(owner, reference);
 
 		// For multi-valued references, add multiple EObjects
@@ -145,13 +147,13 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 		for (int i = 0; i < missingCount; i++) {
 			// Get next candidate using the configured selector strategy
-			EObject referencedEObject = nextAssignableExistingInstance(owner, eReferenceType, reference);
+			EObject referencedEObject = selectValue(owner, reference);
 			// but skip already present ones (only if unique is true), avoiding infinite loops
 			if (reference.isUnique()) {
 				EObject firstCandidate = referencedEObject;
 				while (referencedEObject != null &&
 						list.contains(referencedEObject)) {
-					referencedEObject = nextAssignableExistingInstance(owner, eReferenceType, reference);
+					referencedEObject = selectValue(owner, reference);
 					if (referencedEObject == firstCandidate) {
 						// we've looped through all candidates and found no new one
 						return;
@@ -166,20 +168,34 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 		}
 	}
 
-	private EObject nextAssignableExistingInstance(EObject owner, EClass eReferenceType, EReference reference) {
-		var function = getFunctionFor(reference);
+	/**
+	 * Selects one valid existing value for a cross-reference without assigning it
+	 * to the owner. A configured function is tried first. A {@code null} or invalid
+	 * custom candidate falls back to the configured candidate selector. Default
+	 * candidates are filtered by the cycle policy and opposite multiplicity.
+	 * The FeatureMap coordinator reuses this operation for non-containment
+	 * group members.
+	 *
+	 * @param owner the EObject owning the cross-reference
+	 * @param crossReference the cross-reference for which to select a value
+	 * @return one valid existing EObject, or {@code null} if none is available
+	 */
+	public EObject selectValue(final EObject owner, final EReference crossReference) {
+		var function = getFunctionFor(crossReference);
 		if (function != null) {
 			final EObject candidate = function.apply(owner);
 			if (candidate != null &&
-					isCandidateValid(owner, reference, candidate)) {
+					isCandidateValid(owner, crossReference, candidate)) {
 				return candidate;
 			}
 		}
 
 		// Try to get candidates using the configured selector strategy until we find one
-		// that passes the opposite reference check and is not the owner itself (unless cycles are allowed).
+		// that passes the opposite reference check and is not the owner itself (unless a direct
+		// self-reference is allowed).
 		// Since the selector wraps around, we track the first candidate to detect when
 		// we've checked all
+		final EClass eReferenceType = crossReference.getEReferenceType();
 		final EObject firstCandidate = candidateSelectorStrategy.getNextCandidate(owner, eReferenceType);
 		if (firstCandidate == null) {
 			return null;
@@ -188,7 +204,7 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 		// Note: at this point, getNextCandidate never returns null (it wraps around)
 		EObject candidate = firstCandidate;
 		do {
-			if (isCandidateValid(owner, reference, candidate)) {
+			if (isCandidateValid(owner, crossReference, candidate)) {
 				return candidate;
 			}
 			candidate = candidateSelectorStrategy.getNextCandidate(owner, eReferenceType);
@@ -199,7 +215,7 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	}
 
 	private boolean isCandidateValid(EObject owner, EReference reference, EObject candidate) {
-		return (owner != candidate || allowCycleFor(owner, reference)) &&
+		return (owner != candidate || allowSelfReferenceFor(owner, reference)) &&
 				EMFUtils.canSetInThePresenceOfOppositeReference(reference, candidate);
 	}
 }
