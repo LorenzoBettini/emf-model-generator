@@ -970,4 +970,71 @@ class EMFModelGeneratorExternalMetamodelTest {
 		// avoid asserting against expected output because the generated model is large
 	}
 
+	@Test
+	void testGenerateAadlPackageWithDefaultGeneration() throws Exception {
+		var aadlPackage = generator.loadEcoreModel(
+				EXTERNAL_METAMODELS_DIR + "/aadl2.ecore");
+
+		assertThat(aadlPackage.getName()).isEqualTo("aadl2");
+
+		var aadlPackageClass = assertEClassExists(aadlPackage, "AadlPackage");
+
+		var namedElementClass = assertEClassExists(aadlPackage, "NamedElement");
+		var ownedPropertyAssociation =
+				assertEReferenceExists(namedElementClass, "ownedPropertyAssociation");
+
+		var packageSectionClass = assertEClassExists(aadlPackage, "PackageSection");
+		var ownedClassifier =
+				assertEReferenceExists(packageSectionClass, "ownedClassifier");
+
+		var populator = generator.getInstancePopulator();
+
+		/*
+		 * Property associations are optional, but once created they require a
+		 * Property target. An isolated AadlPackage does not contain Property
+		 * definitions that can serve as cross-reference candidates.
+		 */
+		populator.setContainmentReferenceMaxCountFor(
+				ownedPropertyAssociation, 0);
+
+		/*
+		 * Keep one classifier per package section.
+		 * With the deterministic default selector this avoids reaching
+		 * ComponentImplementation subclasses, whose required derived `type`
+		 * is normally provided by OSATE-specific runtime semantics.
+		 */
+		populator.setContainmentReferenceMaxCountFor(
+				ownedClassifier, 1);
+
+		populator.setMaxDepth(2);
+
+		generator.setFilePrefix("aadl_");
+		var generatedPackage = generator.generateFrom(aadlPackageClass);
+
+		assertThat(generatedPackage.eClass()).isSameAs(aadlPackageClass);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("AADL package validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
+				ignored -> EMFModelValidator.standard());
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("AADL package round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "aadl_aadl2_AadlPackage_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
 }
