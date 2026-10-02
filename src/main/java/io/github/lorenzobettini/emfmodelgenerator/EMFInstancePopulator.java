@@ -459,13 +459,10 @@ public class EMFInstancePopulator {
 	}
 
 	private Collection<FeatureMapPlan> createFeatureMapPlans(final EObject eObject) {
-		final var plans = new ArrayList<FeatureMapPlan>();
-		for (var attribute : eObject.eClass().getEAllAttributes()) {
-			if (EMFUtils.isFeatureMap(attribute)) {
-				plans.add(featureMapSetter.createPlan(eObject, attribute));
-			}
-		}
-		return plans;
+		return eObject.eClass().getEAllAttributes().stream()
+				.filter(EMFUtils::isFeatureMap)
+				.map(attribute -> featureMapSetter.createPlan(eObject, attribute))
+				.toList();
 	}
 
 	private void materializeFeatureMaps(final Collection<FeatureMapPlan> plans,
