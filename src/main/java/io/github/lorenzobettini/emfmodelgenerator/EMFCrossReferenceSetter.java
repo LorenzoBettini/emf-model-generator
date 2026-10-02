@@ -29,11 +29,39 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	}
 
 	/**
-	 * Functional interface for determining whether direct self-references are allowed.
+	 * Functional interface for selectively allowing direct self-references.
 	 *
-	 * <p>This policy concerns only references where the owner and candidate are the same
-	 * EObject (cycles of length one). It does not detect or prevent longer cycles among
-	 * non-containment references.</p>
+	 * <p>By default, the population process prevents direct self-references, that is,
+	 * assignments where an object references itself through a non-containment reference,
+	 * to avoid trivial models. However, in some domains direct self-references are
+	 * semantically meaningful. A {@code SelfReferencePolicy} selectively allows them.</p>
+	 *
+	 * <p>This policy concerns only the case where the owner and the referenced object are
+	 * the same {@code EObject} (cycles of length one). It does not detect or prevent longer
+	 * cycles among non-containment references.</p>
+	 *
+	 * <p>The policy filters both the default round-robin candidates and the values returned
+	 * by custom cross-reference functions, including non-containment feature map group members,
+	 * which reuse {@link #selectValue(EObject, EReference)}.</p>
+	 *
+	 * <p>For example, in a graph model where {@code Node.outgoing} refers to {@code Node},
+	 * self-loops can be allowed only for nodes at even positions:</p>
+	 * {@snippet :
+	 * generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
+	 * generator.getInstancePopulator().setSelfReferencePolicy((owner, reference) -> {
+	 *     if ("outgoing".equals(reference.getName())
+	 *             && "Node".equals(owner.eClass().getName())) {
+	 *         var graph = owner.eContainer();
+	 *         if (graph != null) {
+	 *             var nodes = EMFUtils.getAsEObjectsList(graph,
+	 *                 graph.eClass().getEStructuralFeature("nodes"));
+	 *             return nodes.indexOf(owner) % 2 == 0;
+	 *         }
+	 *     }
+	 *     return false;
+	 * });
+	 * // Result: Node 0 and Node 2 may reference themselves, Node 1 may not
+	 * }
 	 */
 	@FunctionalInterface
 	public static interface SelfReferencePolicy {
@@ -62,8 +90,13 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 	/**
 	 * Set the policy for determining whether direct self-references are allowed.
-	 * 
+	 *
+	 * <p>The default policy denies every direct self-reference. Install a custom
+	 * {@link SelfReferencePolicy} to selectively allow an owner to reference itself
+	 * through a non-containment reference where that is meaningful for the domain.</p>
+	 *
 	 * @param policy the self-reference policy to use
+	 * @see SelfReferencePolicy
 	 */
 	public void setSelfReferencePolicy(SelfReferencePolicy policy) {
 		this.selfReferencePolicy = policy;

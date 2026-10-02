@@ -594,6 +594,44 @@ generator.save();
 
 You can also provide an existing `ResourceSet` to the constructor when generated models must live together with resources managed by your application.
 
+### Example 16: Selective Direct Self-References
+
+By default, the population process prevents *direct self-references*, that is, assignments
+where an object references itself through a non-containment reference, to avoid trivial models.
+However, in some domains direct self-references are semantically meaningful (for example,
+self-loops in a graph). Use `setSelfReferencePolicy` to selectively allow them:
+
+```java
+EMFModelGenerator generator = new EMFModelGenerator();
+generator.setOutputDirectory("output/");
+
+// Generate a graph with 3 nodes
+generator.getInstancePopulator().setContainmentReferenceDefaultMaxCount(3);
+// Allow direct self-references only for nodes at even positions (0, 2, ...)
+generator.getInstancePopulator().setSelfReferencePolicy((owner, reference) -> {
+    if ("outgoing".equals(reference.getName())
+            && "Node".equals(owner.eClass().getName())) {
+        var graph = owner.eContainer();
+        if (graph != null) {
+            var nodes = EMFUtils.getAsEObjectsList(graph,
+                graph.eClass().getEStructuralFeature("nodes"));
+            var index = nodes.indexOf(owner);
+            return index % 2 == 0; // Even indices: allow direct self-reference
+        }
+    }
+    return false;
+});
+
+generator.generateFrom(graphClass);
+generator.save();
+// Result: Node 0 and Node 2 may have self-references, Node 1 does not
+```
+
+The policy concerns only the case where the owner and the referenced object are the same
+`EObject`; it does not detect or prevent longer cycles among non-containment references.
+It filters both the default round-robin candidates and the values returned by custom
+cross-reference functions, including non-containment feature map group members.
+
 ## Using EMFInstancePopulator Directly
 
 While `EMFModelGenerator` provides a complete solution for generating and saving models, you can also use `EMFInstancePopulator` directly when you need more control. This is useful when you have already created EObject instances (manually or programmatically) and only want to populate them with data.
@@ -609,7 +647,7 @@ Use `EMFInstancePopulator` directly when:
 - You need fine-grained control over the population process
 - You're working with existing models that need sample data
 
-### Example 16: Basic Population of Existing EObjects
+### Example 17: Basic Population of Existing EObjects
 
 ```java
 // The EPackage has already been loaded somewhere else
@@ -625,7 +663,7 @@ populator.populateEObjects(library);
 // Now library has sample data for all attributes and references
 ```
 
-### Example 17: Populate Objects Already in Resources
+### Example 18: Populate Objects Already in Resources
 
 ```java
 import org.eclipse.emf.ecore.resource.Resource;
@@ -649,7 +687,7 @@ populator.populateEObjects(library);
 resource.save(null);
 ```
 
-### Example 18: Configure Population Behavior
+### Example 19: Configure Population Behavior
 
 Control how many values are generated for multi-valued features:
 
@@ -667,7 +705,7 @@ populator.setMaxDepth(4);
 populator.populateEObjects(library);
 ```
 
-### Example 19: Populate Objects in Separate Calls
+### Example 20: Populate Objects in Separate Calls
 
 You can reuse a populator across multiple calls, but its setters and selectors may keep deterministic state such as counters and round-robin positions.
 Create a new populator if you want a fresh generation state.
@@ -684,7 +722,7 @@ resource2.getContents().add(library2);
 populator.populateEObjects(library2);
 ```
 
-### Example 20: Populate Multiple Related Objects Together
+### Example 21: Populate Multiple Related Objects Together
 
 To enable cross-references between objects, populate them together:
 
@@ -753,7 +791,9 @@ Examples:
 - **`EMFInstancePopulator`**: Coordinates the population of model instances
 - **`EMFAttributeSetter`**: Sets attribute values (extendable)
 - **`EMFContainmentReferenceSetter`**: Creates and sets containment references (extendable)
-- **`EMFCrossReferenceSetter`**: Sets cross-references between objects (extendable)
+- **`EMFCrossReferenceSetter`**: Sets cross-references between objects (extendable).
+  Use its nested `SelfReferencePolicy` to selectively allow direct self-references,
+  which are prevented by default
 - **`EMFFeatureMapSetter`**: Coordinates heterogeneous EMF feature maps (extendable)
 - **`EMFModelValidator`**: Contract and factory for standard or custom post-generation validation
 - **`EMFValidationResult`**: Immutable validation outcome retaining the complete EMF diagnostic tree
@@ -787,6 +827,10 @@ The generator uses predictable patterns for sample data:
 - Container references, which are opposites of containment references, cannot be set directly from the contained side.
 - Cross-references are assigned only among existing compatible instances; the generator does not
   create new objects just to satisfy a non-containment reference.
+- Direct self-references (an object referencing itself through a non-containment reference)
+  are prevented by default to avoid trivial models. Use `setSelfReferencePolicy` to
+  selectively allow them where they are meaningful for the domain. The policy covers only
+  cycles of length one, not longer cycles among non-containment references.
 - If no assignable target exists, a non-containment reference remains unchanged. This is valid for
   an optional reference, but a required reference then fails standard EMF validation.
 - Generation does not by itself guarantee structural validity. Call `validate()` or

@@ -274,8 +274,13 @@ public class EMFInstancePopulator {
 
 	/**
 	 * Set the policy for determining whether direct self-references are allowed in cross references.
-	 * 
+	 *
+	 * <p>Delegates to the configured cross-reference setter. See
+	 * {@link EMFCrossReferenceSetter.SelfReferencePolicy} for the default behavior,
+	 * scope, and an example.</p>
+	 *
 	 * @param policy the self-reference policy to use
+	 * @see EMFCrossReferenceSetter.SelfReferencePolicy
 	 */
 	public void setSelfReferencePolicy(EMFCrossReferenceSetter.SelfReferencePolicy policy) {
 		crossReferenceSetter.setSelfReferencePolicy(policy);
