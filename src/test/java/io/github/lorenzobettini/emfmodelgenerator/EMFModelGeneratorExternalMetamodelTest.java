@@ -1011,7 +1011,24 @@ class EMFModelGeneratorExternalMetamodelTest {
 		generator.setFilePrefix("aadl_");
 		var generatedPackage = generator.generateFrom(aadlPackageClass);
 
-		assertThat(generatedPackage.eClass()).isSameAs(aadlPackageClass);
+		var ownedPublicSection =
+				assertEReferenceExists(aadlPackageClass, "ownedPublicSection");
+		var ownedPrivateSection =
+				assertEReferenceExists(aadlPackageClass, "ownedPrivateSection");
+
+		var publicSection = (EObject) generatedPackage.eGet(ownedPublicSection);
+		var privateSection = (EObject) generatedPackage.eGet(ownedPrivateSection);
+
+		assertThat(publicSection).isNotNull();
+		assertThat(privateSection).isNotNull();
+
+		assertThat(EMFUtils.getAsEObjectsList(publicSection, ownedClassifier))
+				.extracting(classifier -> classifier.eClass().getName())
+				.containsExactly("FeatureGroupType");
+
+		assertThat(EMFUtils.getAsEObjectsList(privateSection, ownedClassifier))
+				.extracting(classifier -> classifier.eClass().getName())
+				.containsExactly("AbstractType");
 
 		var validation = generator.validate();
 		assertThat(validation.isValid())
@@ -1036,5 +1053,62 @@ class EMFModelGeneratorExternalMetamodelTest {
 		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
 				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGenerateAadlAbstractImplementation() throws Exception {
+		var aadlPackage = generator.loadEcoreModel(
+				EXTERNAL_METAMODELS_DIR + "/aadl2.ecore");
+
+		var abstractImplementationClass =
+				assertEClassExists(aadlPackage, "AbstractImplementation");
+
+		var populator = generator.getInstancePopulator();
+
+		/*
+		 * Keep multi-valued required containments at their minimum lower bound.
+		 */
+		populator.setContainmentReferenceDefaultMaxCount(0);
+
+		/*
+		 * Do not create optional containments.
+		 * Single-valued containments do not use the configurable count, so this
+		 * also suppresses optional [0..1] branches such as ownedExtension.
+		 */
+		populator.setContainmentReferenceSetter(
+				new EMFContainmentReferenceSetter() {
+			@Override
+			public Collection<EObject> setContainmentReference(
+					final EObject owner,
+					final EReference reference) {
+				if (reference.getLowerBound() == 0) {
+					return List.of();
+				}
+				return super.setContainmentReference(owner, reference);
+			}
+		});
+
+		populator.setMaxDepth(2);
+		generator.setFilePrefix("aadl_impl_");
+
+		var generatedImplementation =
+				generator.generateFrom(abstractImplementationClass);
+
+		assertThat(generatedImplementation.eClass())
+				.isSameAs(abstractImplementationClass);
+
+		generator.save(Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		var validation = generator.validate();
+
+		assertThat(validation.isValid())
+				.withFailMessage("AADL AbstractImplementation validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "aadl_impl_aadl2_AbstractImplementation_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
 	}
 }
