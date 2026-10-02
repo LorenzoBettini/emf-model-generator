@@ -803,7 +803,8 @@ Contributions are welcome! Please ensure:
 
 - All new code is covered by tests (aim for 100% coverage)
 - Run the full test suite: `./mvnw clean test`
-- Check coverage: `./mvnw -P jacoco jacoco:report`
+- Produce coverage report: `./mvnw -P jacoco jacoco:report`
+- Ensure 100% code coverage: `./mvnw verify -P jacoco jacoco:check`
 - Code follows the existing style (tabs, max 100 chars per line)
 - Use Java 21 features where appropriate
 
