@@ -1226,7 +1226,7 @@ class EMFModelGeneratorTest {
 		// Verify that a file was created for each instantiable EClass
 		for (EObject obj : generatedObjects) {
 			String className = obj.eClass().getName();
-			String fileName = String.format("dept_%s_1.xmi", className);
+			String fileName = "dept_" + className + "_1.xmi";
 			File outputFile = new File(TEST_OUTPUT_DIR, fileName);
 			assertThat(outputFile).as("File for " + className + " should exist").exists();
 			
