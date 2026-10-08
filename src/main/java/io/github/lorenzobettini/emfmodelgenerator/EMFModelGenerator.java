@@ -254,17 +254,21 @@ public class EMFModelGenerator {
 
 	/**
 	 * Register the given package in the provided ResourceSet and in the global
-	 * EPackage registry. This method is idempotent and safe to call multiple times.
+	 * EPackage registry when it has a nonblank namespace URI. This method is
+	 * idempotent and safe to call multiple times.
 	 */
 	private void registerPackage(ResourceSet rs, EPackage pkg) {
 		String nsURI = pkg.getNsURI();
+		if (!EMFUtils.hasUsableNsURI(pkg)) {
+			return;
+		}
 		rs.getPackageRegistry().computeIfAbsent(nsURI, k -> pkg);
 		EPackage.Registry.INSTANCE.computeIfAbsent(nsURI, k -> pkg);
 	}
 
 	private void registerLoadedPackage(final EPackage ePackage) {
 		final var nsURI = ePackage.getNsURI();
-		if (nsURI == null || nsURI.isBlank()) {
+		if (!EMFUtils.hasUsableNsURI(ePackage)) {
 			return;
 		}
 		registerLoadedPackage(sharedResourceSet.getPackageRegistry(), nsURI, ePackage);
@@ -299,7 +303,8 @@ public class EMFModelGenerator {
 	 * <ul>
 	 * <li>Registers the EcoreResourceFactoryImpl if not already registered</li>
 	 * <li>Loads the Ecore file into the shared ResourceSet</li>
-	 * <li>Registers all discovered EPackages in the shared and global registries</li>
+	 * <li>Registers discovered EPackages with nonblank namespace URIs in the shared and
+	 * global registries</li>
 	 * <li>Tracks the loaded resource and owned registrations for cleanup via
 	 * {@link #unloadEcoreModels()}</li>
 	 * </ul>

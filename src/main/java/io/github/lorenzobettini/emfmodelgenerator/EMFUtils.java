@@ -3,6 +3,7 @@ package io.github.lorenzobettini.emfmodelgenerator;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.emf.ecore.EAttribute;
@@ -49,6 +50,12 @@ public final class EMFUtils {
 	 */
 	public static boolean canBeInstantiated(final EClass eClass) {
 		return !eClass.isAbstract() && !eClass.isInterface();
+	}
+
+	/** Returns whether a package can be registered by namespace URI. */
+	static boolean hasUsableNsURI(final EPackage ePackage) {
+		var nsURI = ePackage.getNsURI();
+		return nsURI != null && !nsURI.isBlank();
 	}
 
 	/**
@@ -158,15 +165,15 @@ public final class EMFUtils {
 	}
 
 	/**
-	 * Finds all instantiable subclasses of the given EClass by scanning the EMF global
-	 * package registry. This includes the EClass itself if it is instantiable (not
-	 * abstract and not an interface). 
+	 * Finds all instantiable subclasses of the given EClass from the EMF global
+	 * package registry and, when needed, its defining Ecore resource. This includes
+	 * the EClass itself if it is instantiable (neither abstract nor an interface).
 	 * 
 	 * <p>
-	 * This method uses the global {@link EPackage.Registry#INSTANCE} to find all registered
-	 * EPackages and scans their contents for subclasses, including all nested subpackages
-	 * recursively. This approach works even when EClasses are in different resources or
-	 * not in a resource set.
+	 * This method scans registered EPackages in ascending namespace-URI order, including
+	 * nested subpackages recursively. If the defining package's namespace URI has no
+	 * registry entry, it first scans every top-level package in the EClass's own resource.
+	 * This also supports packages with absent or blank namespace URIs.
 	 * </p>
 	 * 
 	 * <p>
@@ -195,11 +202,24 @@ public final class EMFUtils {
 		}
 
 		var conceptualId = conceptualId(eClass);
+		final var registry = EPackage.Registry.INSTANCE;
+		var definingPackage = eClass.getEPackage();
+		if (!hasUsableNsURI(definingPackage) ||
+				!registry.containsKey(definingPackage.getNsURI())) {
+			var resource = eClass.eResource();
+			if (resource != null) {
+				for (var root : resource.getContents()) {
+					if (root instanceof EPackage ePackage) {
+						scanResourceForSubclasses(ePackage, eClass, conceptualId, result);
+					}
+				}
+			}
+		}
 
 		// Iterate over all registered EPackages in the global registry
 		// Sort keys to ensure deterministic order
-		final var registry = EPackage.Registry.INSTANCE;
 		registry.keySet().stream()
+			.filter(Objects::nonNull)
 			.sorted()
 			.forEach(nsURI -> {
 				var ePackage = registry.getEPackage(nsURI);
@@ -252,7 +272,7 @@ public final class EMFUtils {
 	 * @return the conceptual ID
 	 */
 	private static String conceptualId(EClass eClass) {
-		return String.format("%s::%s", eClass.getEPackage().getNsURI(), eClass.getName());
+		return eClass.getEPackage().getNsURI() + "::" + eClass.getName();
 	}
 
 	/**

@@ -327,7 +327,7 @@ The `EMFModelGenerator` provides a convenient method to load Ecore models withou
 ```java
 EMFModelGenerator generator = new EMFModelGenerator();
 
-// Load the first package - automatically registers the resource factory and all packages
+// Load the first package - registers the resource factory and packages with usable namespace URIs
 EPackage ePackage = generator.loadEcoreModel("models/mymodel.ecore");
 
 // Use the loaded package
@@ -353,6 +353,12 @@ order is needed. The loading methods:
 - Register every top-level and nested EPackage with a valid namespace URI
 - Preserve pre-existing entries in both the ResourceSet and global package registries
 - Track the resource and registrations owned by the generator for cleanup
+
+Packages with absent or blank namespace URIs remain available from the loaded Ecore resource but
+are not added to either package registry. In-memory generation can still discover concrete
+subclasses across sibling packages in that resource. Subclass discovery also uses a defining
+Ecore resource when its package URI has no global registry entry. XMI serialization of models
+from URI-less metamodels depends on the metamodel and is not guaranteed by this behavior.
 
 Call `unloadEcoreModels()` when finished to:
 - Unload all loaded Ecore resources
