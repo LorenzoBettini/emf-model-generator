@@ -3939,7 +3939,7 @@ class EMFModelGeneratorTest {
 		var resource = resourceSet.getResource(URI.createFileURI(path), true);
 		var basePackage = (EPackage) resource.getContents().getFirst();
 		var siblingPackage = (EPackage) resource.getContents().get(1);
-		assertThat(EPackage.Registry.INSTANCE).doesNotContainKey(basePackage.getNsURI());
+		assertThat(EPackage.Registry.INSTANCE.containsKey(basePackage.getNsURI())).isFalse();
 		assertThat(EMFUtils.findAllInstantiableSubclasses(
 				assertEClassExists(basePackage, "AbstractBase")))
 				.containsExactly(assertEClassExists(siblingPackage, "ConcreteSubtype"));
