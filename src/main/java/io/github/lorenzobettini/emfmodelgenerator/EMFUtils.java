@@ -3,6 +3,7 @@ package io.github.lorenzobettini.emfmodelgenerator;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.emf.ecore.EAttribute;
@@ -195,11 +196,23 @@ public final class EMFUtils {
 		}
 
 		var conceptualId = conceptualId(eClass);
+		var definingNsURI = eClass.getEPackage().getNsURI();
+		if (definingNsURI == null || definingNsURI.isBlank()) {
+			var resource = eClass.eResource();
+			if (resource != null) {
+				for (var root : resource.getContents()) {
+					if (root instanceof EPackage ePackage) {
+						scanResourceForSubclasses(ePackage, eClass, conceptualId, result);
+					}
+				}
+			}
+		}
 
 		// Iterate over all registered EPackages in the global registry
 		// Sort keys to ensure deterministic order
 		final var registry = EPackage.Registry.INSTANCE;
 		registry.keySet().stream()
+			.filter(Objects::nonNull)
 			.sorted()
 			.forEach(nsURI -> {
 				var ePackage = registry.getEPackage(nsURI);

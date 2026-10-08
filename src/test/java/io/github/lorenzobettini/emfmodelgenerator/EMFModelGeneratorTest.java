@@ -3856,6 +3856,81 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
+	void testUriLessPackagesDiscoverPolymorphicChildrenWithoutRegistration() throws Exception {
+		var globalRegistry = EPackage.Registry.INSTANCE;
+		var hadNullKey = globalRegistry.containsKey(null);
+		var priorNullValue = globalRegistry.get(null);
+		var hadBlankKey = globalRegistry.containsKey("   ");
+		var priorBlankValue = globalRegistry.get("   ");
+		var packages = generator.loadEcoreModelPackages(
+				TEST_INPUTS_DIR + "/uri-less-polymorphic.ecore");
+		assertThat(packages).extracting(EPackage::getName).containsExactly("base", "types");
+		assertThat(packages).extracting(EPackage::getNsURI).containsExactly(null, "   ");
+
+		var rootClass = assertEClassExists(packages.getFirst(), "Root");
+		var itemClass = assertEClassExists(packages.getFirst(), "Item");
+		var firstClass = assertEClassExists(packages.get(1), "First");
+		var secondClass = assertEClassExists(packages.get(1), "Second");
+		assertThat(EMFUtils.findAllInstantiableSubclasses(itemClass))
+				.containsExactly(firstClass, secondClass);
+		assertThat(EMFUtils.findAllInstantiableSubclasses(firstClass))
+				.containsExactly(firstClass);
+		var detachedPackage = EcoreUtil.copy(packages.getFirst());
+		assertThat(EMFUtils.findAllInstantiableSubclasses(
+				assertEClassExists(detachedPackage, "Item"))).isEmpty();
+		packages.getFirst().eResource().getContents()
+				.add(EcoreFactory.eINSTANCE.createEAnnotation());
+		assertThat(EMFUtils.findAllInstantiableSubclasses(itemClass))
+				.containsExactly(firstClass, secondClass);
+
+		var root = generator.generateFrom(rootClass);
+		var children = EMFUtils.getAsList(root, assertEReferenceExists(rootClass, "children"));
+		assertThat(children.stream().map(child -> ((EObject) child).eClass()).toList())
+				.containsExactly(firstClass, secondClass);
+		validateModel(root);
+		generator.generateFrom(secondClass);
+		assertThat(generator.getResourceSet().getPackageRegistry())
+				.doesNotContainKeys(null, "   ");
+		assertThat(globalRegistry.containsKey(null)).isEqualTo(hadNullKey);
+		assertThat(globalRegistry.get(null)).isSameAs(priorNullValue);
+		assertThat(globalRegistry.containsKey("   ")).isEqualTo(hadBlankKey);
+		assertThat(globalRegistry.get("   ")).isSameAs(priorBlankValue);
+	}
+
+	@Test
+	void testPreexistingNullRegistryKeyDoesNotPreventSubclassDiscovery() throws Exception {
+		var registry = EPackage.Registry.INSTANCE;
+		var hadNullKey = registry.containsKey(null);
+		var previous = registry.get(null);
+		registry.put(null, EcoreFactory.eINSTANCE.createEPackage());
+		try {
+			var packages = generator.loadEcoreModelPackages(
+					TEST_INPUTS_DIR + "/uri-less-polymorphic.ecore");
+			var itemClass = assertEClassExists(packages.getFirst(), "Item");
+			assertThat(EMFUtils.findAllInstantiableSubclasses(itemClass))
+					.containsExactly(assertEClassExists(packages.get(1), "First"),
+							assertEClassExists(packages.get(1), "Second"));
+		} finally {
+			if (hadNullKey) {
+				registry.put(null, previous);
+			} else {
+				registry.remove(null);
+			}
+		}
+	}
+
+	@Test
+	void testRegisteredSubclassDiscoveryRetainsClassifierOrder() throws Exception {
+		var ePackage = generator.loadEcoreModelPackages(
+				TEST_INPUTS_DIR + "/abstract-hierarchy.ecore").getFirst();
+		assertThat(EMFUtils.findAllInstantiableSubclasses(
+				assertEClassExists(ePackage, "Shape")))
+				.containsExactly(assertEClassExists(ePackage, "Circle"),
+						assertEClassExists(ePackage, "Rectangle"),
+						assertEClassExists(ePackage, "Triangle"));
+	}
+
+	@Test
 	void testLoadEcoreModelPackagesRejectsResourceWithoutTopLevelPackage() {
 		var path = TEST_INPUTS_DIR + "/no-package.ecore";
 		var createdResource = new AtomicReference<Resource>();

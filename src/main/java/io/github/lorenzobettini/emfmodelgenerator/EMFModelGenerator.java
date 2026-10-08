@@ -258,6 +258,9 @@ public class EMFModelGenerator {
 	 */
 	private void registerPackage(ResourceSet rs, EPackage pkg) {
 		String nsURI = pkg.getNsURI();
+		if (nsURI == null || nsURI.isBlank()) {
+			return;
+		}
 		rs.getPackageRegistry().computeIfAbsent(nsURI, k -> pkg);
 		EPackage.Registry.INSTANCE.computeIfAbsent(nsURI, k -> pkg);
 	}
