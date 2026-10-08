@@ -272,7 +272,7 @@ public final class EMFUtils {
 	 * @return the conceptual ID
 	 */
 	private static String conceptualId(EClass eClass) {
-		return String.format("%s::%s", eClass.getEPackage().getNsURI(), eClass.getName());
+		return eClass.getEPackage().getNsURI() + "::" + eClass.getName();
 	}
 
 	/**
