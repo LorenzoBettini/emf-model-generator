@@ -52,6 +52,12 @@ public final class EMFUtils {
 		return !eClass.isAbstract() && !eClass.isInterface();
 	}
 
+	/** Returns whether a package can be registered by namespace URI. */
+	static boolean hasUsableNsURI(final EPackage ePackage) {
+		var nsURI = ePackage.getNsURI();
+		return nsURI != null && !nsURI.isBlank();
+	}
+
 	/**
 	 * Check if an EReference is valid for processing.
 	 * A reference is valid if it is changeable, not derived, and not a container reference.
@@ -159,15 +165,15 @@ public final class EMFUtils {
 	}
 
 	/**
-	 * Finds all instantiable subclasses of the given EClass by scanning the EMF global
-	 * package registry. This includes the EClass itself if it is instantiable (not
-	 * abstract and not an interface). 
+	 * Finds all instantiable subclasses of the given EClass from the EMF global
+	 * package registry and, when needed, its defining Ecore resource. This includes
+	 * the EClass itself if it is instantiable (neither abstract nor an interface).
 	 * 
 	 * <p>
-	 * This method uses the global {@link EPackage.Registry#INSTANCE} to find all registered
-	 * EPackages and scans their contents for subclasses, including all nested subpackages
-	 * recursively. This approach works even when EClasses are in different resources or
-	 * not in a resource set.
+	 * This method scans registered EPackages in ascending namespace-URI order, including
+	 * nested subpackages recursively. If the defining package's namespace URI has no
+	 * registry entry, it first scans every top-level package in the EClass's own resource.
+	 * This also supports packages with absent or blank namespace URIs.
 	 * </p>
 	 * 
 	 * <p>
@@ -196,8 +202,10 @@ public final class EMFUtils {
 		}
 
 		var conceptualId = conceptualId(eClass);
-		var definingNsURI = eClass.getEPackage().getNsURI();
-		if (definingNsURI == null || definingNsURI.isBlank()) {
+		final var registry = EPackage.Registry.INSTANCE;
+		var definingPackage = eClass.getEPackage();
+		if (!hasUsableNsURI(definingPackage) ||
+				!registry.containsKey(definingPackage.getNsURI())) {
 			var resource = eClass.eResource();
 			if (resource != null) {
 				for (var root : resource.getContents()) {
@@ -210,7 +218,6 @@ public final class EMFUtils {
 
 		// Iterate over all registered EPackages in the global registry
 		// Sort keys to ensure deterministic order
-		final var registry = EPackage.Registry.INSTANCE;
 		registry.keySet().stream()
 			.filter(Objects::nonNull)
 			.sorted()

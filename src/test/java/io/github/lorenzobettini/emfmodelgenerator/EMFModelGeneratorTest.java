@@ -3931,6 +3931,21 @@ class EMFModelGeneratorTest {
 	}
 
 	@Test
+	void testUriBearingUnregisteredResourceDiscoversSiblingPackageSubclass() {
+		var resourceSet = new ResourceSetImpl();
+		resourceSet.getResourceFactoryRegistry().getExtensionToFactoryMap()
+				.put("ecore", new EcoreResourceFactoryImpl());
+		var path = new File(TEST_INPUTS_DIR, "multiple-packages.ecore").getAbsolutePath();
+		var resource = resourceSet.getResource(URI.createFileURI(path), true);
+		var basePackage = (EPackage) resource.getContents().getFirst();
+		var siblingPackage = (EPackage) resource.getContents().get(1);
+		assertThat(EPackage.Registry.INSTANCE).doesNotContainKey(basePackage.getNsURI());
+		assertThat(EMFUtils.findAllInstantiableSubclasses(
+				assertEClassExists(basePackage, "AbstractBase")))
+				.containsExactly(assertEClassExists(siblingPackage, "ConcreteSubtype"));
+	}
+
+	@Test
 	void testLoadEcoreModelPackagesRejectsResourceWithoutTopLevelPackage() {
 		var path = TEST_INPUTS_DIR + "/no-package.ecore";
 		var createdResource = new AtomicReference<Resource>();
