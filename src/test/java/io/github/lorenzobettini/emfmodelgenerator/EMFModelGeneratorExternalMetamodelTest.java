@@ -1145,4 +1145,43 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.anySatisfy(message -> assertThat(message)
 						.contains("required feature 'general'"));
 	}
+
+	@Test
+	void testGenerateBibtexWithDefaultGeneration() throws Exception {
+		var packages = generator.loadEcoreModelPackages(EXTERNAL_METAMODELS_DIR + "/BibTeX.ecore");
+		var bibtexPackage = packages.stream()
+				.filter(ePackage -> "BIBTEX".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var bibtexClass = assertEClassExists(bibtexPackage, "Bibtex");
+
+		generator.setFilePrefix("bibtex_");
+
+		var generatedBibtex = generator.generateFrom(bibtexClass);
+
+		assertThat(generatedBibtex.eClass()).isSameAs(bibtexClass);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BibTeX validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
+				ignored -> EMFModelValidator.standard());
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("BibTeX round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "bibtex_BIBTEX_Bibtex_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+	}
 }
