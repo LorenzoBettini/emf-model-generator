@@ -89,6 +89,9 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFModelValidator.Factory;
  * resource set:
  * {@snippet :
  * EMFValidationResult roundTripResult = generator.saveAndValidateRoundTrip();
+ * EMFValidationResult roundTripWithOptions = generator.saveAndValidateRoundTrip(options);
+ * EMFValidationResult customRoundTrip = generator.saveAndValidateRoundTrip(
+ *     resourceSet -> new MyProjectModelValidator(resourceSet));
  * EMFValidationResult customRoundTripResult = generator.saveAndValidateRoundTrip(
  *     options, resourceSet -> new MyProjectModelValidator(resourceSet));
  * }
@@ -707,6 +710,44 @@ public class EMFModelGenerator {
 	 */
 	public EMFValidationResult saveAndValidateRoundTrip() throws IOException {
 		return saveAndValidateRoundTrip(null, STANDARD_VALIDATOR_FACTORY);
+	}
+
+	/**
+	 * Saves all generated models with custom options, reloads the saved resources in a fresh
+	 * resource set, and validates every reloaded root using standard EMF validation.
+	 * The options are forwarded unchanged to the normal save path. See
+	 * {@link #saveAndValidateRoundTrip()} for round-trip and validation-before-save behavior.
+	 *
+	 * @param options the save options to pass to EMF resources, or null for default options
+	 * @return the aggregate standard-validation result for the reloaded roots
+	 * @throws IOException if the files cannot be written or reloaded
+	 * @throws EMFValidationException if validation before saving is enabled and the current
+	 * model fails validation
+	 */
+	public EMFValidationResult saveAndValidateRoundTrip(final Map<Object, Object> options)
+			throws IOException {
+		return saveAndValidateRoundTrip(options, STANDARD_VALIDATOR_FACTORY);
+	}
+
+	/**
+	 * Saves all generated models with default options, reloads the saved resources in a fresh
+	 * resource set, and validates every reloaded root using a validator from the supplied factory.
+	 * The factory receives the fresh resource set and applies only to the reconstructed graph.
+	 * See {@link #saveAndValidateRoundTrip(Map, EMFModelValidator.Factory)} for the full
+	 * round-trip and validation-before-save behavior.
+	 *
+	 * @param validatorFactory the factory used to create one validator for the fresh round-trip
+	 * resource set
+	 * @return the supplied validator's result for the reconstructed model only
+	 * @throws NullPointerException if the factory, validator, or result is {@code null}; a null
+	 * factory is rejected before any save-related filesystem side effect
+	 * @throws IOException if the files cannot be written or reloaded
+	 * @throws EMFValidationException if validation before saving is enabled and the current
+	 * model fails validation
+	 */
+	public EMFValidationResult saveAndValidateRoundTrip(
+			final EMFModelValidator.Factory validatorFactory) throws IOException {
+		return saveAndValidateRoundTrip(null, validatorFactory);
 	}
 
 	/**

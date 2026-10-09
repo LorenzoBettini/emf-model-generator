@@ -75,8 +75,7 @@ class EMFModelGeneratorRoundTripValidationTest {
 		generator.generateFrom(assertEClassExists(model, "Person"));
 
 		var result = generator.saveAndValidateRoundTrip(
-				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
-				ignored -> EMFModelValidator.standard());
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 
 		assertThat(result.isValid()).isTrue();
 		assertThat(temporaryDirectory.resolve("valid/simple_Person_1.xmi"))
@@ -208,7 +207,7 @@ class EMFModelGeneratorRoundTripValidationTest {
 		var factoryCalls = new AtomicInteger();
 		var suppliedResourceSets = new java.util.ArrayList<ResourceSet>();
 
-		var result = generator.saveAndValidateRoundTrip(null, resourceSet -> {
+		var result = generator.saveAndValidateRoundTrip(resourceSet -> {
 			factoryCalls.incrementAndGet();
 			suppliedResourceSets.add(resourceSet);
 			return validator;
@@ -230,13 +229,13 @@ class EMFModelGeneratorRoundTripValidationTest {
 		var invalidResult = invalidResult();
 		var invalidValidator = new RecordingValidator(invalidResult);
 
-		assertThat(generator.saveAndValidateRoundTrip(null, ignored -> invalidValidator))
+		assertThat(generator.saveAndValidateRoundTrip(ignored -> invalidValidator))
 				.isSameAs(invalidResult);
 		assertThat(invalidValidator.closed).isTrue();
 
 		var failingValidator = new RecordingValidator(validResult("unused"));
 		failingValidator.failure = new IllegalStateException("validation failed");
-		assertThatThrownBy(() -> generator.saveAndValidateRoundTrip(null,
+		assertThatThrownBy(() -> generator.saveAndValidateRoundTrip(
 				ignored -> failingValidator))
 				.isSameAs(failingValidator.failure);
 		assertThat(failingValidator.closed).isTrue();
@@ -249,6 +248,10 @@ class EMFModelGeneratorRoundTripValidationTest {
 		assertThatNullPointerException()
 				.isThrownBy(() -> generator.saveAndValidateRoundTrip(null, null))
 				.withMessage("validatorFactory");
+		assertThatNullPointerException()
+				.isThrownBy(() -> generator.saveAndValidateRoundTrip(
+					(EMFModelValidator.Factory) null))
+				.withMessage("validatorFactory");
 		assertThat(temporaryDirectory.resolve("null-factory")).doesNotExist();
 	}
 
@@ -257,12 +260,12 @@ class EMFModelGeneratorRoundTripValidationTest {
 		generator = newGenerator("nulls");
 
 		assertThatNullPointerException()
-				.isThrownBy(() -> generator.saveAndValidateRoundTrip(null, ignored -> null))
+				.isThrownBy(() -> generator.saveAndValidateRoundTrip(ignored -> null))
 				.withMessage("Validator factory returned null");
 
 		var validator = new RecordingValidator(null);
 		assertThatNullPointerException()
-				.isThrownBy(() -> generator.saveAndValidateRoundTrip(null, ignored -> validator))
+				.isThrownBy(() -> generator.saveAndValidateRoundTrip(ignored -> validator))
 				.withMessage("Validator returned a null result");
 		assertThat(validator.closed).isTrue();
 	}

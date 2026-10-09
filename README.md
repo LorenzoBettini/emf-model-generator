@@ -280,8 +280,17 @@ if (!roundTrip.isValid()) {
 }
 ```
 
-The general overload forwards the same save options accepted by `save(options)` and accepts a
-validator factory for the reconstructed graph:
+Pass save options to use standard EMF validation on the reconstructed graph, or pass a validator
+factory to use default save options with a custom validator:
+
+```java
+var withOptions = generator.saveAndValidateRoundTrip(
+    Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+var withValidator = generator.saveAndValidateRoundTrip(
+    resourceSet -> new MyProjectModelValidator(resourceSet));
+```
+
+The two-argument overload accepts both save options and a validator factory:
 
 ```java
 var roundTrip = generator.saveAndValidateRoundTrip(
