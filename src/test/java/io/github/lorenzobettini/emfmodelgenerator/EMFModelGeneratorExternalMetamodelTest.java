@@ -322,8 +322,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 		 * to ensure that the actual persisted BPEL/WSDL models are valid as well.
 		 */
 		var roundTripValidation = generator.saveAndValidateRoundTrip(
-				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
-				ignored -> EMFModelValidator.standard());
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 		assertThat(roundTripValidation.isValid())
 				.withFailMessage("BPEL/WSDL round-trip validation failed: %s",
 						roundTripValidation.rejectedDiagnostics().stream()
@@ -412,8 +411,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.isTrue();
 
 		var roundTripValidation = generator.saveAndValidateRoundTrip(
-				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
-				ignored -> EMFModelValidator.standard());
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 		assertThat(roundTripValidation.isValid())
 				.withFailMessage("BPEL-hosted WSDL Definition round-trip validation failed: %s",
 						roundTripValidation.rejectedDiagnostics().stream()
@@ -459,8 +457,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.isTrue();
 
 		var roundTripValidation = generator.saveAndValidateRoundTrip(
-				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
-				ignored -> EMFModelValidator.standard());
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 		var diagnosticList = roundTripValidation.flattenedDiagnostics();
 		assertThat(roundTripValidation.isValid())
 				.isFalse();
