@@ -1036,8 +1036,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.isTrue();
 
 		var roundTripValidation = generator.saveAndValidateRoundTrip(
-				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
-				ignored -> EMFModelValidator.standard());
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 
 		assertThat(roundTripValidation.isValid())
 				.withFailMessage("AADL package round-trip validation failed: %s",
@@ -1171,8 +1170,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.isTrue();
 
 		var roundTripValidation = generator.saveAndValidateRoundTrip(
-				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
-				ignored -> EMFModelValidator.standard());
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 
 		assertThat(roundTripValidation.isValid())
 				.withFailMessage("BibTeX round-trip validation failed: %s",
@@ -1238,8 +1236,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.isTrue();
 
 		var roundTripValidation = generator.saveAndValidateRoundTrip(
-				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
-				ignored -> EMFModelValidator.standard());
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 
 		assertThat(roundTripValidation.isValid())
 				.withFailMessage("BibTeX round-trip validation failed: %s",
