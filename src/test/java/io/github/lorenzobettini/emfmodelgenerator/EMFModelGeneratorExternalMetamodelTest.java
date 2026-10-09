@@ -1517,4 +1517,152 @@ class EMFModelGeneratorExternalMetamodelTest {
 		var generatedFileName = "plugin_PluginEclipse_Eclipse_1.xmi";
 		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
 	}
+
+	@Test
+	void testGeneratePluginEclipseWithPolymorphicDependencies() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/PluginEclipse.ecore");
+
+		var pluginPackage = packages.stream()
+				.filter(ePackage -> "PluginEclipse".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var extensionsPackage = packages.stream()
+				.filter(ePackage -> "PluginsEclipse".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var eclipseClass = assertEClassExists(pluginPackage, "Eclipse");
+		var bundleClass = assertEClassExists(pluginPackage, "Bundle");
+		var requiredBundleClass = assertEClassExists(pluginPackage, "RequiredBundle");
+		var requiredAttributeClass =
+				assertEClassExists(pluginPackage, "RequireBundleAttribute");
+		var rangeClass = assertEClassExists(pluginPackage, "Range");
+		var exportedPackageClass = assertEClassExists(pluginPackage, "ExportedPackage");
+		var xinternalClass = assertEClassExists(extensionsPackage, "Xinternal");
+
+		var bundlesReference = assertEReferenceExists(eclipseClass, "bundles");
+		var requireReference = assertEReferenceExists(bundleClass, "require");
+		var exportReference = assertEReferenceExists(bundleClass, "export");
+		var attributesReference = assertEReferenceExists(
+				requiredBundleClass, "requireBundleAttribute");
+		var lowerBoundReference = assertEReferenceExists(rangeClass, "lowerBound");
+		var upperBoundReference = assertEReferenceExists(rangeClass, "upperBound");
+
+		/*
+		 * RequireBundleAttribute has three concrete subclasses:
+		 * AttResolution, AttVisibility, and Range.
+		 *
+		 * Discover them reflectively and generate one of each per requirement.
+		 */
+		var attributeTypes =
+				EMFUtils.findAllInstantiableSubclasses(requiredAttributeClass);
+
+		assertThat(attributeTypes).hasSize(3);
+
+		/*
+		 * ExportedPackage is concrete, and Xinternal extends it from another
+		 * EPackage in the same Ecore resource.
+		 */
+		var exportedTypes =
+				EMFUtils.findAllInstantiableSubclasses(exportedPackageClass);
+
+		assertThat(exportedTypes)
+				.containsExactlyInAnyOrder(exportedPackageClass, xinternalClass);
+
+		var populator = generator.getInstancePopulator();
+
+		populator.setContainmentReferenceMaxCountFor(
+				attributesReference, attributeTypes.size());
+
+		/*
+		 * Keep the default containment depth so nested Range and Version
+		 * objects can be populated.
+		 */
+		populator.setMaxDepth(5);
+
+		generator.setFilePrefix("plugin_polymorphic_");
+
+		var generatedEclipse = generator.generateFrom(eclipseClass);
+
+		var bundles = EMFUtils.getAsEObjectsList(
+				generatedEclipse, bundlesReference);
+
+		assertEveryRequiredBundleContainsOneInstanceOfEachConcreteSubtype(rangeClass, requireReference,
+				attributesReference, lowerBoundReference, upperBoundReference, attributeTypes, bundles);
+
+		/*
+		 * Verify that the polymorphic ExportedPackage containment can select
+		 * Xinternal from the second EPackage.
+		 */
+		var exportedTypesGenerated = bundles.stream()
+				.flatMap(bundle -> EMFUtils.getAsEObjectsList(
+						bundle, exportReference).stream())
+				.map(EObject::eClass)
+				.distinct()
+				.toList();
+
+		assertThat(exportedTypesGenerated)
+				.containsExactlyInAnyOrderElementsOf(exportedTypes);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("Polymorphic PluginEclipse validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
+				ignored -> EMFModelValidator.standard());
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("Polymorphic PluginEclipse round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName =
+				"plugin_polymorphic_PluginEclipse_Eclipse_1.xmi";
+
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+	}
+
+	/*
+	 * Every RequiredBundle must contain one instance of each concrete
+	 * RequireBundleAttribute subtype.
+	 */
+	private void assertEveryRequiredBundleContainsOneInstanceOfEachConcreteSubtype(EClass rangeClass,
+			EReference requireReference, EReference attributesReference, EReference lowerBoundReference,
+			EReference upperBoundReference, List<EClass> attributeTypes, List<EObject> bundles) {
+		assertThat(bundles).hasSize(2).allSatisfy(bundle -> {
+			var requirements = EMFUtils.getAsEObjectsList(
+					bundle, requireReference);
+
+			assertThat(requirements).hasSize(2);
+
+			assertThat(requirements).allSatisfy(requirement -> {
+				var attributes = EMFUtils.getAsEObjectsList(
+						requirement, attributesReference);
+
+				assertThat(attributes)
+						.extracting(EObject::eClass)
+						.containsExactlyInAnyOrderElementsOf(attributeTypes);
+
+				/*
+				 * Range requires both lowerBound and upperBound Version objects.
+				 */
+				var range = attributes.stream()
+						.filter(attribute -> attribute.eClass() == rangeClass)
+						.findFirst()
+						.orElseThrow();
+
+				assertThat(range.eGet(lowerBoundReference)).isNotNull();
+				assertThat(range.eGet(upperBoundReference)).isNotNull();
+			});
+		});
+	}
 }
