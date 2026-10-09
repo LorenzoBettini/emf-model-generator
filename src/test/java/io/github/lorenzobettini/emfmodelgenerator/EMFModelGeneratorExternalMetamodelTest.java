@@ -1435,4 +1435,86 @@ class EMFModelGeneratorExternalMetamodelTest {
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
 				generatedFileName, generatedFileName);
 	}
+
+	@Test
+	void testGeneratePluginEclipseWithDefaultGeneration() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/PluginEclipse.ecore");
+
+		assertThat(packages).extracting(EPackage::getName)
+				.containsExactly("PluginEclipse", "PluginsEclipse", "PrimitiveTypes");
+
+		var pluginPackage = packages.stream()
+				.filter(ePackage -> "PluginEclipse".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var eclipseClass = assertEClassExists(pluginPackage, "Eclipse");
+		var bundleClass = assertEClassExists(pluginPackage, "Bundle");
+		var requiredBundleClass = assertEClassExists(pluginPackage, "RequiredBundle");
+
+		var bundlesReference = assertEReferenceExists(eclipseClass, "bundles");
+		var packagesReference = assertEReferenceExists(eclipseClass, "packages");
+		var versionReference = assertEReferenceExists(bundleClass, "version");
+		var requireReference = assertEReferenceExists(bundleClass, "require");
+		var requiredBundleReference = assertEReferenceExists(requiredBundleClass, "bundle");
+
+		generator.setFilePrefix("plugin_");
+
+		var generatedEclipse = generator.generateFrom(eclipseClass);
+
+		assertThat(generatedEclipse.eClass()).isSameAs(eclipseClass);
+
+		/*
+		 * The default multiplicity produces two bundles and two packages.
+		 * Every bundle must have its mandatory Version containment.
+		 */
+		var bundles = EMFUtils.getAsEObjectsList(
+				generatedEclipse, bundlesReference);
+
+		var generatedPackages = EMFUtils.getAsEObjectsList(
+				generatedEclipse, packagesReference);
+
+		assertThat(bundles).hasSize(2);
+		assertThat(generatedPackages).hasSize(2);
+
+		assertThat(bundles).allSatisfy(bundle -> {
+			assertThat(bundle.eGet(versionReference)).isNotNull();
+
+			/*
+			 * RequiredBundle.bundle is a mandatory non-containment reference.
+			 * It must select an existing bundle rather than create a new one.
+			 */
+			var requirements = EMFUtils.getAsEObjectsList(
+					bundle, requireReference);
+
+			assertThat(requirements).hasSize(2);
+
+			assertThat(requirements).allSatisfy(requirement ->
+					assertThat(requirement.eGet(requiredBundleReference))
+							.isIn(bundles));
+		});
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("PluginEclipse validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
+				ignored -> EMFModelValidator.standard());
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("PluginEclipse round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "plugin_PluginEclipse_Eclipse_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+	}
 }
