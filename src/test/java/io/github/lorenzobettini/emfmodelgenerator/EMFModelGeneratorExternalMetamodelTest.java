@@ -1184,4 +1184,73 @@ class EMFModelGeneratorExternalMetamodelTest {
 		var generatedFileName = "bibtex_BIBTEX_Bibtex_1.xmi";
 		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
 	}
+
+	@Test
+	void testGenerateBibtexWithAllPossibleBibtexEntries() throws Exception {
+		var packages = generator.loadEcoreModelPackages(EXTERNAL_METAMODELS_DIR + "/BibTeX.ecore");
+		var bibtexPackage = packages.stream()
+				.filter(ePackage -> "BIBTEX".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var bibtexClass = assertEClassExists(bibtexPackage, "Bibtex");
+
+		var entryClass = assertEClassExists(bibtexPackage, "Entry");
+		var entriesReference = assertEReferenceExists(bibtexClass, "entries");
+
+		/*
+		 * Generate one instance of every concrete BibTeX entry type.
+		 * The default round-robin selector distributes instances across
+		 * all available Entry subclasses.
+		 */
+		var entryTypes = EMFUtils.findAllInstantiableSubclasses(entryClass);
+		assertThat(entryTypes).hasSize(12);
+
+		generator.getInstancePopulator()
+			.setContainmentReferenceDefaultMaxCount(entryTypes.size());
+
+		generator.getInstancePopulator().setContainmentReferenceMaxCountFor(
+				entriesReference, entryTypes.size());
+
+		generator.setFilePrefix("bibtex_entries_");
+
+		var generatedBibtex = generator.generateFrom(bibtexClass);
+
+		assertThat(generatedBibtex.eClass()).isSameAs(bibtexClass);
+
+		/*
+		 * Verify that every concrete entry type has been instantiated
+		 * exactly once, independently of selection order.
+		 */
+		var generatedEntries = EMFUtils.getAsEObjectsList(
+				generatedBibtex, entriesReference);
+
+		assertThat(generatedEntries)
+				.extracting(EObject::eClass)
+				.containsExactlyInAnyOrderElementsOf(entryTypes);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BibTeX validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
+				ignored -> EMFModelValidator.standard());
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("BibTeX round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "bibtex_entries_BIBTEX_Bibtex_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
 }
