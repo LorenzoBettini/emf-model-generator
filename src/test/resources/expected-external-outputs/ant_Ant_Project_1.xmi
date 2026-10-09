@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="ASCII"?>
+<ant:Project
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ant="http://example.org/atlantic-zoo/ant"
+    xsi:schemaLocation="http://example.org/atlantic-zoo/ant ../external-metamodels/Ant.ecore#/0"
+    name="Project_name_1"
+    basedir="Project_basedir_1"
+    description="Project_description_1"
+    default="//@targets.0">
+  <path id="Path_id_1"
+      refid="Path_refid_1">
+    <path id="Path_id_2"
+        refid="Path_refid_2"/>
+    <pathElement
+        path="PathElement_path_1"
+        location="PathElement_location_1"/>
+    <pathElement
+        path="PathElement_path_2"
+        location="PathElement_location_2"/>
+    <fileset
+        dir="FileSet_dir_1"/>
+    <fileset
+        dir="FileSet_dir_2"/>
+  </path>
+  <properties
+      xsi:type="ant:PropertyValue"
+      name="PropertyValue_name_1"
+      value="PropertyValue_value_1"/>
+  <properties
+      xsi:type="ant:PropertyLocation"
+      name="PropertyLocation_name_1"
+      location="PropertyLocation_location_1"/>
+  <taskdef name="TaskDef_name_1"
+      classname="TaskDef_classname_1"/>
+  <taskdef name="TaskDef_name_2"
+      classname="TaskDef_classname_2"/>
+  <targets name="Target_name_1"
+      description="Target_description_1"
+      unless="Target_unless_1"
+      ifCondition="Target_ifCondition_1"
+      depends="//@targets.1">
+    <tasks xsi:type="ant:NewTask"
+        taskName="//@taskdef.0"/>
+    <tasks xsi:type="ant:Exec"
+        id="Exec_id_1"
+        taskname="Exec_taskname_1"
+        description="Exec_description_1"
+        executable="Exec_executable_1"
+        dir="Exec_dir_1"/>
+  </targets>
+  <targets name="Target_name_2"
+      description="Target_description_2"
+      unless="Target_unless_2"
+      ifCondition="Target_ifCondition_2"
+      depends="//@targets.0">
+    <tasks xsi:type="ant:Java"
+        id="Java_id_1"
+        taskname="Java_taskname_1"
+        description="Java_description_1"
+        classname="Java_classname_1"
+        jar="Java_jar_1"
+        fork="Java_fork_1"/>
+    <tasks xsi:type="ant:Echo"
+        id="Echo_id_1"
+        taskname="Echo_taskname_1"
+        description="Echo_description_1"
+        message="Echo_message_1"
+        file="Echo_file_1"
+        append="Echo_append_1"/>
+  </targets>
+</ant:Project>

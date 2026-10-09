@@ -1250,4 +1250,189 @@ class EMFModelGeneratorExternalMetamodelTest {
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
 				generatedFileName, generatedFileName);
 	}
+
+	@Test
+	void testGenerateAntProjectWithDefaultGeneration() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/Ant.ecore");
+
+		assertThat(packages)
+				.extracting(EPackage::getName)
+				.containsExactly("Ant", "PrimitiveTypes");
+
+		var antPackage = packages.getFirst();
+		var projectClass = assertEClassExists(antPackage, "Project");
+		var targetClass = assertEClassExists(antPackage, "Target");
+		var taskClass = assertEClassExists(antPackage, "Task");
+
+		var targetsReference = assertEReferenceExists(projectClass, "targets");
+		var defaultReference = assertEReferenceExists(projectClass, "default");
+		var tasksReference = assertEReferenceExists(targetClass, "tasks");
+		var taskTargetReference = assertEReferenceExists(taskClass, "target");
+
+		generator.getInstancePopulator().setMaxDepth(2);
+		generator.setFilePrefix("ant_");
+
+		var generatedProject = generator.generateFrom(projectClass);
+
+		assertThat(generatedProject.eClass()).isSameAs(projectClass);
+
+		/*
+		 * Verify that the project contains the expected targets and that
+		 * its mandatory default cross-reference selects an existing target.
+		 */
+		var targets = EMFUtils.getAsEObjectsList(
+				generatedProject, targetsReference);
+
+		assertThat(targets).hasSize(2);
+		assertThat(generatedProject.eGet(defaultReference)).isIn(targets);
+
+		/*
+		 * Each target contains generated tasks.
+		 * The required Task.target reference is the opposite of the
+		 * Target.tasks containment and must point back to its owner.
+		 */
+		assertThat(targets).allSatisfy(target -> {
+			var tasks = EMFUtils.getAsEObjectsList(target, tasksReference);
+
+			assertThat(tasks).hasSize(2);
+			assertThat(tasks).allSatisfy(task ->
+					assertThat(task.eGet(taskTargetReference)).isSameAs(target));
+		});
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("Ant validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("Ant round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "ant_Ant_Project_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGenerateAntProjectWithAllConcreteTaskTypes() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/Ant.ecore");
+
+		var antPackage = packages.stream()
+				.filter(ePackage -> "Ant".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var projectClass = assertEClassExists(antPackage, "Project");
+		var targetClass = assertEClassExists(antPackage, "Target");
+		var taskClass = assertEClassExists(antPackage, "Task");
+		var newTaskClass = assertEClassExists(antPackage, "NewTask");
+
+		var targetsReference = assertEReferenceExists(projectClass, "targets");
+		var defaultReference = assertEReferenceExists(projectClass, "default");
+		var taskdefReference = assertEReferenceExists(projectClass, "taskdef");
+		var tasksReference = assertEReferenceExists(targetClass, "tasks");
+		var taskTargetReference = assertEReferenceExists(taskClass, "target");
+		var taskNameReference = assertEReferenceExists(newTaskClass, "taskName");
+
+		/*
+		 * Discover all concrete Task subclasses reflectively and configure
+		 * the generator to produce one instance of each, using its ordinary
+		 * deterministic round-robin selector.
+		 */
+		var taskTypes = EMFUtils.findAllInstantiableSubclasses(taskClass);
+		assertThat(taskTypes).hasSize(11);
+
+		var populator = generator.getInstancePopulator();
+
+		populator.setContainmentReferenceMaxCountFor(targetsReference, 1);
+		populator.setContainmentReferenceMaxCountFor(
+				tasksReference, taskTypes.size());
+		populator.setMaxDepth(2);
+
+		generator.setFilePrefix("ant_all_tasks_");
+
+		var generatedProject = generator.generateFrom(projectClass);
+
+		var targets = EMFUtils.getAsEObjectsList(
+				generatedProject, targetsReference);
+
+		assertThat(targets).hasSize(1);
+
+		var target = targets.getFirst();
+
+		/*
+		 * The required Project.default reference must resolve to
+		 * the generated target.
+		 */
+		assertThat(generatedProject.eGet(defaultReference))
+				.isSameAs(target);
+
+		var tasks = EMFUtils.getAsEObjectsList(target, tasksReference);
+
+		/*
+		 * Every concrete Task subtype must occur exactly once.
+		 */
+		assertThat(tasks)
+				.extracting(EObject::eClass)
+				.containsExactlyInAnyOrderElementsOf(taskTypes);
+
+		/*
+		 * Verify containment opposites for all eleven tasks.
+		 */
+		assertThat(tasks).allSatisfy(task ->
+				assertThat(task.eGet(taskTargetReference)).isSameAs(target));
+
+		/*
+		 * NewTask requires a TaskDef reference.
+		 * The standard generator should resolve it using the task
+		 * definitions created in the surrounding Project.
+		 */
+		var taskDefinitions = EMFUtils.getAsEObjectsList(
+				generatedProject, taskdefReference);
+
+		assertThat(taskDefinitions).isNotEmpty();
+
+		var newTask = tasks.stream()
+				.filter(task -> task.eClass() == newTaskClass)
+				.findFirst()
+				.orElseThrow();
+
+		assertThat(newTask.eGet(taskNameReference))
+				.isIn(taskDefinitions);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("Ant task validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("Ant task round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "ant_all_tasks_Ant_Project_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
 }
