@@ -61,11 +61,15 @@
 		-->
 		<m2e.apt.activation>disabled</m2e.apt.activation>
 
+		<sonar.issue.ignore.multicriteria>e1,e2</sonar.issue.ignore.multicriteria>
 		<!-- Ignore Sonar rule java:S2143 only in EMFAttributeSetter.java
 			EMF EDate is backed by java.util.Date; keep java.time internally and convert at the boundary. -->
-		<sonar.issue.ignore.multicriteria>e1</sonar.issue.ignore.multicriteria>
 		<sonar.issue.ignore.multicriteria.e1.ruleKey>java:S2143</sonar.issue.ignore.multicriteria.e1.ruleKey>
 		<sonar.issue.ignore.multicriteria.e1.resourceKey>**/EMFAttributeSetter.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
+		<!-- False positive for password detected in the deploy-maven workflow:
+			it's an environment variable containing an encrypted value. -->
+		<sonar.issue.ignore.multicriteria.e2.ruleKey>yaml:S2068</sonar.issue.ignore.multicriteria.e2.ruleKey>
+		<sonar.issue.ignore.multicriteria.e2.resourceKey>**/workflows/deploy-maven.yml</sonar.issue.ignore.multicriteria.e2.resourceKey>
 	</properties>
 
 	<dependencyManagement>
