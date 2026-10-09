@@ -1504,8 +1504,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.isTrue();
 
 		var roundTripValidation = generator.saveAndValidateRoundTrip(
-				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
-				ignored -> EMFModelValidator.standard());
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 
 		assertThat(roundTripValidation.isValid())
 				.withFailMessage("PluginEclipse round-trip validation failed: %s",
@@ -1516,6 +1515,8 @@ class EMFModelGeneratorExternalMetamodelTest {
 
 		var generatedFileName = "plugin_PluginEclipse_Eclipse_1.xmi";
 		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
 	}
 
 	@Test
@@ -1589,8 +1590,14 @@ class EMFModelGeneratorExternalMetamodelTest {
 		var bundles = EMFUtils.getAsEObjectsList(
 				generatedEclipse, bundlesReference);
 
-		assertEveryRequiredBundleContainsOneInstanceOfEachConcreteSubtype(rangeClass, requireReference,
-				attributesReference, lowerBoundReference, upperBoundReference, attributeTypes, bundles);
+		assertEveryRequiredBundleContainsOneInstanceOfEachConcreteSubtype(
+				rangeClass,
+				requireReference,
+				attributesReference,
+				lowerBoundReference,
+				upperBoundReference,
+				attributeTypes,
+				bundles);
 
 		/*
 		 * Verify that the polymorphic ExportedPackage containment can select
@@ -1615,8 +1622,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.isTrue();
 
 		var roundTripValidation = generator.saveAndValidateRoundTrip(
-				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE),
-				ignored -> EMFModelValidator.standard());
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
 
 		assertThat(roundTripValidation.isValid())
 				.withFailMessage("Polymorphic PluginEclipse round-trip validation failed: %s",
@@ -1627,8 +1633,9 @@ class EMFModelGeneratorExternalMetamodelTest {
 
 		var generatedFileName =
 				"plugin_polymorphic_PluginEclipse_Eclipse_1.xmi";
-
 		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
 	}
 
 	/*
