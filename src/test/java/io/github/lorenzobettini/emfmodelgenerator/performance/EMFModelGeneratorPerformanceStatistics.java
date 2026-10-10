@@ -102,7 +102,7 @@ public final class EMFModelGeneratorPerformanceStatistics {
 
 	static Configuration parse(final String... args) {
 		final Map<String, String> values = new TreeMap<>();
-		final var allowed = List.of("scenario", "metamodel", "package", "root", "roots",
+		final var allowed = List.of("profile", "scenario", "metamodel", "package", "root", "roots",
 				"depth", "attribute-max", "containment-max", "cross-reference-max",
 				"feature-map-max", "warmups", "repetitions", "preflight", "raw", "summary");
 		for (int i = 0; i < args.length; i += 2) {
@@ -116,6 +116,9 @@ public final class EMFModelGeneratorPerformanceStatistics {
 			if (values.putIfAbsent(key.substring(2), args[i + 1]) != null) {
 				throw new IllegalArgumentException("Duplicate option: " + key);
 			}
+		}
+		if (values.containsKey("profile")) {
+			return profileConfiguration(values);
 		}
 		final var metamodel = Path.of(values.getOrDefault("metamodel",
 				"src/test/resources/inputs/extlibrary.ecore"));
@@ -140,6 +143,38 @@ public final class EMFModelGeneratorPerformanceStatistics {
 				Path.of(values.getOrDefault("summary", "target/benchmark/summary.csv")));
 	}
 
+	private static Configuration profileConfiguration(final Map<String, String> values) {
+		for (final var key : List.of("scenario", "metamodel", "package", "root",
+				"attribute-max", "containment-max", "cross-reference-max", "feature-map-max")) {
+			if (values.containsKey(key)) {
+				throw new IllegalArgumentException("--" + key + " cannot override a named profile");
+			}
+		}
+		final var profile = ScenarioProfiles.get(values.get("profile"));
+		final int roots = number(values, "roots", profile.roots().getFirst());
+		final int depth = number(values, "depth", profile.defaultDepth());
+		if (!profile.roots().contains(roots) || !profile.depths().contains(depth)) {
+			throw new IllegalArgumentException("Outside pilot bounds for " + profile.id()
+					+ ": roots " + profile.roots() + ", depths " + profile.depths());
+		}
+		final Preflight preflight;
+		try {
+			preflight = Preflight.valueOf(values.getOrDefault("preflight",
+					profile.preflight().name()).toUpperCase(Locale.ROOT));
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException("preflight must be none, validate or roundtrip", e);
+		}
+		if (preflight == Preflight.NONE) {
+			throw new IllegalArgumentException("Named profiles require validation preflight");
+		}
+		return new Configuration(profile.id(), profile.metamodel(), profile.packageName(),
+				profile.rootClass(), roots, depth, profile.attributeMax(),
+				profile.containmentMax(), profile.crossReferenceMax(), profile.featureMapMax(),
+				number(values, "warmups", 1), number(values, "repetitions", 2), preflight,
+				Path.of(values.getOrDefault("raw", "target/benchmark/raw.csv")),
+				Path.of(values.getOrDefault("summary", "target/benchmark/summary.csv")));
+	}
+
 	private static int number(final Map<String, String> values, final String key,
 			final int defaultValue) {
 		try {
@@ -153,6 +188,7 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		return """
 				Usage: EMFModelGeneratorPerformanceStatistics [--option value ...]
 				--scenario ID --metamodel FILE --package NAME --root ECLASS
+				--profile ID (locks a named pilot profile and requires preflight)
 				--roots N --depth N --attribute-max N --containment-max N
 				--cross-reference-max N --feature-map-max N
 				--warmups N --repetitions N --preflight none|validate|roundtrip
@@ -160,6 +196,7 @@ public final class EMFModelGeneratorPerformanceStatistics {
 				Defaults: EXTLibrary Library, 1 root, depth 1, maxima 1,
 				1 warmup, 2 repetitions, no preflight, output under target/benchmark.
 				Use --help alone for this text.
+				Profiles: extlibrary, bibtex, ant, plugin-eclipse, rss, bpmn-bounded.
 				""";
 	}
 

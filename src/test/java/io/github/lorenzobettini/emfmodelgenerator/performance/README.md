@@ -4,8 +4,98 @@ This test-source harness measures generation from one **named EClass** in one na
 EPackage. It replaces the old all-class sweep: `numberOfInstances` is the number
 of roots of the selected class, rather than the number for every concrete class.
 The old `--models-min/max/step` and `--depth-min/max/step` options are retired.
-Invoke one configuration per JVM. Size and depth series are separate invocations;
-Task 01 will calibrate safe ranges and scenario profiles.
+Invoke one configuration per JVM. Size and depth series are separate invocations.
+
+## Calibrated pilot profiles
+
+`ScenarioProfiles` defines these locked configurations. `--profile ID` selects the
+exact Ecore file, package, concrete root EClass, and multiplicities. The loader
+registers the packages and uses their dynamic EMF factories; no custom setter,
+factory, auxiliary root, or source-Ecore edit is used. All profiles set attribute,
+containment, cross-reference, and FeatureMap maxima to **1**. The normal generator
+selection behavior is retained. Root counts and depths outside the listed values
+are rejected by the profile CLI. Named profiles require preflight before timing.
+
+All paths below are relative to the core repository root. `external/` abbreviates
+`src/test/resources/external-metamodels/`; EXTLibrary uses
+`src/test/resources/inputs/extlibrary.ecore`.
+
+| Profile | Ecore, package, root EClass | Topology | Depths (scaling depth bold) | Pilot roots | Preflight |
+|---|---|---|---|---|---|
+| `extlibrary` | `inputs/extlibrary.ecore`, `extlibrary::Library` | Library containment baseline | **1**, 2 | 1, 2, 5, 10, 20 | XMI round trip |
+| `bibtex` | `external/BibTeX.ecore`, `BIBTEX::Bibtex` | Shallow polymorphic entries and fields | 1, **2** | 1, 2, 5, 10, 20 | XMI round trip |
+| `ant` | `external/Ant.ecore`, `Ant::Project` | Targets and tasks; required default reference and containment opposites | **2** | 1, 2, 5, 10, 20 | XMI round trip |
+| `plugin-eclipse` | `external/PluginEclipse.ecore`, `PluginEclipse::Eclipse` | Bundles, versions, dependencies, and cross references | **4** | 1, 2, 5, 10, 20 | XMI round trip |
+| `rss` | `external/RSS-2.0.ecore`, `RSS::RSS` | Channel, items, optional structures, and opposites | 2, **3** | 1, 2, 5, 10, 20 | XMI round trip |
+| `bpmn-bounded` | `external/BPMN.ecore`, `bpmn::BpmnDiagram` | Recursive graph and FeatureMap structures; stress supplement | **1**, 2 | 1, 2, 3, 5 | In-memory validation |
+
+The selected package namespace URIs, respectively, are
+`http:///org/eclipse/emf/examples/library/extlibrary.ecore/1.0.0`,
+`http://example.org/atlantic-zoo/bibtex`,
+`http://example.org/atlantic-zoo/ant`,
+`http://example.org/atlantic-zoo/plugineclipse`,
+`http://example.org/atlantic-zoo/rss`, and
+`http://stp.eclipse.org/bpmn`. Multi-package Ecores are loaded in full;
+the selected root package is named explicitly. In particular,
+PluginEclipse also registers `PluginsEclipse`, which contributes polymorphic
+types. No profile overrides a package factory.
+
+The following are **observed pilot counts**, not publication measurements. Each
+entry is the total EObject count for the root counts in the same table row, in
+order. All measured rows reported the requested number of roots and one model
+resource per root. Preflight passed at every listed scaling size. One warmup and
+two measured observations at five roots had identical EObject/resource counts
+within each profile. This checks size stability; it does not prove identical
+internal graphs across repetitions. A fast independent-generation test also
+compares the contained EClass frequency maps at five roots for every profile.
+
+| Profile at scaling depth | Roots | Actual EObjects | Model resources |
+|---|---|---|---|
+| `extlibrary` depth 1 | 1, 2, 5, 10, 20 | 4, 8, 20, 40, 80 | 1, 2, 5, 10, 20 |
+| `bibtex` depth 2 | 1, 2, 5, 10, 20 | 3, 6, 15, 30, 60 | 1, 2, 5, 10, 20 |
+| `ant` depth 2 | 1, 2, 5, 10, 20 | 9, 18, 45, 90, 180 | 1, 2, 5, 10, 20 |
+| `plugin-eclipse` depth 4 | 1, 2, 5, 10, 20 | 14, 28, 72, 146, 292 | 1, 2, 5, 10, 20 |
+| `rss` depth 3 | 1, 2, 5, 10, 20 | 13, 26, 65, 130, 260 | 1, 2, 5, 10, 20 |
+| `bpmn-bounded` depth 1 | 1, 2, 3, 5 | 5, 10, 15, 25 | 1, 2, 3, 5 |
+
+At alternate depths, one root and the largest allowed root count also passed
+preflight: EXTLibrary depth 2 produced 7 and 140 EObjects; BibTeX depth 1
+produced 2 and 40; RSS depth 2 produced 9 and 180; BPMN depth 2 produced 16
+and 80. Intermediate root counts at those alternate depths remain exploratory.
+PluginEclipse depth 3 with these multiplicities failed XMI round-trip preflight:
+an imported `Range` lacked required `lowerBound` and `upperBound` children.
+Depths 4 and 5 passed at one root; only depth 4 was profiled across sizes.
+
+These bounds are for **short pilots** with a 512 MiB heap and a 30 second wall
+limit per forked Maven invocation. Calibration used zero warmups and one measured
+sample at each size, then one warmup and two measured samples at five roots to
+check counts. The measured call took roughly 1–24 ms across these runs, but
+single samples after little or no warmup do not establish scaling or comparative
+performance. PluginEclipse EObject totals are not exactly proportional to roots,
+which is another reason to use actual counts. The graph and cross-reference
+costs still need larger, repeated measurements. BPMN is a bounded stress case,
+not part of a claim that all eight external metamodels are benchmarked. AADL
+`ComponentImplementation` and BPEL/WSDL were deliberately excluded because
+their functional examples need specialized setup or have problematic validity.
+
+Reproduce one size with a separate forked JVM and unique CSV paths:
+
+```sh
+./mvnw -DskipTests test-compile
+timeout 30s ./mvnw exec:exec@run-profile-pilot -Pperformance-tests \
+  -Dbenchmark.profile=ant -Dbenchmark.roots=5 -Dbenchmark.depth=2 \
+  -Dbenchmark.heap=512m -Dbenchmark.warmups=0 -Dbenchmark.repetitions=1 \
+  -Dbenchmark.raw=target/benchmark/calibration-ant-5-raw.csv \
+  -Dbenchmark.summary=target/benchmark/calibration-ant-5-summary.csv
+```
+
+Repeat with each profile and listed root count; set `benchmark.depth` to the
+bold depth in the first table. Use distinct output paths for every invocation.
+The profile execution supplies its validity preflight automatically, outside
+the timed call. On Linux, `timeout` caps Maven plus the forked Java process;
+the heap cap applies to the forked benchmark JVM. For any publication run,
+recalibrate larger sizes and collect at least seven measured repetitions after
+scenario-matched warmups.
 
 ## Small smoke run
 

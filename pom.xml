@@ -373,6 +373,37 @@
 						<version>3.6.4</version>
 						<executions>
 							<execution>
+								<id>run-profile-pilot</id>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<configuration>
+									<executable>java</executable>
+									<classpathScope>test</classpathScope>
+									<arguments>
+										<argument>-Xms${benchmark.heap}</argument>
+										<argument>-Xmx${benchmark.heap}</argument>
+										<argument>-cp</argument>
+										<classpath/>
+										<argument>io.github.lorenzobettini.emfmodelgenerator.performance.EMFModelGeneratorPerformanceStatistics</argument>
+										<argument>--profile</argument>
+										<argument>${benchmark.profile}</argument>
+										<argument>--roots</argument>
+										<argument>${benchmark.roots}</argument>
+										<argument>--depth</argument>
+										<argument>${benchmark.depth}</argument>
+										<argument>--repetitions</argument>
+										<argument>${benchmark.repetitions}</argument>
+										<argument>--warmups</argument>
+										<argument>${benchmark.warmups}</argument>
+										<argument>--raw</argument>
+										<argument>${benchmark.raw}</argument>
+										<argument>--summary</argument>
+										<argument>${benchmark.summary}</argument>
+									</arguments>
+								</configuration>
+							</execution>
+							<execution>
 								<id>run-performance-tests</id>
 								<goals>
 									<goal>exec</goal>
@@ -425,6 +456,7 @@
 			</build>
 			<properties>
 				<benchmark.heap>512m</benchmark.heap>
+				<benchmark.profile>extlibrary</benchmark.profile>
 				<benchmark.scenario>extlibrary-smoke</benchmark.scenario>
 				<benchmark.metamodel>src/test/resources/inputs/extlibrary.ecore</benchmark.metamodel>
 				<benchmark.package>extlibrary</benchmark.package>
