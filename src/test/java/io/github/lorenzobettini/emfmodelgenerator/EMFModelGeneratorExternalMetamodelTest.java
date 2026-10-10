@@ -23,6 +23,7 @@ import javax.xml.namespace.QName;
 import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
+import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
@@ -1671,5 +1672,223 @@ class EMFModelGeneratorExternalMetamodelTest {
 				assertThat(range.eGet(upperBoundReference)).isNotNull();
 			});
 		});
+	}
+
+	@Test
+	void testGenerateRssWithDefaultGeneration() throws Exception { // NOSONAR: we do want so many assertions
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/RSS-2.0.ecore");
+
+		assertThat(packages)
+				.extracting(EPackage::getName)
+				.containsExactly("RSS", "PrimitiveTypes");
+
+		var rssPackage = packages.stream()
+				.filter(ePackage -> "RSS".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var rssClass = assertEClassExists(rssPackage, "RSS");
+		var channelClass = assertEClassExists(rssPackage, "Channel");
+		var itemClass = assertEClassExists(rssPackage, "Item");
+		var imageClass = assertEClassExists(rssPackage, "Image");
+		var textInputClass = assertEClassExists(rssPackage, "TextInput");
+		var cloudClass = assertEClassExists(rssPackage, "Cloud");
+
+		var channelReference = assertEReferenceExists(rssClass, "channel");
+		var rssReference = assertEReferenceExists(channelClass, "rss");
+		var itemsReference = assertEReferenceExists(channelClass, "items");
+		var itemChannelReference = assertEReferenceExists(itemClass, "channel");
+
+		var imageReference = assertEReferenceExists(channelClass, "image");
+		var textInputReference = assertEReferenceExists(channelClass, "textInput");
+		var cloudReference = assertEReferenceExists(channelClass, "cloud");
+
+		generator.setFilePrefix("rss_");
+
+		var generatedRss = generator.generateFrom(rssClass);
+
+		assertThat(generatedRss.eClass()).isSameAs(rssClass);
+
+		var versionAttribute = assertEAttributeExists(rssClass, "version");
+		assertThat(generatedRss.eGet(versionAttribute))
+				.isInstanceOf(String.class);
+
+		/*
+		 * RSS.channel is mandatory containment, opposite Channel.rss.
+		 */
+		var channel = (EObject) generatedRss.eGet(channelReference);
+
+		assertThat(channel).isNotNull();
+		assertThat(channel.eClass()).isSameAs(channelClass);
+		assertThat(channel.eGet(rssReference)).isSameAs(generatedRss);
+
+		/*
+		 * Default generation creates two items.
+		 * Item.channel must point back to their containing Channel.
+		 */
+		var items = EMFUtils.getAsEObjectsList(channel, itemsReference);
+
+		assertThat(items).hasSize(2).allSatisfy(item -> {
+			assertThat(item.eGet(itemChannelReference)).isSameAs(channel);
+
+			assertThat(item.eGet(assertEReferenceExists(itemClass, "source")))
+					.isNotNull();
+			assertThat(item.eGet(assertEReferenceExists(itemClass, "enclosure")))
+					.isNotNull();
+			assertThat(item.eGet(assertEReferenceExists(itemClass, "pubDate")))
+					.isNotNull();
+		});
+
+		/*
+		 * Optional single-valued containments are populated by default.
+		 * Their required opposite references must be maintained.
+		 */
+		var image = (EObject) channel.eGet(imageReference);
+		var textInput = (EObject) channel.eGet(textInputReference);
+		var cloud = (EObject) channel.eGet(cloudReference);
+
+		assertThat(image).isNotNull();
+		assertThat(textInput).isNotNull();
+		assertThat(cloud).isNotNull();
+
+		assertThat(image.eGet(assertEReferenceExists(imageClass, "channel")))
+				.isSameAs(channel);
+		assertThat(textInput.eGet(assertEReferenceExists(textInputClass, "channel")))
+				.isSameAs(channel);
+		assertThat(cloud.eGet(assertEReferenceExists(cloudClass, "channel")))
+				.isSameAs(channel);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("RSS validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("RSS round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "rss_RSS_RSS_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGenerateRssWithMultipleItemsAndAllDays() throws Exception { // NOSONAR: we do want so many assertions
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/RSS-2.0.ecore");
+
+		var rssPackage = packages.stream()
+				.filter(ePackage -> "RSS".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var rssClass = assertEClassExists(rssPackage, "RSS");
+		var channelClass = assertEClassExists(rssPackage, "Channel");
+		var itemClass = assertEClassExists(rssPackage, "Item");
+		var dateClass = assertEClassExists(rssPackage, "Date");
+
+		var channelReference = assertEReferenceExists(rssClass, "channel");
+		var rssReference = assertEReferenceExists(channelClass, "rss");
+		var itemsReference = assertEReferenceExists(channelClass, "items");
+		var skipDaysAttribute = assertEAttributeExists(channelClass, "skipDays");
+		var itemChannelReference = assertEReferenceExists(itemClass, "channel");
+		var pubDateReference = assertEReferenceExists(itemClass, "pubDate");
+		var dayAttribute = assertEAttributeExists(dateClass, "eDay");
+
+		var dayKind = (EEnum) rssPackage.getEClassifier("DayKind");
+
+		assertThat(dayKind).isNotNull();
+		assertThat(dayKind.getELiterals()).hasSize(7);
+
+		var dayCount = dayKind.getELiterals().size();
+
+		/*
+		 * Two generic multiplicity settings:
+		 * - create seven items in the channel;
+		 * - generate all seven weekday enumeration values.
+		 */
+		var populator = generator.getInstancePopulator();
+
+		populator.setContainmentReferenceMaxCountFor(
+				itemsReference, dayCount);
+
+		populator.setAttributeMaxCountFor(
+				skipDaysAttribute, dayCount);
+
+		generator.setFilePrefix("rss_expanded_");
+
+		var generatedRss = generator.generateFrom(rssClass);
+
+		assertThat(generatedRss.eClass()).isSameAs(rssClass);
+
+		var channel = (EObject) generatedRss.eGet(channelReference);
+
+		assertThat(channel).isNotNull();
+		assertThat(channel.eGet(rssReference)).isSameAs(generatedRss);
+
+		/*
+		 * Verify seven contained items and their required opposite
+		 * references.
+		 */
+		var items = EMFUtils.getAsEObjectsList(channel, itemsReference);
+
+		assertThat(items).hasSize(dayCount);
+
+		assertThat(items).allSatisfy(item -> {
+			assertThat(item.eGet(itemChannelReference)).isSameAs(channel);
+
+			var pubDate = (EObject) item.eGet(pubDateReference);
+
+			assertThat(pubDate).isNotNull();
+			assertThat(pubDate.eGet(dayAttribute)).isNotNull();
+		});
+
+		/*
+		 * The default round-robin enumeration selector should visit
+		 * every literal of DayKind exactly once.
+		 */
+		var expectedDays = dayKind.getELiterals().stream()
+				.map(literal -> literal.getInstance())
+				.toList();
+
+		var generatedSkipDays = EMFUtils.getAsList(
+				channel, skipDaysAttribute);
+
+		assertThat(generatedSkipDays)
+				.containsExactlyInAnyOrderElementsOf(expectedDays);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("Expanded RSS validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("Expanded RSS round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "rss_expanded_RSS_RSS_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
 	}
 }
