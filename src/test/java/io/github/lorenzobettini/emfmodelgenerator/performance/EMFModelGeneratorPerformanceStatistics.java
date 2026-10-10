@@ -30,15 +30,19 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
 public final class EMFModelGeneratorPerformanceStatistics {
 
 	private static final String RAW_HEADER = String.join(",",
-			"run_id", "started_utc", "scenario", "metamodel", "metamodel_sha256",
+			"run_id", "started_utc", "measurement_mode", "scenario", "metamodel", "metamodel_sha256",
 			"package", "root_class", "requested_roots", "depth", "attribute_max",
 			"containment_max", "cross_reference_max", "feature_map_max", "warmups",
 			"repetitions", "preflight", "run_index", "elapsed_ns", "actual_roots",
 			"eobjects", "model_resources", "status", "error", "java_version",
 			"java_vm", "jvm_args", "os_name", "os_arch", "cpu_count", "max_heap_bytes");
 	private static final String SUMMARY_HEADER = String.join(",",
-			"run_id", "scenario", "successful_samples", "median_ns", "p25_ns", "p75_ns",
+			"run_id", "measurement_mode", "scenario", "successful_samples", "median_ns", "p25_ns", "p75_ns",
 			"status");
+	private static final String DIAGNOSTIC_HEADER = String.join(",",
+			"run_id", "scenario", "run_index", "requested_roots", "depth", "actual_roots",
+			"eobjects", "model_resources", "generation_elapsed_ns", "compute_calls",
+			"candidate_entries", "compute_elapsed_ns", "status", "error");
 
 	private EMFModelGeneratorPerformanceStatistics() {
 	}
@@ -46,7 +50,7 @@ public final class EMFModelGeneratorPerformanceStatistics {
 	record Configuration(String scenario, Path metamodel, String packageName, String rootClass,
 			int roots, int depth, int attributeMax, int containmentMax, int crossReferenceMax,
 			int featureMapMax, int warmups, int repetitions, Preflight preflight,
-			Path rawPath, Path summaryPath) {
+			Path rawPath, Path summaryPath, Path diagnosticPath) {
 		Configuration {
 			if (scenario.isBlank() || packageName.isBlank() || rootClass.isBlank()) {
 				throw new IllegalArgumentException("scenario, package and root must be nonblank");
@@ -60,6 +64,10 @@ public final class EMFModelGeneratorPerformanceStatistics {
 			if (rawPath.equals(summaryPath)) {
 				throw new IllegalArgumentException("raw and summary output paths must differ");
 			}
+			if (diagnosticPath != null && (diagnosticPath.equals(rawPath)
+					|| diagnosticPath.equals(summaryPath))) {
+				throw new IllegalArgumentException("diagnostics output path must differ");
+			}
 		}
 	}
 
@@ -70,7 +78,11 @@ public final class EMFModelGeneratorPerformanceStatistics {
 	record Counts(int roots, long objects, int resources) {
 	}
 
-	record Sample(int index, long elapsedNanos, Counts counts, String status, String error) {
+	record Sample(int index, long elapsedNanos, Counts counts, String status, String error,
+			InstrumentedEObjectCandidateSelector.Snapshot diagnostic) {
+		Sample(int index, long elapsedNanos, Counts counts, String status, String error) {
+			this(index, elapsedNanos, counts, status, error, null);
+		}
 	}
 
 	record Summary(long median, long p25, long p75) {
@@ -104,7 +116,8 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		final Map<String, String> values = new TreeMap<>();
 		final var allowed = List.of("profile", "scenario", "metamodel", "package", "root", "roots",
 				"depth", "attribute-max", "containment-max", "cross-reference-max",
-				"feature-map-max", "warmups", "repetitions", "preflight", "raw", "summary");
+				"feature-map-max", "warmups", "repetitions", "preflight", "raw", "summary",
+				"diagnostics");
 		for (int i = 0; i < args.length; i += 2) {
 			final String key = args[i];
 			if (!key.startsWith("--") || !allowed.contains(key.substring(2))) {
@@ -140,7 +153,8 @@ public final class EMFModelGeneratorPerformanceStatistics {
 				number(values, "feature-map-max", 1),
 				number(values, "warmups", 1), number(values, "repetitions", 2), mode,
 				Path.of(values.getOrDefault("raw", "target/benchmark/raw.csv")),
-				Path.of(values.getOrDefault("summary", "target/benchmark/summary.csv")));
+				Path.of(values.getOrDefault("summary", "target/benchmark/summary.csv")),
+				diagnosticPath(values));
 	}
 
 	private static Configuration profileConfiguration(final Map<String, String> values) {
@@ -172,7 +186,13 @@ public final class EMFModelGeneratorPerformanceStatistics {
 				profile.containmentMax(), profile.crossReferenceMax(), profile.featureMapMax(),
 				number(values, "warmups", 1), number(values, "repetitions", 2), preflight,
 				Path.of(values.getOrDefault("raw", "target/benchmark/raw.csv")),
-				Path.of(values.getOrDefault("summary", "target/benchmark/summary.csv")));
+				Path.of(values.getOrDefault("summary", "target/benchmark/summary.csv")),
+				diagnosticPath(values));
+	}
+
+	private static Path diagnosticPath(final Map<String, String> values) {
+		final var value = values.getOrDefault("diagnostics", "off");
+		return value.equals("off") ? null : Path.of(value);
 	}
 
 	private static int number(final Map<String, String> values, final String key,
@@ -192,7 +212,7 @@ public final class EMFModelGeneratorPerformanceStatistics {
 				--roots N --depth N --attribute-max N --containment-max N
 				--cross-reference-max N --feature-map-max N
 				--warmups N --repetitions N --preflight none|validate|roundtrip
-				--raw FILE --summary FILE
+				--raw FILE --summary FILE --diagnostics FILE|off
 				Defaults: EXTLibrary Library, 1 root, depth 1, maxima 1,
 				1 warmup, 2 repetitions, no preflight, output under target/benchmark.
 				Use --help alone for this text.
@@ -261,7 +281,8 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		return root;
 	}
 
-	private static EMFModelGenerator configured(final Configuration config) {
+	private static EMFModelGenerator configured(final Configuration config,
+			final InstrumentedEObjectCandidateSelector selector) {
 		final var generator = new EMFModelGenerator();
 		generator.setNumberOfInstances(config.roots());
 		final var populator = generator.getInstancePopulator();
@@ -270,12 +291,17 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		populator.setContainmentReferenceDefaultMaxCount(config.containmentMax());
 		populator.setCrossReferenceDefaultMaxCount(config.crossReferenceMax());
 		populator.setFeatureMapDefaultMaxCount(config.featureMapMax());
+		if (selector != null) {
+			populator.setCrossReferenceCandidateSelectorStrategy(selector);
+		}
 		return generator;
 	}
 
 	private static Sample observe(final Configuration config, final EClass root,
 			final int index, final boolean measured, final boolean preflight) {
-		final var generator = configured(config);
+		final var selector = config.diagnosticPath() == null
+				? null : new InstrumentedEObjectCandidateSelector();
+		final var generator = configured(config, selector);
 		try {
 			final long start = measured ? System.nanoTime() : 0;
 			final var models = generator.generateFromSeveral(root);
@@ -286,12 +312,14 @@ public final class EMFModelGeneratorPerformanceStatistics {
 						? generator.saveAndValidateRoundTrip() : generator.validate();
 				if (!result.isValid()) {
 					return new Sample(index, elapsed, counts, "invalid",
-							result.diagnostic().toString());
+							result.diagnostic().toString(), selector == null ? null : selector.snapshot());
 				}
 			}
-			return new Sample(index, elapsed, counts, "ok", "");
+			return new Sample(index, elapsed, counts, "ok", "",
+					selector == null ? null : selector.snapshot());
 		} catch (Exception e) {
-			return new Sample(index, 0, new Counts(0, 0, 0), "error", e.toString());
+			return new Sample(index, 0, new Counts(0, 0, 0), "error", e.toString(),
+					selector == null ? null : selector.snapshot());
 		} finally {
 			for (final Resource resource : List.copyOf(generator.getResourceSet().getResources())) {
 				resource.unload();
@@ -337,8 +365,9 @@ public final class EMFModelGeneratorPerformanceStatistics {
 	static void write(final Configuration config, final Metadata metadata,
 			final List<Sample> samples) throws IOException {
 		final var raw = new StringBuilder(RAW_HEADER).append('\n');
+		final var mode = config.diagnosticPath() == null ? "baseline" : "instrumented";
 		for (final var sample : samples) {
-			raw.append(csv(metadata.runId(), metadata.started(), config.scenario(),
+			raw.append(csv(metadata.runId(), metadata.started(), mode, config.scenario(),
 					config.metamodel().toString(), metadata.fingerprint(), config.packageName(),
 					config.rootClass(), config.roots(), config.depth(), config.attributeMax(),
 					config.containmentMax(), config.crossReferenceMax(), config.featureMapMax(),
@@ -355,15 +384,31 @@ public final class EMFModelGeneratorPerformanceStatistics {
 				&& s.status().equals("ok")).toList();
 		final String summary;
 		if (successful.isEmpty()) {
-			summary = csv(metadata.runId(), config.scenario(), 0, "", "", "",
+			summary = csv(metadata.runId(), mode, config.scenario(), 0, "", "", "",
 					samples.isEmpty() ? "empty" : samples.getLast().status());
 		} else {
 			final var stats = summarize(successful);
-			summary = csv(metadata.runId(), config.scenario(), successful.size(),
+			summary = csv(metadata.runId(), mode, config.scenario(), successful.size(),
 					stats.median(), stats.p25(), stats.p75(), "ok");
 		}
 		writeFile(config.rawPath(), raw.toString());
 		writeFile(config.summaryPath(), SUMMARY_HEADER + "\n" + summary + "\n");
+		if (config.diagnosticPath() != null) {
+			final var diagnostic = new StringBuilder(DIAGNOSTIC_HEADER).append('\n');
+			for (final var sample : samples) {
+				final var snapshot = sample.diagnostic();
+				diagnostic.append(csv(metadata.runId(), config.scenario(), sample.index(),
+						config.roots(), config.depth(), sample.counts().roots(),
+						sample.counts().objects(), sample.counts().resources(),
+						sample.index() == 0 || !sample.status().equals("ok")
+								? "" : sample.elapsedNanos(),
+						snapshot == null ? "" : snapshot.computeCalls(),
+						snapshot == null ? "" : snapshot.candidateEntries(),
+						snapshot == null ? "" : snapshot.computeNanos(),
+						sample.status(), sample.error())).append('\n');
+			}
+			writeFile(config.diagnosticPath(), diagnostic.toString());
+		}
 	}
 
 	private static void writeFile(final Path path, final String value) throws IOException {

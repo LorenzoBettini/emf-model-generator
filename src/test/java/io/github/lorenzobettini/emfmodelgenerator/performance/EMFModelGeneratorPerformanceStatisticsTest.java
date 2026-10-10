@@ -40,6 +40,9 @@ class EMFModelGeneratorPerformanceStatisticsTest {
 		assertThatThrownBy(() -> EMFModelGeneratorPerformanceStatistics.parse(
 				"--preflight", "bad")).hasMessageContaining("preflight");
 		assertThat(EMFModelGeneratorPerformanceStatistics.help()).contains("--help");
+		assertThatThrownBy(() -> EMFModelGeneratorPerformanceStatistics.parse(
+				"--diagnostics", "target/benchmark/raw.csv"))
+				.hasMessageContaining("diagnostics output path must differ");
 	}
 
 	@Test
@@ -122,11 +125,35 @@ class EMFModelGeneratorPerformanceStatisticsTest {
 		final var rawLines = Files.readAllLines(raw);
 		assertThat(rawLines).hasSize(3);
 		assertThat(rawLines.getFirst()).contains("metamodel_sha256", "eobjects",
-				"model_resources", "elapsed_ns", "status");
+				"model_resources", "elapsed_ns", "measurement_mode", "status");
 		assertThat(rawLines.get(1)).contains("\"small\"", "\"1\"", "\"ok\"");
+		assertThat(rawLines.get(1)).contains("\"baseline\"");
 		assertThat(rawLines.get(2)).contains("\"small\"", "\"2\"", "\"ok\"");
 		final var summaryLines = Files.readAllLines(summary);
 		assertThat(summaryLines).hasSize(2);
 		assertThat(summaryLines.get(1)).contains("\"small\"", "\"2\"", "\"ok\"");
+	}
+
+	@Test
+	void diagnosticsWriteSeparatePerMeasurementRows() throws Exception {
+		final var raw = temporary.resolve("instrumented-raw.csv");
+		final var summary = temporary.resolve("instrumented-summary.csv");
+		final var diagnostics = temporary.resolve("diagnostics.csv");
+		final var config = EMFModelGeneratorPerformanceStatistics.parse(
+				"--profile", "extlibrary", "--roots", "2", "--depth", "1",
+				"--warmups", "1", "--repetitions", "2", "--raw", raw.toString(),
+				"--summary", summary.toString(), "--diagnostics", diagnostics.toString());
+		final var samples = EMFModelGeneratorPerformanceStatistics.run(config);
+		assertThat(samples).hasSize(2).allSatisfy(sample -> {
+			assertThat(sample.status()).isEqualTo("ok");
+			assertThat(sample.counts()).isEqualTo(new Counts(2, 8, 2));
+			assertThat(sample.diagnostic().computeCalls()).isPositive();
+			assertThat(sample.diagnostic().candidateEntries()).isPositive();
+			assertThat(sample.diagnostic().computeNanos()).isPositive();
+		});
+		assertThat(Files.readAllLines(raw).get(1)).contains("\"instrumented\"");
+		assertThat(Files.readAllLines(diagnostics)).hasSize(3);
+		assertThat(Files.readAllLines(diagnostics).getFirst())
+				.contains("compute_calls", "candidate_entries", "compute_elapsed_ns");
 	}
 }

@@ -400,6 +400,8 @@
 										<argument>${benchmark.raw}</argument>
 										<argument>--summary</argument>
 										<argument>${benchmark.summary}</argument>
+										<argument>--diagnostics</argument>
+										<argument>${benchmark.diagnostics}</argument>
 									</arguments>
 								</configuration>
 							</execution>
@@ -447,6 +449,8 @@
 										<argument>${benchmark.raw}</argument>
 										<argument>--summary</argument>
 										<argument>${benchmark.summary}</argument>
+										<argument>--diagnostics</argument>
+										<argument>${benchmark.diagnostics}</argument>
 									</arguments>
 								</configuration>
 							</execution>
@@ -472,6 +476,7 @@
 				<benchmark.preflight>none</benchmark.preflight>
 				<benchmark.raw>target/benchmark/raw.csv</benchmark.raw>
 				<benchmark.summary>target/benchmark/summary.csv</benchmark.summary>
+				<benchmark.diagnostics>off</benchmark.diagnostics>
 			</properties>
 		</profile>
 		<profile>

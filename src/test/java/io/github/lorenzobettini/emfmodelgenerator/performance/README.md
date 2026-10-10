@@ -176,3 +176,46 @@ its own status row. The summary CSV reports successful sample count, median,
 p25 and p75 nanoseconds (linear interpolation, rounded to a nanosecond).
 Neither file is append-only: give every run a distinct pair of output paths.
 Do not combine invalid or instrumented runs with baseline timings.
+
+## Candidate discovery diagnostic
+
+The default `benchmark.diagnostics=off` uses the ordinary selector. Set the
+property to a **third, distinct CSV path** to install a test-source subclass of
+`EMFRoundRobinEObjectCandidateSelector` and record actual calls to its
+`compute` method. The subclass delegates to `super.compute` and changes no
+candidate order or cache behavior. Each observation gets a fresh selector;
+preflight and warmup use the same mode but have no measured row. The raw and
+summary CSVs label rows `baseline` or `instrumented` in `measurement_mode`.
+Keep separate raw/summary paths for each mode as well as the diagnostics path.
+
+For example, after `./mvnw -DskipTests test-compile`, run these bounded,
+forked commands separately:
+
+```sh
+./mvnw exec:exec@run-profile-pilot -Pperformance-tests \
+  -Dbenchmark.profile=extlibrary -Dbenchmark.roots=5 -Dbenchmark.depth=1 \
+  -Dbenchmark.heap=512m -Dbenchmark.warmups=1 -Dbenchmark.repetitions=3 \
+  -Dbenchmark.raw=target/benchmark/extlibrary-5-baseline-raw.csv \
+  -Dbenchmark.summary=target/benchmark/extlibrary-5-baseline-summary.csv
+
+./mvnw exec:exec@run-profile-pilot -Pperformance-tests \
+  -Dbenchmark.profile=extlibrary -Dbenchmark.roots=5 -Dbenchmark.depth=1 \
+  -Dbenchmark.heap=512m -Dbenchmark.warmups=1 -Dbenchmark.repetitions=3 \
+  -Dbenchmark.raw=target/benchmark/extlibrary-5-instrumented-raw.csv \
+  -Dbenchmark.summary=target/benchmark/extlibrary-5-instrumented-summary.csv \
+  -Dbenchmark.diagnostics=target/benchmark/extlibrary-5-diagnostics.csv
+```
+
+The diagnostic CSV has one row per measured repetition with `run_id`,
+`scenario`, `run_index`, `requested_roots`, `depth`, `actual_roots`, `eobjects`,
+`model_resources`, `generation_elapsed_ns`, `compute_calls`,
+`candidate_entries`, `compute_elapsed_ns`, `status`, and `error`. A failed
+preflight or warmup has a status row at index zero. `compute_calls` counts
+candidate-list recomputations on cache misses; `candidate_entries` sums list
+sizes, including repeated entries across target classes. `compute_elapsed_ns`
+times only calls to the superclass computation, including its ResourceSet
+traversal and list construction. The instrumented generation time includes
+timer and counter overhead, so it is not a substitute for baseline timing.
+The selectors cache by target EClass and reset once before cross-reference
+population. Counts of model resources and EObjects describe the generated
+model, but root scaling varies both together; it does not isolate their costs.
