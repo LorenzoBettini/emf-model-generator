@@ -24,6 +24,7 @@ import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EEnum;
+import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
@@ -1843,9 +1844,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 		 */
 		var items = EMFUtils.getAsEObjectsList(channel, itemsReference);
 
-		assertThat(items).hasSize(dayCount);
-
-		assertThat(items).allSatisfy(item -> {
+		assertThat(items).hasSize(dayCount).allSatisfy(item -> {
 			assertThat(item.eGet(itemChannelReference)).isSameAs(channel);
 
 			var pubDate = (EObject) item.eGet(pubDateReference);
@@ -1859,7 +1858,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 		 * every literal of DayKind exactly once.
 		 */
 		var expectedDays = dayKind.getELiterals().stream()
-				.map(literal -> literal.getInstance())
+				.map(EEnumLiteral::getInstance)
 				.toList();
 
 		var generatedSkipDays = EMFUtils.getAsList(
