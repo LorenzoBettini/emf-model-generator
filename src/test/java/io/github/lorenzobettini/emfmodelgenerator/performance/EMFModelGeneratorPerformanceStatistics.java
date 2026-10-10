@@ -1,375 +1,347 @@
 package io.github.lorenzobettini.emfmodelgenerator.performance;
 
-import java.io.File;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
 
-import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EPackage;
-import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.emf.ecore.resource.Resource;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
-import io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils;
 
 /**
- * Performance statistics for EMFModelGenerator.
- * 
- * This class measures how execution time increases with different metrics:
- * - Number of containment generation depth
- * - Number of models to be generated
- * 
- * Results are presented in table format and CSV format for easy import into
- * spreadsheet tools.
+ * Explicit-root benchmark harness. Launch in a separate JVM; see
+ * {@code src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/README.md}.
  */
-public class EMFModelGeneratorPerformanceStatistics {
+public final class EMFModelGeneratorPerformanceStatistics {
 
-	// Default configuration constants
-	private static final int DEFAULT_DEPTH_MIN = 1;
-	private static final int DEFAULT_DEPTH_MAX = 10;
-	private static final int DEFAULT_DEPTH_STEP = 1;
-	
-	private static final int DEFAULT_MODELS_MIN = 1;
-	private static final int DEFAULT_MODELS_MAX = 1000;
-	private static final int DEFAULT_MODELS_STEP = 100;
-	
-	private static final int DEFAULT_REPETITIONS = 3;
-	private static final int DEFAULT_WARMUP_ITERATIONS = 10;
-	
-	private static final String DEFAULT_METAMODEL = "src/test/resources/inputs/extlibrary.ecore";
-	
-	// Baseline configuration
-	private static final int BASELINE_DEPTH = 3;
-	private static final int BASELINE_INSTANCES = 10;
-	
-	// Configuration fields
-	private int depthMin = DEFAULT_DEPTH_MIN;
-	private int depthMax = DEFAULT_DEPTH_MAX;
-	private int depthStep = DEFAULT_DEPTH_STEP;
-	
-	private int modelsMin = DEFAULT_MODELS_MIN;
-	private int modelsMax = DEFAULT_MODELS_MAX;
-	private int modelsStep = DEFAULT_MODELS_STEP;
-	
-	private int repetitions = DEFAULT_REPETITIONS;
-	private int warmupIterations = DEFAULT_WARMUP_ITERATIONS;
-	
-	private String metamodelPath = DEFAULT_METAMODEL;
-	
-	private EPackage ePackage;
+	private static final String RAW_HEADER = String.join(",",
+			"run_id", "started_utc", "scenario", "metamodel", "metamodel_sha256",
+			"package", "root_class", "requested_roots", "depth", "attribute_max",
+			"containment_max", "cross_reference_max", "feature_map_max", "warmups",
+			"repetitions", "preflight", "run_index", "elapsed_ns", "actual_roots",
+			"eobjects", "model_resources", "status", "error", "java_version",
+			"java_vm", "jvm_args", "os_name", "os_arch", "cpu_count", "max_heap_bytes");
+	private static final String SUMMARY_HEADER = String.join(",",
+			"run_id", "scenario", "successful_samples", "median_ns", "p25_ns", "p75_ns",
+			"status");
 
-	/**
-	 * Measurement result for a single data point.
-	 */
-	private static class MeasurementResult {
-		int metricValue;
-		int objectCount;
-		double avgTimeMs;
-		double minTimeMs;
-		double maxTimeMs;
-		double stdDevMs;
+	private EMFModelGeneratorPerformanceStatistics() {
 	}
 
-	public static void main(String[] args) {
-		var stats = new EMFModelGeneratorPerformanceStatistics();
-		stats.parseArguments(args);
-		stats.run();
-	}
-
-	private void parseArguments(String[] args) {
-		for (int i = 0; i < args.length; i++) {
-			switch (args[i]) {
-				case "--depth-min":
-					depthMin = Integer.parseInt(args[++i]);
-					break;
-				case "--depth-max":
-					depthMax = Integer.parseInt(args[++i]);
-					break;
-				case "--depth-step":
-					depthStep = Integer.parseInt(args[++i]);
-					break;
-				case "--models-min":
-					modelsMin = Integer.parseInt(args[++i]);
-					break;
-				case "--models-max":
-					modelsMax = Integer.parseInt(args[++i]);
-					break;
-				case "--models-step":
-					modelsStep = Integer.parseInt(args[++i]);
-					break;
-				case "--repetitions":
-					repetitions = Integer.parseInt(args[++i]);
-					break;
-				case "--warmup":
-					warmupIterations = Integer.parseInt(args[++i]);
-					break;
-				case "--metamodel":
-					metamodelPath = args[++i];
-					break;
-				case "--help":
-					printHelp();
-					System.exit(0);
-					break;
-				default:
-					System.err.println("Unknown argument: " + args[i]);
-					printHelp();
-					System.exit(1);
+	record Configuration(String scenario, Path metamodel, String packageName, String rootClass,
+			int roots, int depth, int attributeMax, int containmentMax, int crossReferenceMax,
+			int featureMapMax, int warmups, int repetitions, Preflight preflight,
+			Path rawPath, Path summaryPath) {
+		Configuration {
+			if (scenario.isBlank() || packageName.isBlank() || rootClass.isBlank()) {
+				throw new IllegalArgumentException("scenario, package and root must be nonblank");
+			}
+			if (roots < 1 || depth < 0 || attributeMax < 0 || containmentMax < 0
+					|| crossReferenceMax < 0 || featureMapMax < 0
+					|| warmups < 0 || repetitions < 1) {
+				throw new IllegalArgumentException(
+						"roots and repetitions must be positive; depth, maxima and warmups nonnegative");
+			}
+			if (rawPath.equals(summaryPath)) {
+				throw new IllegalArgumentException("raw and summary output paths must differ");
 			}
 		}
 	}
 
-	private void printHelp() {
-		System.out.println("EMF Model Generator Performance Statistics");
-		System.out.println();
-		System.out.println("Usage: java EMFModelGeneratorPerformanceStatistics [options]");
-		System.out.println();
-		System.out.println("Options:");
-		System.out.println("  --depth-min <n>      Minimum depth (default: " + DEFAULT_DEPTH_MIN + ")");
-		System.out.println("  --depth-max <n>      Maximum depth (default: " + DEFAULT_DEPTH_MAX + ")");
-		System.out.println("  --depth-step <n>     Depth step size (default: " + DEFAULT_DEPTH_STEP + ")");
-		System.out.println("  --models-min <n>     Minimum number of models (default: " + DEFAULT_MODELS_MIN + ")");
-		System.out.println("  --models-max <n>     Maximum number of models (default: " + DEFAULT_MODELS_MAX + ")");
-		System.out.println("  --models-step <n>    Models step size (default: " + DEFAULT_MODELS_STEP + ")");
-		System.out.println("  --repetitions <n>    Number of repetitions per measurement (default: " + DEFAULT_REPETITIONS + ")");
-		System.out.println("  --warmup <n>         Number of warmup iterations (default: " + DEFAULT_WARMUP_ITERATIONS + ")");
-		System.out.println("  --metamodel <path>   Path to metamodel file (default: " + DEFAULT_METAMODEL + ")");
-		System.out.println("  --help               Show this help message");
+	enum Preflight {
+		NONE, VALIDATE, ROUNDTRIP
 	}
 
-	private void run() {
-		System.out.println("=".repeat(80));
-		System.out.println("EMF MODEL GENERATOR PERFORMANCE STATISTICS");
-		System.out.println("=".repeat(80));
-		System.out.println();
-		
-		printConfiguration();
-		
-		// Load metamodel
-		loadMetamodel();
-		
-		// Warm up JVM
-		warmUp();
-		
-		// Run measurements
-		System.out.println("\nRunning performance measurements...\n");
-		measureDepthPerformance();
-		measureModelsPerformance();
-		
-		System.out.println("\n" + "=".repeat(80));
-		System.out.println("Performance measurements completed.");
-		System.out.println("=".repeat(80));
+	record Counts(int roots, long objects, int resources) {
 	}
 
-	private void printConfiguration() {
-		System.out.println("Configuration:");
-		System.out.println("-".repeat(80));
-		System.out.println("Metamodel:           " + metamodelPath);
-		System.out.println("Repetitions:         " + repetitions);
-		System.out.println("Warmup iterations:   " + warmupIterations);
-		System.out.println();
-		System.out.println("Depth measurement:");
-		System.out.println("  Range:             " + depthMin + "-" + depthMax + " (step: " + depthStep + ")");
-		System.out.println("  Baseline instances: " + BASELINE_INSTANCES);
-		System.out.println();
-		System.out.println("Models measurement:");
-		System.out.println("  Range:             " + modelsMin + "-" + modelsMax + " (step: " + modelsStep + ")");
-		System.out.println("  Baseline depth:    " + BASELINE_DEPTH);
-		System.out.println("-".repeat(80));
+	record Sample(int index, long elapsedNanos, Counts counts, String status, String error) {
 	}
 
-	private void loadMetamodel() {
-		System.out.println("\nLoading metamodel: " + metamodelPath);
-		var file = new File(metamodelPath);
-		if (!file.exists()) {
-			throw new IllegalArgumentException("Metamodel file not found: " + metamodelPath);
+	record Summary(long median, long p25, long p75) {
+	}
+
+	record Metadata(String runId, String started, String fingerprint, String javaVersion,
+			String javaVm, String jvmArgs, String osName, String osArch, int cpuCount,
+			long maxHeapBytes) {
+		static Metadata capture(final Path metamodel) throws IOException {
+			final byte[] bytes = Files.readAllBytes(metamodel);
+			final byte[] hash;
+			try {
+				hash = MessageDigest.getInstance("SHA-256").digest(bytes);
+			} catch (NoSuchAlgorithmException e) {
+				throw new IllegalStateException("SHA-256 unavailable", e);
+			}
+			final var fingerprint = new StringBuilder();
+			for (final byte value : hash) {
+				fingerprint.append(String.format(Locale.ROOT, "%02x", value & 0xff));
+			}
+			return new Metadata(UUID.randomUUID().toString(), Instant.now().toString(),
+					fingerprint.toString(), System.getProperty("java.version"),
+					System.getProperty("java.vm.name"),
+					String.join(" ", ManagementFactory.getRuntimeMXBean().getInputArguments()),
+					System.getProperty("os.name"), System.getProperty("os.arch"),
+					Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().maxMemory());
 		}
-		
-		ePackage = EMFTestUtils.loadEcoreModel(file.getParent(), file.getName());
-		System.out.println("Metamodel loaded: " + ePackage.getName());
 	}
 
-	private void warmUp() {
-		System.out.println("\nWarming up JVM with " + warmupIterations + " iterations...");
-		
-		for (int i = 0; i < warmupIterations; i++) {
-			var generator = new EMFModelGenerator();
-			generator.getInstancePopulator().setMaxDepth(2);
-			generator.setNumberOfInstances(5);
-			generator.generateAllFrom(ePackage);
-		}
-		
-		System.out.println("Warmup completed.");
-	}
-
-	private void measureDepthPerformance() {
-		System.out.println("\n" + "=".repeat(80));
-		System.out.println("MEASUREMENT 1: Generation Depth Performance");
-		System.out.println("=".repeat(80));
-		System.out.println("Measuring how execution time increases with containment depth");
-		System.out.println("Baseline: " + BASELINE_INSTANCES + " instances per EClass");
-		System.out.println();
-		
-		var results = new ArrayList<MeasurementResult>();
-		
-		for (int depth = depthMin; depth <= depthMax; depth += depthStep) {
-			var result = measureDepth(depth);
-			results.add(result);
-			
-			System.out.printf("Depth: %3d | Objects: %6d | Avg: %8.2f ms | Min: %8.2f ms | Max: %8.2f ms | StdDev: %8.2f ms%n",
-					result.metricValue, result.objectCount,
-					result.avgTimeMs, result.minTimeMs, result.maxTimeMs, result.stdDevMs);
-		}
-		
-		System.out.println();
-		printTableFormat("Depth", results);
-		System.out.println();
-		printCSVFormat("Depth", results);
-	}
-
-	private MeasurementResult measureDepth(int depth) {
-		var times = new ArrayList<Double>();
-		int objectCount = 0;
-		
-		for (int i = 0; i < repetitions; i++) {
-			var generator = new EMFModelGenerator();
-			generator.getInstancePopulator().setMaxDepth(depth);
-			generator.setNumberOfInstances(BASELINE_INSTANCES);
-			
-			var startTime = System.nanoTime();
-			var models = generator.generateAllFrom(ePackage);
-			var endTime = System.nanoTime();
-			
-			var timeMs = (endTime - startTime) / 1_000_000.0;
-			times.add(timeMs);
-			
-			// Count objects only once
-			if (i == 0) {
-				objectCount = countAllObjects(models);
+	static Configuration parse(final String... args) {
+		final Map<String, String> values = new TreeMap<>();
+		final var allowed = List.of("scenario", "metamodel", "package", "root", "roots",
+				"depth", "attribute-max", "containment-max", "cross-reference-max",
+				"feature-map-max", "warmups", "repetitions", "preflight", "raw", "summary");
+		for (int i = 0; i < args.length; i += 2) {
+			final String key = args[i];
+			if (!key.startsWith("--") || !allowed.contains(key.substring(2))) {
+				throw new IllegalArgumentException("Unknown option: " + key);
+			}
+			if (i + 1 == args.length || args[i + 1].startsWith("--")) {
+				throw new IllegalArgumentException("Missing value for " + key);
+			}
+			if (values.putIfAbsent(key.substring(2), args[i + 1]) != null) {
+				throw new IllegalArgumentException("Duplicate option: " + key);
 			}
 		}
-		
-		return computeStatistics(depth, objectCount, times);
-	}
-
-	private void measureModelsPerformance() {
-		System.out.println("\n" + "=".repeat(80));
-		System.out.println("MEASUREMENT 2: Number of Models Performance");
-		System.out.println("=".repeat(80));
-		System.out.println("Measuring how execution time increases with number of instances");
-		System.out.println("Baseline: depth " + BASELINE_DEPTH);
-		System.out.println();
-		
-		var results = new ArrayList<MeasurementResult>();
-		
-		// First measure with modelsMin, then continue with multiples of modelsStep
-		// This gives us: 1, 100, 200, 300, ... instead of 1, 101, 201, 301, ...
-		var result = measureModels(modelsMin);
-		results.add(result);
-		System.out.printf("Models: %4d | Objects: %7d | Avg: %8.2f ms | Min: %8.2f ms | Max: %8.2f ms | StdDev: %8.2f ms%n",
-				result.metricValue, result.objectCount,
-				result.avgTimeMs, result.minTimeMs, result.maxTimeMs, result.stdDevMs);
-		
-		// Continue with multiples of modelsStep
-		for (int numModels = modelsStep; numModels <= modelsMax; numModels += modelsStep) {
-			result = measureModels(numModels);
-			results.add(result);
-			
-			System.out.printf("Models: %4d | Objects: %7d | Avg: %8.2f ms | Min: %8.2f ms | Max: %8.2f ms | StdDev: %8.2f ms%n",
-					result.metricValue, result.objectCount,
-					result.avgTimeMs, result.minTimeMs, result.maxTimeMs, result.stdDevMs);
+		final var metamodel = Path.of(values.getOrDefault("metamodel",
+				"src/test/resources/inputs/extlibrary.ecore"));
+		final var preflight = values.getOrDefault("preflight", "none").toUpperCase(Locale.ROOT);
+		final Preflight mode;
+		try {
+			mode = Preflight.valueOf(preflight);
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException(
+					"preflight must be none, validate or roundtrip", e);
 		}
-		
-		System.out.println();
-		printTableFormat("Models", results);
-		System.out.println();
-		printCSVFormat("Models", results);
+		return new Configuration(values.getOrDefault("scenario", "extlibrary-smoke"), metamodel,
+				values.getOrDefault("package", "extlibrary"),
+				values.getOrDefault("root", "Library"),
+				number(values, "roots", 1), number(values, "depth", 1),
+				number(values, "attribute-max", 1),
+				number(values, "containment-max", 1),
+				number(values, "cross-reference-max", 1),
+				number(values, "feature-map-max", 1),
+				number(values, "warmups", 1), number(values, "repetitions", 2), mode,
+				Path.of(values.getOrDefault("raw", "target/benchmark/raw.csv")),
+				Path.of(values.getOrDefault("summary", "target/benchmark/summary.csv")));
 	}
 
-	private MeasurementResult measureModels(int numInstances) {
-		var times = new ArrayList<Double>();
-		int objectCount = 0;
-		
-		for (int i = 0; i < repetitions; i++) {
-			var generator = new EMFModelGenerator();
-			generator.getInstancePopulator().setMaxDepth(BASELINE_DEPTH);
-			generator.setNumberOfInstances(numInstances);
-			
-			var startTime = System.nanoTime();
-			var models = generator.generateAllFrom(ePackage);
-			var endTime = System.nanoTime();
-			
-			var timeMs = (endTime - startTime) / 1_000_000.0;
-			times.add(timeMs);
-			
-			// Count objects only once
-			if (i == 0) {
-				objectCount = countAllObjects(models);
+	private static int number(final Map<String, String> values, final String key,
+			final int defaultValue) {
+		try {
+			return Integer.parseInt(values.getOrDefault(key, Integer.toString(defaultValue)));
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException("--" + key + " requires an integer", e);
+		}
+	}
+
+	static String help() {
+		return """
+				Usage: EMFModelGeneratorPerformanceStatistics [--option value ...]
+				--scenario ID --metamodel FILE --package NAME --root ECLASS
+				--roots N --depth N --attribute-max N --containment-max N
+				--cross-reference-max N --feature-map-max N
+				--warmups N --repetitions N --preflight none|validate|roundtrip
+				--raw FILE --summary FILE
+				Defaults: EXTLibrary Library, 1 root, depth 1, maxima 1,
+				1 warmup, 2 repetitions, no preflight, output under target/benchmark.
+				Use --help alone for this text.
+				""";
+	}
+
+	public static void main(final String[] args) throws IOException {
+		if (Arrays.equals(args, new String[] {"--help"})) {
+			System.out.print(help());
+			return;
+		}
+		final var config = parse(args);
+		run(config);
+	}
+
+	static List<Sample> run(final Configuration config) throws IOException {
+		final var metadata = Metadata.capture(config.metamodel());
+		final var loader = new EMFModelGenerator();
+		final var samples = new ArrayList<Sample>();
+		try {
+			final var packages = loader.loadEcoreModelPackages(config.metamodel().toString());
+			final var root = selectRoot(packages, config.packageName(), config.rootClass());
+			if (config.preflight() != Preflight.NONE) {
+				final var checked = observe(config, root, 0, false, true);
+				if (!checked.status().equals("ok")) {
+					samples.add(checked);
+					write(config, metadata, samples);
+					throw new IllegalStateException("Preflight failed: " + checked.error());
+				}
+			}
+			for (int i = 0; i < config.warmups(); i++) {
+				final var warmup = observe(config, root, 0, false, false);
+				if (!warmup.status().equals("ok")) {
+					samples.add(warmup);
+					write(config, metadata, samples);
+					throw new IllegalStateException("Warmup failed: " + warmup.error());
+				}
+			}
+			for (int i = 1; i <= config.repetitions(); i++) {
+				final var sample = observe(config, root, i, true, false);
+				samples.add(sample);
+				write(config, metadata, samples);
+				if (!sample.status().equals("ok")) {
+					throw new IllegalStateException("Measurement failed: " + sample.error());
+				}
+			}
+			return List.copyOf(samples);
+		} finally {
+			loader.unloadEcoreModels();
+		}
+	}
+
+	static EClass selectRoot(final List<EPackage> packages, final String packageName,
+			final String rootName) {
+		final var matches = packages.stream().filter(p -> p.getName().equals(packageName)).toList();
+		if (matches.size() != 1) {
+			throw new IllegalArgumentException("Expected exactly one package named "
+					+ packageName + "; found " + matches.size());
+		}
+		final var classifier = matches.getFirst().getEClassifier(rootName);
+		if (!(classifier instanceof EClass root) || root.isAbstract() || root.isInterface()) {
+			throw new IllegalArgumentException("Root must be a concrete EClass in "
+					+ packageName + ": " + rootName);
+		}
+		return root;
+	}
+
+	private static EMFModelGenerator configured(final Configuration config) {
+		final var generator = new EMFModelGenerator();
+		generator.setNumberOfInstances(config.roots());
+		final var populator = generator.getInstancePopulator();
+		populator.setMaxDepth(config.depth());
+		populator.setAttributeDefaultMaxCount(config.attributeMax());
+		populator.setContainmentReferenceDefaultMaxCount(config.containmentMax());
+		populator.setCrossReferenceDefaultMaxCount(config.crossReferenceMax());
+		populator.setFeatureMapDefaultMaxCount(config.featureMapMax());
+		return generator;
+	}
+
+	private static Sample observe(final Configuration config, final EClass root,
+			final int index, final boolean measured, final boolean preflight) {
+		final var generator = configured(config);
+		try {
+			final long start = measured ? System.nanoTime() : 0;
+			final var models = generator.generateFromSeveral(root);
+			final long elapsed = measured ? System.nanoTime() - start : 0;
+			final var counts = count(generator, models.size());
+			if (preflight) {
+				final var result = config.preflight() == Preflight.ROUNDTRIP
+						? generator.saveAndValidateRoundTrip() : generator.validate();
+				if (!result.isValid()) {
+					return new Sample(index, elapsed, counts, "invalid",
+							result.diagnostic().toString());
+				}
+			}
+			return new Sample(index, elapsed, counts, "ok", "");
+		} catch (Exception e) {
+			return new Sample(index, 0, new Counts(0, 0, 0), "error", e.toString());
+		} finally {
+			for (final Resource resource : List.copyOf(generator.getResourceSet().getResources())) {
+				resource.unload();
+				generator.getResourceSet().getResources().remove(resource);
 			}
 		}
-		
-		return computeStatistics(numInstances, objectCount, times);
 	}
 
-	private int countAllObjects(List<EObject> roots) {
-		int count = roots.size();
-		for (var root : roots) {
-			var iterator = EcoreUtil.getAllContents(root, true);
-			while (iterator.hasNext()) {
-				iterator.next();
-				count++;
+	static Counts count(final EMFModelGenerator generator, final int roots) {
+		long objects = 0;
+		int resources = 0;
+		for (final var resource : generator.getResourceSet().getResources()) {
+			if (!"ecore".equals(resource.getURI().fileExtension())) {
+				resources++;
+				final var contents = resource.getAllContents();
+				while (contents.hasNext()) {
+					contents.next();
+					objects++;
+				}
 			}
 		}
-		return count;
+		return new Counts(roots, objects, resources);
 	}
 
-	private MeasurementResult computeStatistics(int metricValue, int objectCount, List<Double> times) {
-		var stats = times.stream()
-				.mapToDouble(Double::doubleValue)
-				.summaryStatistics();
-		
-		var result = new MeasurementResult();
-		result.metricValue = metricValue;
-		result.objectCount = objectCount;
-		result.avgTimeMs = stats.getAverage();
-		result.minTimeMs = stats.getMin();
-		result.maxTimeMs = stats.getMax();
-		
-		// Calculate standard deviation
-		var mean = stats.getAverage();
-		var variance = times.stream()
-				.mapToDouble(t -> Math.pow(t - mean, 2))
-				.sum() / times.size();
-		result.stdDevMs = Math.sqrt(variance);
-		
-		return result;
-	}
-
-	private void printTableFormat(String metricName, List<MeasurementResult> results) {
-		System.out.println("TABLE FORMAT:");
-		System.out.println("-".repeat(100));
-		System.out.printf("%-10s | %-12s | %-12s | %-12s | %-12s | %-12s%n",
-				metricName, "Objects", "Avg (ms)", "Min (ms)", "Max (ms)", "StdDev (ms)");
-		System.out.println("-".repeat(100));
-		
-		for (var result : results) {
-			System.out.printf("%-10d | %-12d | %12.2f | %12.2f | %12.2f | %12.2f%n",
-					result.metricValue, result.objectCount,
-					result.avgTimeMs, result.minTimeMs, result.maxTimeMs, result.stdDevMs);
+	static Summary summarize(final List<Sample> samples) {
+		final var sorted = samples.stream().filter(s -> s.status().equals("ok"))
+				.map(Sample::elapsedNanos).sorted(Comparator.naturalOrder()).toList();
+		if (sorted.isEmpty()) {
+			throw new IllegalArgumentException("No successful samples");
 		}
-		
-		System.out.println("-".repeat(100));
+		return new Summary(percentile(sorted, 0.5), percentile(sorted, 0.25),
+				percentile(sorted, 0.75));
 	}
 
-	private void printCSVFormat(String metricName, List<MeasurementResult> results) {
-		System.out.println("CSV FORMAT:");
-		System.out.println("-".repeat(100));
-		System.out.printf("%s,Objects,Avg_ms,Min_ms,Max_ms,StdDev_ms%n", metricName);
-		
-		for (var result : results) {
-			System.out.printf("%d,%d,%.2f,%.2f,%.2f,%.2f%n",
-					result.metricValue, result.objectCount,
-					result.avgTimeMs, result.minTimeMs, result.maxTimeMs, result.stdDevMs);
+	private static long percentile(final List<Long> sorted, final double fraction) {
+		final double position = fraction * (sorted.size() - 1);
+		final int lower = (int) position;
+		final int upper = (int) Math.ceil(position);
+		return Math.round(sorted.get(lower)
+				+ (sorted.get(upper) - sorted.get(lower)) * (position - lower));
+	}
+
+	static void write(final Configuration config, final Metadata metadata,
+			final List<Sample> samples) throws IOException {
+		final var raw = new StringBuilder(RAW_HEADER).append('\n');
+		for (final var sample : samples) {
+			raw.append(csv(metadata.runId(), metadata.started(), config.scenario(),
+					config.metamodel().toString(), metadata.fingerprint(), config.packageName(),
+					config.rootClass(), config.roots(), config.depth(), config.attributeMax(),
+					config.containmentMax(), config.crossReferenceMax(), config.featureMapMax(),
+					config.warmups(), config.repetitions(), config.preflight().name().toLowerCase(
+							Locale.ROOT), sample.index(),
+					sample.index() == 0 || !sample.status().equals("ok")
+							? "" : sample.elapsedNanos(),
+					sample.counts().roots(), sample.counts().objects(), sample.counts().resources(),
+					sample.status(), sample.error(), metadata.javaVersion(), metadata.javaVm(),
+					metadata.jvmArgs(), metadata.osName(), metadata.osArch(), metadata.cpuCount(),
+					metadata.maxHeapBytes())).append('\n');
 		}
-		
-		System.out.println("-".repeat(100));
+		final var successful = samples.stream().filter(s -> s.index() > 0
+				&& s.status().equals("ok")).toList();
+		final String summary;
+		if (successful.isEmpty()) {
+			summary = csv(metadata.runId(), config.scenario(), 0, "", "", "",
+					samples.isEmpty() ? "empty" : samples.getLast().status());
+		} else {
+			final var stats = summarize(successful);
+			summary = csv(metadata.runId(), config.scenario(), successful.size(),
+					stats.median(), stats.p25(), stats.p75(), "ok");
+		}
+		writeFile(config.rawPath(), raw.toString());
+		writeFile(config.summaryPath(), SUMMARY_HEADER + "\n" + summary + "\n");
+	}
+
+	private static void writeFile(final Path path, final String value) throws IOException {
+		final var parent = path.toAbsolutePath().getParent();
+		Files.createDirectories(parent);
+		Files.writeString(path, value, StandardCharsets.UTF_8);
+	}
+
+	private static String csv(final Object... values) {
+		final var result = new ArrayList<String>();
+		for (final var value : values) {
+			final String text = String.valueOf(value);
+			final String quote = Character.toString(34);
+			result.add(quote + text.replace(quote, quote + quote) + quote);
+		}
+		return String.join(",", result);
 	}
 }

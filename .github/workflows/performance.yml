@@ -25,15 +25,17 @@ jobs:
     
     - name: Run Performance Tests (Unix)
       if: runner.os != 'Windows'
-      run: ./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests 2>&1 | tee performance-results-${{ matrix.os }}.txt
+      run: ./mvnw test-compile exec:exec@run-performance-tests -Pperformance-tests 2>&1 | tee performance-results-${{ matrix.os }}.txt
     
     - name: Run Performance Tests (Windows)
       if: runner.os == 'Windows'
-      run: ./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests 2>&1 | tee performance-results-${{ matrix.os }}.txt
+      run: ./mvnw test-compile exec:exec@run-performance-tests -Pperformance-tests 2>&1 | tee performance-results-${{ matrix.os }}.txt
       shell: bash
     
     - name: Upload Performance Results
       uses: actions/upload-artifact@v7
       with:
         name: performance-results-${{ matrix.os }}
-        path: performance-results-*.txt
+        path: |
+          performance-results-*.txt
+          target/benchmark/*.csv
