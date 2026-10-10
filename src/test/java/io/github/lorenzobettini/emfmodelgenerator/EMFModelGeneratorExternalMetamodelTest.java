@@ -23,6 +23,8 @@ import javax.xml.namespace.QName;
 import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
+import org.eclipse.emf.ecore.EEnum;
+import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
@@ -967,4 +969,925 @@ class EMFModelGeneratorExternalMetamodelTest {
 		// avoid asserting against expected output because the generated model is large
 	}
 
+	@Test
+	void testGenerateAadlPackageWithDefaultGeneration() throws Exception {
+		var aadlPackage = generator.loadEcoreModel(
+				EXTERNAL_METAMODELS_DIR + "/aadl2.ecore");
+
+		assertThat(aadlPackage.getName()).isEqualTo("aadl2");
+
+		var aadlPackageClass = assertEClassExists(aadlPackage, "AadlPackage");
+
+		var namedElementClass = assertEClassExists(aadlPackage, "NamedElement");
+		var ownedPropertyAssociation =
+				assertEReferenceExists(namedElementClass, "ownedPropertyAssociation");
+
+		var packageSectionClass = assertEClassExists(aadlPackage, "PackageSection");
+		var ownedClassifier =
+				assertEReferenceExists(packageSectionClass, "ownedClassifier");
+
+		var populator = generator.getInstancePopulator();
+
+		/*
+		 * Property associations are optional, but once created they require a
+		 * Property target. An isolated AadlPackage does not contain Property
+		 * definitions that can serve as cross-reference candidates.
+		 */
+		populator.setContainmentReferenceMaxCountFor(
+				ownedPropertyAssociation, 0);
+
+		/*
+		 * Keep one classifier per package section.
+		 * With the deterministic default selector this avoids reaching
+		 * ComponentImplementation subclasses, whose required derived `type`
+		 * is normally provided by OSATE-specific runtime semantics.
+		 */
+		populator.setContainmentReferenceMaxCountFor(
+				ownedClassifier, 1);
+
+		populator.setMaxDepth(2);
+
+		generator.setFilePrefix("aadl_");
+		var generatedPackage = generator.generateFrom(aadlPackageClass);
+
+		var ownedPublicSection =
+				assertEReferenceExists(aadlPackageClass, "ownedPublicSection");
+		var ownedPrivateSection =
+				assertEReferenceExists(aadlPackageClass, "ownedPrivateSection");
+
+		var publicSection = (EObject) generatedPackage.eGet(ownedPublicSection);
+		var privateSection = (EObject) generatedPackage.eGet(ownedPrivateSection);
+
+		assertThat(publicSection).isNotNull();
+		assertThat(privateSection).isNotNull();
+
+		assertThat(EMFUtils.getAsEObjectsList(publicSection, ownedClassifier))
+				.extracting(classifier -> classifier.eClass().getName())
+				.containsExactly("FeatureGroupType");
+
+		assertThat(EMFUtils.getAsEObjectsList(privateSection, ownedClassifier))
+				.extracting(classifier -> classifier.eClass().getName())
+				.containsExactly("AbstractType");
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("AADL package validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("AADL package round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "aadl_aadl2_AadlPackage_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGenerateAadlAbstractImplementationExposesRequiredDerivedSemantics()
+			throws Exception {
+		var aadlPackage = generator.loadEcoreModel(
+				EXTERNAL_METAMODELS_DIR + "/aadl2.ecore");
+
+		var abstractImplementationClass =
+				assertEClassExists(aadlPackage, "AbstractImplementation");
+
+		var populator = generator.getInstancePopulator();
+
+		/*
+		 * AbstractImplementation exposes a large number of optional multi-valued
+		 * containments.
+		 *
+		 * Keep their generated count at zero so that the experiment concentrates
+		 * on the mandatory structure.
+		 *
+		 * Required multi-valued containments would still be generated according
+		 * to their lower bound.
+		 */
+		populator.setContainmentReferenceDefaultMaxCount(0);
+
+		/*
+		 * The configurable maximum count does not suppress optional single-valued
+		 * containments [0..1], since counts apply to multi-valued features.
+		 *
+		 * For this focused experiment, omit every optional containment, while
+		 * delegating required containments to the ordinary setter.
+		 *
+		 * This policy is generic rather than AADL-specific: it asks the generator
+		 * to construct only the containment structure required by the metamodel.
+		 */
+		populator.setContainmentReferenceSetter(
+				new EMFContainmentReferenceSetter() {
+			@Override
+			public Collection<EObject> setContainmentReference(
+					final EObject owner,
+					final EReference reference) {
+				if (reference.getLowerBound() == 0) {
+					return List.of();
+				}
+				return super.setContainmentReference(owner, reference);
+			}
+		});
+
+		/*
+		 * Depth 2 is sufficient to create and populate the mandatory
+		 * AbstractImplementation.ownedRealization containment.
+		 */
+		populator.setMaxDepth(2);
+		generator.setFilePrefix("aadl_impl_");
+
+		var generatedImplementation =
+				generator.generateFrom(abstractImplementationClass);
+
+		assertThat(generatedImplementation.eClass())
+				.isSameAs(abstractImplementationClass);
+
+		/*
+		 * The generated object is expected to be invalid according to standard
+		 * reflective EMF validation.
+		 *
+		 * AADL declares some mandatory relationships as derived runtime state.
+		 * For example, ComponentImplementation.type is required but derived,
+		 * transient, and volatile.
+		 *
+		 * The generated Realization similarly inherits mandatory derived
+		 * relationship features such as Generalization.general.
+		 *
+		 * EMF Model Generator intentionally does not assign derived or
+		 * non-changeable features, since doing so would violate their Ecore
+		 * semantics.
+		 */
+		var validation = generator.validate();
+
+		assertThat(validation.isValid()).isFalse();
+
+		var messages = validation.flattenedDiagnostics().stream()
+				.map(Diagnostic::getMessage)
+				.toList();
+
+		/*
+		 * Check representative diagnostics rather than every inherited derived
+		 * relationship, so that the test documents the fundamental limitation
+		 * without becoming unnecessarily coupled to the complete AADL hierarchy.
+		 */
+		assertThat(messages)
+				.anySatisfy(message -> assertThat(message)
+						.contains("required feature 'type'"))
+				.anySatisfy(message -> assertThat(message)
+						.contains("required feature 'general'"));
+	}
+
+	@Test
+	void testGenerateBibtexWithDefaultGeneration() throws Exception {
+		var packages = generator.loadEcoreModelPackages(EXTERNAL_METAMODELS_DIR + "/BibTeX.ecore");
+		var bibtexPackage = packages.stream()
+				.filter(ePackage -> "BIBTEX".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var bibtexClass = assertEClassExists(bibtexPackage, "Bibtex");
+
+		generator.setFilePrefix("bibtex_");
+
+		var generatedBibtex = generator.generateFrom(bibtexClass);
+
+		assertThat(generatedBibtex.eClass()).isSameAs(bibtexClass);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BibTeX validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("BibTeX round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "bibtex_BIBTEX_Bibtex_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+	}
+
+	@Test
+	void testGenerateBibtexWithAllPossibleBibtexEntries() throws Exception {
+		var packages = generator.loadEcoreModelPackages(EXTERNAL_METAMODELS_DIR + "/BibTeX.ecore");
+		var bibtexPackage = packages.stream()
+				.filter(ePackage -> "BIBTEX".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var bibtexClass = assertEClassExists(bibtexPackage, "Bibtex");
+
+		var entryClass = assertEClassExists(bibtexPackage, "Entry");
+		var entriesReference = assertEReferenceExists(bibtexClass, "entries");
+
+		/*
+		 * Generate one instance of every concrete BibTeX entry type.
+		 * The default round-robin selector distributes instances across
+		 * all available Entry subclasses.
+		 */
+		var entryTypes = EMFUtils.findAllInstantiableSubclasses(entryClass);
+		assertThat(entryTypes).hasSize(12);
+
+		generator.getInstancePopulator()
+			.setContainmentReferenceDefaultMaxCount(entryTypes.size());
+
+		generator.getInstancePopulator().setContainmentReferenceMaxCountFor(
+				entriesReference, entryTypes.size());
+
+		generator.setFilePrefix("bibtex_entries_");
+
+		var generatedBibtex = generator.generateFrom(bibtexClass);
+
+		assertThat(generatedBibtex.eClass()).isSameAs(bibtexClass);
+
+		/*
+		 * Verify that every concrete entry type has been instantiated
+		 * exactly once, independently of selection order.
+		 */
+		var generatedEntries = EMFUtils.getAsEObjectsList(
+				generatedBibtex, entriesReference);
+
+		assertThat(generatedEntries)
+				.extracting(EObject::eClass)
+				.containsExactlyInAnyOrderElementsOf(entryTypes);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("BibTeX validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("BibTeX round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "bibtex_entries_BIBTEX_Bibtex_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGenerateAntProjectWithDefaultGeneration() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/Ant.ecore");
+
+		assertThat(packages)
+				.extracting(EPackage::getName)
+				.containsExactly("Ant", "PrimitiveTypes");
+
+		var antPackage = packages.getFirst();
+		var projectClass = assertEClassExists(antPackage, "Project");
+		var targetClass = assertEClassExists(antPackage, "Target");
+		var taskClass = assertEClassExists(antPackage, "Task");
+
+		var targetsReference = assertEReferenceExists(projectClass, "targets");
+		var defaultReference = assertEReferenceExists(projectClass, "default");
+		var tasksReference = assertEReferenceExists(targetClass, "tasks");
+		var taskTargetReference = assertEReferenceExists(taskClass, "target");
+
+		generator.getInstancePopulator().setMaxDepth(2);
+		generator.setFilePrefix("ant_");
+
+		var generatedProject = generator.generateFrom(projectClass);
+
+		assertThat(generatedProject.eClass()).isSameAs(projectClass);
+
+		/*
+		 * Verify that the project contains the expected targets and that
+		 * its mandatory default cross-reference selects an existing target.
+		 */
+		var targets = EMFUtils.getAsEObjectsList(
+				generatedProject, targetsReference);
+
+		assertThat(targets).hasSize(2);
+		assertThat(generatedProject.eGet(defaultReference)).isIn(targets);
+
+		/*
+		 * Each target contains generated tasks.
+		 * The required Task.target reference is the opposite of the
+		 * Target.tasks containment and must point back to its owner.
+		 */
+		assertThat(targets).allSatisfy(target -> {
+			var tasks = EMFUtils.getAsEObjectsList(target, tasksReference);
+
+			assertThat(tasks).hasSize(2);
+			assertThat(tasks).allSatisfy(task ->
+					assertThat(task.eGet(taskTargetReference)).isSameAs(target));
+		});
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("Ant validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("Ant round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "ant_Ant_Project_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGenerateAntProjectWithAllConcreteTaskTypes() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/Ant.ecore");
+
+		var antPackage = packages.stream()
+				.filter(ePackage -> "Ant".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var projectClass = assertEClassExists(antPackage, "Project");
+		var targetClass = assertEClassExists(antPackage, "Target");
+		var taskClass = assertEClassExists(antPackage, "Task");
+		var newTaskClass = assertEClassExists(antPackage, "NewTask");
+
+		var targetsReference = assertEReferenceExists(projectClass, "targets");
+		var defaultReference = assertEReferenceExists(projectClass, "default");
+		var taskdefReference = assertEReferenceExists(projectClass, "taskdef");
+		var tasksReference = assertEReferenceExists(targetClass, "tasks");
+		var taskTargetReference = assertEReferenceExists(taskClass, "target");
+		var taskNameReference = assertEReferenceExists(newTaskClass, "taskName");
+
+		/*
+		 * Discover all concrete Task subclasses reflectively and configure
+		 * the generator to produce one instance of each, using its ordinary
+		 * deterministic round-robin selector.
+		 */
+		var taskTypes = EMFUtils.findAllInstantiableSubclasses(taskClass);
+		assertThat(taskTypes).hasSize(11);
+
+		var populator = generator.getInstancePopulator();
+
+		populator.setContainmentReferenceMaxCountFor(targetsReference, 1);
+		populator.setContainmentReferenceMaxCountFor(
+				tasksReference, taskTypes.size());
+		populator.setMaxDepth(2);
+
+		generator.setFilePrefix("ant_all_tasks_");
+
+		var generatedProject = generator.generateFrom(projectClass);
+
+		var targets = EMFUtils.getAsEObjectsList(
+				generatedProject, targetsReference);
+
+		assertThat(targets).hasSize(1);
+
+		var target = targets.getFirst();
+
+		/*
+		 * The required Project.default reference must resolve to
+		 * the generated target.
+		 */
+		assertThat(generatedProject.eGet(defaultReference))
+				.isSameAs(target);
+
+		var tasks = EMFUtils.getAsEObjectsList(target, tasksReference);
+
+		/*
+		 * Every concrete Task subtype must occur exactly once.
+		 */
+		assertThat(tasks)
+				.extracting(EObject::eClass)
+				.containsExactlyInAnyOrderElementsOf(taskTypes);
+
+		/*
+		 * Verify containment opposites for all eleven tasks.
+		 */
+		assertThat(tasks).allSatisfy(task ->
+				assertThat(task.eGet(taskTargetReference)).isSameAs(target));
+
+		/*
+		 * NewTask requires a TaskDef reference.
+		 * The standard generator should resolve it using the task
+		 * definitions created in the surrounding Project.
+		 */
+		var taskDefinitions = EMFUtils.getAsEObjectsList(
+				generatedProject, taskdefReference);
+
+		assertThat(taskDefinitions).isNotEmpty();
+
+		var newTask = tasks.stream()
+				.filter(task -> task.eClass() == newTaskClass)
+				.findFirst()
+				.orElseThrow();
+
+		assertThat(newTask.eGet(taskNameReference))
+				.isIn(taskDefinitions);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("Ant task validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("Ant task round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "ant_all_tasks_Ant_Project_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGeneratePluginEclipseWithDefaultGeneration() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/PluginEclipse.ecore");
+
+		assertThat(packages).extracting(EPackage::getName)
+				.containsExactly("PluginEclipse", "PluginsEclipse", "PrimitiveTypes");
+
+		var pluginPackage = packages.stream()
+				.filter(ePackage -> "PluginEclipse".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var eclipseClass = assertEClassExists(pluginPackage, "Eclipse");
+		var bundleClass = assertEClassExists(pluginPackage, "Bundle");
+		var requiredBundleClass = assertEClassExists(pluginPackage, "RequiredBundle");
+
+		var bundlesReference = assertEReferenceExists(eclipseClass, "bundles");
+		var packagesReference = assertEReferenceExists(eclipseClass, "packages");
+		var versionReference = assertEReferenceExists(bundleClass, "version");
+		var requireReference = assertEReferenceExists(bundleClass, "require");
+		var requiredBundleReference = assertEReferenceExists(requiredBundleClass, "bundle");
+
+		generator.setFilePrefix("plugin_");
+
+		var generatedEclipse = generator.generateFrom(eclipseClass);
+
+		assertThat(generatedEclipse.eClass()).isSameAs(eclipseClass);
+
+		/*
+		 * The default multiplicity produces two bundles and two packages.
+		 * Every bundle must have its mandatory Version containment.
+		 */
+		var bundles = EMFUtils.getAsEObjectsList(
+				generatedEclipse, bundlesReference);
+
+		var generatedPackages = EMFUtils.getAsEObjectsList(
+				generatedEclipse, packagesReference);
+
+		assertThat(bundles).hasSize(2);
+		assertThat(generatedPackages).hasSize(2);
+
+		assertThat(bundles).allSatisfy(bundle -> {
+			assertThat(bundle.eGet(versionReference)).isNotNull();
+
+			/*
+			 * RequiredBundle.bundle is a mandatory non-containment reference.
+			 * It must select an existing bundle rather than create a new one.
+			 */
+			var requirements = EMFUtils.getAsEObjectsList(
+					bundle, requireReference);
+
+			assertThat(requirements).hasSize(2);
+
+			assertThat(requirements).allSatisfy(requirement ->
+					assertThat(requirement.eGet(requiredBundleReference))
+							.isIn(bundles));
+		});
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("PluginEclipse validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("PluginEclipse round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "plugin_PluginEclipse_Eclipse_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGeneratePluginEclipseWithPolymorphicDependencies() throws Exception {
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/PluginEclipse.ecore");
+
+		var pluginPackage = packages.stream()
+				.filter(ePackage -> "PluginEclipse".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var extensionsPackage = packages.stream()
+				.filter(ePackage -> "PluginsEclipse".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var eclipseClass = assertEClassExists(pluginPackage, "Eclipse");
+		var bundleClass = assertEClassExists(pluginPackage, "Bundle");
+		var requiredBundleClass = assertEClassExists(pluginPackage, "RequiredBundle");
+		var requiredAttributeClass =
+				assertEClassExists(pluginPackage, "RequireBundleAttribute");
+		var rangeClass = assertEClassExists(pluginPackage, "Range");
+		var exportedPackageClass = assertEClassExists(pluginPackage, "ExportedPackage");
+		var xinternalClass = assertEClassExists(extensionsPackage, "Xinternal");
+
+		var bundlesReference = assertEReferenceExists(eclipseClass, "bundles");
+		var requireReference = assertEReferenceExists(bundleClass, "require");
+		var exportReference = assertEReferenceExists(bundleClass, "export");
+		var attributesReference = assertEReferenceExists(
+				requiredBundleClass, "requireBundleAttribute");
+		var lowerBoundReference = assertEReferenceExists(rangeClass, "lowerBound");
+		var upperBoundReference = assertEReferenceExists(rangeClass, "upperBound");
+
+		/*
+		 * RequireBundleAttribute has three concrete subclasses:
+		 * AttResolution, AttVisibility, and Range.
+		 *
+		 * Discover them reflectively and generate one of each per requirement.
+		 */
+		var attributeTypes =
+				EMFUtils.findAllInstantiableSubclasses(requiredAttributeClass);
+
+		assertThat(attributeTypes).hasSize(3);
+
+		/*
+		 * ExportedPackage is concrete, and Xinternal extends it from another
+		 * EPackage in the same Ecore resource.
+		 */
+		var exportedTypes =
+				EMFUtils.findAllInstantiableSubclasses(exportedPackageClass);
+
+		assertThat(exportedTypes)
+				.containsExactlyInAnyOrder(exportedPackageClass, xinternalClass);
+
+		var populator = generator.getInstancePopulator();
+
+		populator.setContainmentReferenceMaxCountFor(
+				attributesReference, attributeTypes.size());
+
+		/*
+		 * Keep the default containment depth so nested Range and Version
+		 * objects can be populated.
+		 */
+		populator.setMaxDepth(5);
+
+		generator.setFilePrefix("plugin_polymorphic_");
+
+		var generatedEclipse = generator.generateFrom(eclipseClass);
+
+		var bundles = EMFUtils.getAsEObjectsList(
+				generatedEclipse, bundlesReference);
+
+		assertEveryRequiredBundleContainsOneInstanceOfEachConcreteSubtype(
+				rangeClass,
+				requireReference,
+				attributesReference,
+				lowerBoundReference,
+				upperBoundReference,
+				attributeTypes,
+				bundles);
+
+		/*
+		 * Verify that the polymorphic ExportedPackage containment can select
+		 * Xinternal from the second EPackage.
+		 */
+		var exportedTypesGenerated = bundles.stream()
+				.flatMap(bundle -> EMFUtils.getAsEObjectsList(
+						bundle, exportReference).stream())
+				.map(EObject::eClass)
+				.distinct()
+				.toList();
+
+		assertThat(exportedTypesGenerated)
+				.containsExactlyInAnyOrderElementsOf(exportedTypes);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("Polymorphic PluginEclipse validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("Polymorphic PluginEclipse round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName =
+				"plugin_polymorphic_PluginEclipse_Eclipse_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
+	/*
+	 * Every RequiredBundle must contain one instance of each concrete
+	 * RequireBundleAttribute subtype.
+	 */
+	private void assertEveryRequiredBundleContainsOneInstanceOfEachConcreteSubtype(EClass rangeClass,
+			EReference requireReference, EReference attributesReference, EReference lowerBoundReference,
+			EReference upperBoundReference, List<EClass> attributeTypes, List<EObject> bundles) {
+		assertThat(bundles).hasSize(2).allSatisfy(bundle -> {
+			var requirements = EMFUtils.getAsEObjectsList(
+					bundle, requireReference);
+
+			assertThat(requirements).hasSize(2);
+
+			assertThat(requirements).allSatisfy(requirement -> {
+				var attributes = EMFUtils.getAsEObjectsList(
+						requirement, attributesReference);
+
+				assertThat(attributes)
+						.extracting(EObject::eClass)
+						.containsExactlyInAnyOrderElementsOf(attributeTypes);
+
+				/*
+				 * Range requires both lowerBound and upperBound Version objects.
+				 */
+				var range = attributes.stream()
+						.filter(attribute -> attribute.eClass() == rangeClass)
+						.findFirst()
+						.orElseThrow();
+
+				assertThat(range.eGet(lowerBoundReference)).isNotNull();
+				assertThat(range.eGet(upperBoundReference)).isNotNull();
+			});
+		});
+	}
+
+	@Test
+	void testGenerateRssWithDefaultGeneration() throws Exception { // NOSONAR: we do want so many assertions
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/RSS-2.0.ecore");
+
+		assertThat(packages)
+				.extracting(EPackage::getName)
+				.containsExactly("RSS", "PrimitiveTypes");
+
+		var rssPackage = packages.stream()
+				.filter(ePackage -> "RSS".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var rssClass = assertEClassExists(rssPackage, "RSS");
+		var channelClass = assertEClassExists(rssPackage, "Channel");
+		var itemClass = assertEClassExists(rssPackage, "Item");
+		var imageClass = assertEClassExists(rssPackage, "Image");
+		var textInputClass = assertEClassExists(rssPackage, "TextInput");
+		var cloudClass = assertEClassExists(rssPackage, "Cloud");
+
+		var channelReference = assertEReferenceExists(rssClass, "channel");
+		var rssReference = assertEReferenceExists(channelClass, "rss");
+		var itemsReference = assertEReferenceExists(channelClass, "items");
+		var itemChannelReference = assertEReferenceExists(itemClass, "channel");
+
+		var imageReference = assertEReferenceExists(channelClass, "image");
+		var textInputReference = assertEReferenceExists(channelClass, "textInput");
+		var cloudReference = assertEReferenceExists(channelClass, "cloud");
+
+		generator.setFilePrefix("rss_");
+
+		var generatedRss = generator.generateFrom(rssClass);
+
+		assertThat(generatedRss.eClass()).isSameAs(rssClass);
+
+		var versionAttribute = assertEAttributeExists(rssClass, "version");
+		assertThat(generatedRss.eGet(versionAttribute))
+				.isInstanceOf(String.class);
+
+		/*
+		 * RSS.channel is mandatory containment, opposite Channel.rss.
+		 */
+		var channel = (EObject) generatedRss.eGet(channelReference);
+
+		assertThat(channel).isNotNull();
+		assertThat(channel.eClass()).isSameAs(channelClass);
+		assertThat(channel.eGet(rssReference)).isSameAs(generatedRss);
+
+		/*
+		 * Default generation creates two items.
+		 * Item.channel must point back to their containing Channel.
+		 */
+		var items = EMFUtils.getAsEObjectsList(channel, itemsReference);
+
+		assertThat(items).hasSize(2).allSatisfy(item -> {
+			assertThat(item.eGet(itemChannelReference)).isSameAs(channel);
+
+			assertThat(item.eGet(assertEReferenceExists(itemClass, "source")))
+					.isNotNull();
+			assertThat(item.eGet(assertEReferenceExists(itemClass, "enclosure")))
+					.isNotNull();
+			assertThat(item.eGet(assertEReferenceExists(itemClass, "pubDate")))
+					.isNotNull();
+		});
+
+		/*
+		 * Optional single-valued containments are populated by default.
+		 * Their required opposite references must be maintained.
+		 */
+		var image = (EObject) channel.eGet(imageReference);
+		var textInput = (EObject) channel.eGet(textInputReference);
+		var cloud = (EObject) channel.eGet(cloudReference);
+
+		assertThat(image).isNotNull();
+		assertThat(textInput).isNotNull();
+		assertThat(cloud).isNotNull();
+
+		assertThat(image.eGet(assertEReferenceExists(imageClass, "channel")))
+				.isSameAs(channel);
+		assertThat(textInput.eGet(assertEReferenceExists(textInputClass, "channel")))
+				.isSameAs(channel);
+		assertThat(cloud.eGet(assertEReferenceExists(cloudClass, "channel")))
+				.isSameAs(channel);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("RSS validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("RSS round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "rss_RSS_RSS_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
+
+	@Test
+	void testGenerateRssWithMultipleItemsAndAllDays() throws Exception { // NOSONAR: we do want so many assertions
+		var packages = generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/RSS-2.0.ecore");
+
+		var rssPackage = packages.stream()
+				.filter(ePackage -> "RSS".equals(ePackage.getName()))
+				.findFirst()
+				.orElseThrow();
+
+		var rssClass = assertEClassExists(rssPackage, "RSS");
+		var channelClass = assertEClassExists(rssPackage, "Channel");
+		var itemClass = assertEClassExists(rssPackage, "Item");
+		var dateClass = assertEClassExists(rssPackage, "Date");
+
+		var channelReference = assertEReferenceExists(rssClass, "channel");
+		var rssReference = assertEReferenceExists(channelClass, "rss");
+		var itemsReference = assertEReferenceExists(channelClass, "items");
+		var skipDaysAttribute = assertEAttributeExists(channelClass, "skipDays");
+		var itemChannelReference = assertEReferenceExists(itemClass, "channel");
+		var pubDateReference = assertEReferenceExists(itemClass, "pubDate");
+		var dayAttribute = assertEAttributeExists(dateClass, "eDay");
+
+		var dayKind = (EEnum) rssPackage.getEClassifier("DayKind");
+
+		assertThat(dayKind).isNotNull();
+		assertThat(dayKind.getELiterals()).hasSize(7);
+
+		var dayCount = dayKind.getELiterals().size();
+
+		/*
+		 * Two generic multiplicity settings:
+		 * - create seven items in the channel;
+		 * - generate all seven weekday enumeration values.
+		 */
+		var populator = generator.getInstancePopulator();
+
+		populator.setContainmentReferenceMaxCountFor(
+				itemsReference, dayCount);
+
+		populator.setAttributeMaxCountFor(
+				skipDaysAttribute, dayCount);
+
+		generator.setFilePrefix("rss_expanded_");
+
+		var generatedRss = generator.generateFrom(rssClass);
+
+		assertThat(generatedRss.eClass()).isSameAs(rssClass);
+
+		var channel = (EObject) generatedRss.eGet(channelReference);
+
+		assertThat(channel).isNotNull();
+		assertThat(channel.eGet(rssReference)).isSameAs(generatedRss);
+
+		/*
+		 * Verify seven contained items and their required opposite
+		 * references.
+		 */
+		var items = EMFUtils.getAsEObjectsList(channel, itemsReference);
+
+		assertThat(items).hasSize(dayCount).allSatisfy(item -> {
+			assertThat(item.eGet(itemChannelReference)).isSameAs(channel);
+
+			var pubDate = (EObject) item.eGet(pubDateReference);
+
+			assertThat(pubDate).isNotNull();
+			assertThat(pubDate.eGet(dayAttribute)).isNotNull();
+		});
+
+		/*
+		 * The default round-robin enumeration selector should visit
+		 * every literal of DayKind exactly once.
+		 */
+		var expectedDays = dayKind.getELiterals().stream()
+				.map(EEnumLiteral::getInstance)
+				.toList();
+
+		var generatedSkipDays = EMFUtils.getAsList(
+				channel, skipDaysAttribute);
+
+		assertThat(generatedSkipDays)
+				.containsExactlyInAnyOrderElementsOf(expectedDays);
+
+		var validation = generator.validate();
+		assertThat(validation.isValid())
+				.withFailMessage("Expanded RSS validation failed: %s",
+						validation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var roundTripValidation = generator.saveAndValidateRoundTrip(
+				Map.of(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE));
+
+		assertThat(roundTripValidation.isValid())
+				.withFailMessage("Expanded RSS round-trip validation failed: %s",
+						roundTripValidation.rejectedDiagnostics().stream()
+								.map(Diagnostic::getMessage)
+								.toList())
+				.isTrue();
+
+		var generatedFileName = "rss_expanded_RSS_RSS_1.xmi";
+		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
+				generatedFileName, generatedFileName);
+	}
 }
