@@ -376,18 +376,44 @@ def main():
     sub = parser.add_subparsers(dest="action", required=True)
     launch = sub.add_parser("run")
     launch.add_argument("--preset", choices=("smoke", "pilot", "paper",
-                                             "bpmn-pilot", "bpmn-paper"), required=True)
+                                             "bpmn-pilot", "bpmn-paper",
+                                             "large-calibration", "large-paper"), required=True)
     launch.add_argument("--output", help="new, nonexisting result directory")
     launch.add_argument("--heap", default="512m")
     launch.add_argument("--timeout", type=int, default=120,
                         help="wall seconds per Maven invocation, including fork")
+    launch.add_argument("--selection-output", help="calibration selection JSON path")
+    launch.add_argument("--selection", help="compatible calibration selection JSON path")
     analyze = sub.add_parser("report")
-    analyze.add_argument("output", help="existing result directory")
+    analyze.add_argument("output", nargs="?", help="existing result directory")
+    analyze.add_argument("--latest", choices=("large-paper",),
+                         help="regenerate the latest publication result")
     args = parser.parse_args()
+    if args.action == "run" and args.timeout <= 0:
+        parser.error("--timeout must be positive")
     if args.action == "run":
-        run(args)
+        if args.preset.startswith("large-"):
+            from publication_evaluation import run_publication
+            run_publication(args)
+        else:
+            if args.selection or args.selection_output:
+                parser.error("selection options require a large preset")
+            run(args)
     else:
-        report(args.output)
+        if args.latest:
+            if args.output:
+                parser.error("report accepts a path or --latest, not both")
+            from publication_evaluation import latest_output, report_publication
+            report_publication(latest_output(args.latest))
+        elif args.output:
+            manifest = json.loads((Path(args.output) / "manifest.json").read_text())
+            if manifest["preset"] == "large-paper":
+                from publication_evaluation import report_publication
+                report_publication(args.output)
+            else:
+                report(args.output)
+        else:
+            parser.error("report requires a result path or --latest")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EMF model generator publication calibration selection",
+  "type": "object",
+  "required": [
+    "schema_version", "kind", "created_utc", "host", "heap",
+    "fixed_jvm_flags", "metamodel_sha256", "source_sha256", "calibration_result",
+    "safety_caps", "probes", "selected", "series_summary", "test_only", "rationale"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "large-calibration-selection"},
+    "created_utc": {"type": "string"},
+    "host": {"type": "object"},
+    "heap": {"type": "string", "pattern": "^[1-9][0-9]*[mMgG]$"},
+    "fixed_jvm_flags": {"type": "array", "items": {"type": "string"}},
+    "metamodel_sha256": {"type": "object"},
+    "source_sha256": {"type": "object"},
+    "calibration_result": {"type": "string"},
+    "safety_caps": {"type": "object"},
+    "probes": {"type": "array", "items": {"$ref": "#/$defs/probe"}},
+    "selected": {"type": "array", "items": {"$ref": "#/$defs/selection"}},
+    "series_summary": {"type": "object"},
+    "test_only": {"type": "boolean"},
+    "rationale": {"type": "string"}
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "required": [
+        "series", "scenario", "family", "depth", "changing_variable",
+        "roots", "attribute_max", "containment_max", "cross_reference_max",
+        "feature_map_max", "preflight"
+      ],
+      "properties": {
+        "series": {"type": "string"},
+        "scenario": {"enum": ["extlibrary", "bibtex", "ant", "plugin-eclipse", "rss", "bpmn-bounded"]},
+        "family": {"enum": ["contained", "many-roots", "bpmn"]},
+        "depth": {"type": "integer", "minimum": 1, "maximum": 4},
+        "changing_variable": {"enum": ["roots", "breadth"]},
+        "roots": {"type": "integer", "minimum": 1, "maximum": 20000},
+        "attribute_max": {"const": 1},
+        "containment_max": {"type": "integer", "minimum": 1, "maximum": 1024},
+        "cross_reference_max": {"const": 1},
+        "feature_map_max": {"const": 1},
+        "preflight": {"enum": ["roundtrip", "validate"]}
+      }
+    },
+    "probe": {
+      "allOf": [
+        {"$ref": "#/$defs/case"},
+        {"type": "object", "required": ["status", "reason"],
+         "properties": {"status": {"enum": ["completed", "failed", "invalid", "oom", "timeout", "capped", "over-cap"]},
+                        "reason": {"type": "string"}}}
+      ]
+    },
+    "selection": {
+      "allOf": [
+        {"$ref": "#/$defs/case"},
+        {"type": "object", "required": ["observed_eobjects", "observed_resources", "calibration_stem"],
+         "properties": {"observed_eobjects": {"type": "integer", "minimum": 1, "maximum": 1200000},
+                        "observed_resources": {"type": "integer", "minimum": 1, "maximum": 20000},
+                        "calibration_stem": {"type": "string"}}}
+      ]
+    }
+  }
+}

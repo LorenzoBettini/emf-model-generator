@@ -1,5 +1,52 @@
 # Benchmark harness
 
+## Calibrated publication-scale workflow
+
+Run these four commands from the core repository root on a quiet physical host
+with JDK 21+, Python 3, sufficient disk space, and a stable power/CPU policy.
+Calibration and publication measurements are lengthy and explicitly opt-in.
+The commands use a fixed 2 GiB heap, G1GC and UTF-8 in serial forked JVMs.
+
+```sh
+./mvnw -q -DskipTests test-compile
+python3 scripts/performance_evaluation.py run --preset large-calibration --heap 2g --timeout 900 --selection-output target/benchmark/publication-selection.json
+python3 scripts/performance_evaluation.py run --preset large-paper --heap 2g --timeout 900 --selection target/benchmark/publication-selection.json
+python3 scripts/performance_evaluation.py report --latest large-paper
+```
+
+Calibration probes progressively larger one-root containment breadth and fixed-shape
+many-root workloads. It records every success, failure, timeout and capped case in
+`target/benchmark/publication-selection.json` and in a unique
+`target/benchmark/large-calibration-*/` directory. BibTeX breadth maxima
+32, 100, 512, 707 and 1024 are candidates subject to observed object, time,
+resource and heap limits, not guaranteed successes. The selection records the
+host, JDK, git revision/dirty state, source and Ecore hashes, heap, actual EObject/resource
+counts, every probe and the selected cases. `large-paper` rejects incompatible
+selections and uses three matched warmups plus seven measured repetitions per
+configuration. Its unique `target/benchmark/large-paper-*/` directory is printed
+and saved in `target/benchmark/latest-large-paper.json`; the report command
+uses that pointer without rerunning generation. A copied `selection.json` makes
+the publication directory self-contained for report regeneration.
+
+The combined `report.md` indexes EXTLibrary, BibTeX, Ant, PluginEclipse, RSS,
+and BPMN. SVG and matching CSV pairs are `figure-contained`,
+`figure-many-roots`, `figure-diagnostic`, and `figure-bpmn`. Their horizontal
+axis is actual generated EObject count; CSVs also contain observed resources,
+depth, roots, breadth, median/p25/p75 and sample count. The compact six-scenario
+table and `failure-capped-cases.csv` make incomplete or unsupported cases visible.
+Per-configuration raw/summary/diagnostic CSVs and logs remain in the result
+directory. Share the result-directory archive and the calibration selection for
+paper analysis. Calibration data are not publication timings.
+
+One-root breadth curves and many-root/resource curves answer different scaling
+questions. BPMN depths 1 and 2 are separate series, with in-memory `validate`
+preflight; the other profiles use XMI `roundtrip`. BPMN is FeatureMap-capable,
+but these measurements do not establish that generated FeatureMap entries were
+stressed. Candidate diagnostics are separate instrumented runs and are compared
+descriptively with matching baseline medians. Failed cases are never aggregated.
+The generated graph shape, host, heap, JIT/GC and co-varying EObject/resource
+counts limit interpretation; the report makes no universal complexity claim.
+
 This test-source harness measures generation from one **named EClass** in one named
 EPackage. It replaces the old all-class sweep: `numberOfInstances` is the number
 of roots of the selected class, rather than the number for every concrete class.

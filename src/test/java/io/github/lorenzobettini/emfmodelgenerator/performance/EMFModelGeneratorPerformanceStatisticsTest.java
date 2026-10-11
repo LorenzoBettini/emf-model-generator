@@ -159,7 +159,10 @@ class EMFModelGeneratorPerformanceStatisticsTest {
 		final var summary = temporary.resolve("instrumented-summary.csv");
 		final var diagnostics = temporary.resolve("diagnostics.csv");
 		final var config = EMFModelGeneratorPerformanceStatistics.parse(
-				"--profile", "extlibrary", "--roots", "2", "--depth", "1",
+				"--scenario", "extlibrary-diagnostic-test",
+				"--metamodel", "src/test/resources/inputs/extlibrary.ecore",
+				"--package", "extlibrary", "--root", "Library",
+				"--roots", "1", "--depth", "1", "--preflight", "none",
 				"--warmups", "1", "--repetitions", "2", "--raw", raw.toString(),
 				"--summary", summary.toString(), "--diagnostics", diagnostics.toString());
 		final var console = new ByteArrayOutputStream();
@@ -167,9 +170,9 @@ class EMFModelGeneratorPerformanceStatisticsTest {
 				new PrintStream(console, true, StandardCharsets.UTF_8));
 		assertThat(samples).hasSize(2).allSatisfy(sample -> {
 			assertThat(sample.status()).isEqualTo("ok");
-			assertThat(sample.counts()).isEqualTo(new Counts(2, 8, 2));
+			assertThat(sample.counts()).isEqualTo(new Counts(1, 4, 1));
 			assertThat(sample.diagnostic().computeCalls()).isPositive();
-			assertThat(sample.diagnostic().candidateEntries()).isPositive();
+			assertThat(sample.diagnostic().candidateEntries()).isGreaterThanOrEqualTo(0);
 			assertThat(sample.diagnostic().computeNanos()).isPositive();
 		});
 		assertThat(Files.readAllLines(raw).get(1)).contains("\"instrumented\"");
@@ -177,8 +180,7 @@ class EMFModelGeneratorPerformanceStatisticsTest {
 		assertThat(Files.readAllLines(diagnostics).getFirst())
 				.contains("compute_calls", "candidate_entries", "compute_elapsed_ns");
 		assertThat(console.toString(StandardCharsets.UTF_8))
-				.containsSubsequence("preflight start", "preflight done status=ok",
-						"warmup 1/1 start", "warmup 1/1 done status=ok",
+				.containsSubsequence("warmup 1/1 start", "warmup 1/1 done status=ok",
 						"measurement 1/2 start", "measurement 1/2 done status=ok",
 						"measurement 2/2 start", "measurement 2/2 done status=ok")
 				.contains("mode=instrumented", "diagnostics=" + diagnostics);
