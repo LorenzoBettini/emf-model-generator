@@ -385,6 +385,13 @@ def main():
                         help="wall seconds per Maven invocation, including fork")
     launch.add_argument("--selection-output", help="calibration selection JSON path")
     launch.add_argument("--selection", help="compatible calibration selection JSON path")
+    launch.add_argument("--roots", help="explicit comma-separated crossref root counts")
+    launch.add_argument("--scenarios", default="plugin-eclipse",
+                        help="comma-separated crossref scenarios for explicit roots")
+    launch.add_argument("--max-eobjects", type=int, default=400000)
+    launch.add_argument("--max-resources", type=int, default=25000)
+    launch.add_argument("--warmups", type=int, default=1)
+    launch.add_argument("--repetitions", type=int, default=2)
     analyze = sub.add_parser("report")
     analyze.add_argument("output", nargs="?", help="existing result directory")
     analyze.add_argument("--latest", choices=("large-paper", "crossref-investigation",

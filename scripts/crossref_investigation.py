@@ -10,7 +10,14 @@ import performance_evaluation as base
 import publication_evaluation as pub
 
 
-COLUMNS = "run_id scenario run_index reference calls selected custom_selected null_selections no_candidates exhausted_cycles attempts rejected_unknown max_attempts median_attempts p95_attempts attempt_histogram selection_elapsed_ns retrieval_elapsed_ns compute_calls candidate_entries compute_elapsed_ns status".split()
+COLUMNS = ("run_id scenario run_index reference calls selected custom_selected "
+           "null_selections no_candidates exhausted_cycles attempts rejected_unknown "
+           "max_attempts median_attempts p95_attempts attempt_histogram selection_elapsed_ns "
+           "retrieval_elapsed_ns compute_calls candidate_entries compute_elapsed_ns status "
+           "self_rejected opposite_single_occupied opposite_many_full multi_selection_calls "
+           "unique_retries unique_exhaustions contains_checks contains_list_elements "
+           "contains_elapsed_ns single_assignments single_assignment_elapsed_ns "
+           "multi_assignments multi_assignment_elapsed_ns").split()
 ALLOWED_DIAGNOSTIC_CHANGES = {
     "scripts/performance_evaluation.py", "scripts/publication_evaluation.py",
     "src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/"
@@ -19,6 +26,15 @@ ALLOWED_DIAGNOSTIC_CHANGES = {
 # Exact audited transition from the publication runner to this diagnostic runner.
 # A later edit must either match calibration anew or explicitly review this policy.
 VETTED_DIAGNOSTIC_HASHES = {
+    "scripts/performance_evaluation.py":
+        "55dd63e8c5e48da4e69c21531199dd5ccd2fd3bba52b48e1190fc75cc0c92aad",
+    "scripts/publication_evaluation.py":
+        "a3d30c7530c7ef45499448437ef7d4e4d3219b778d5371e2ea2b3e11abbdb1ee",
+    "src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/"
+    "EMFModelGeneratorPerformanceStatistics.java":
+        "85e4263e75390c246e91aa13bdd8fb888e83357421c1ecdfee2969a3485d92eb",
+}
+PREVIOUS_DIAGNOSTIC_HASHES = {
     "scripts/performance_evaluation.py":
         "96bb0e81501b4ec115fcd94ffb9a9523b62455d7e7e743447c318363ce9ffd49",
     "scripts/publication_evaluation.py":
@@ -57,6 +73,10 @@ def selection_compatible(selection, current):
         if new[path] != VETTED_DIAGNOSTIC_HASHES[path]:
             raise ValueError(f"Diagnostic source {path} differs from audited version; "
                              "recalibrate or review the compatibility policy")
+        if selection.get("test_only") and old[path] == PREVIOUS_DIAGNOSTIC_HASHES[path]:
+            # The preserved Mac smoke selection was made with precisely this
+            # audited, but then uncommitted, diagnostic implementation.
+            continue
         revision = selection["host"].get("git_revision")
         try:
             previous = subprocess.check_output(["git", "show", f"{revision}:{path}"],
@@ -110,6 +130,8 @@ def choose_cases(selection):
 
 
 def run_investigation(args):
+    if args.roots:
+        return run_explicit_roots(args)
     if args.selection_output or not args.selection:
         raise ValueError("crossref-investigation requires --selection and no --selection-output")
     if not args.heap or not __import__("re").fullmatch(r"[1-9][0-9]*[mgMG]", args.heap):
@@ -138,6 +160,66 @@ def run_investigation(args):
         item = pub.invoke(case, output, "selection", args.heap, 1, 2, args.timeout)
         manifest["invocations"].append(item)
         pub.write_json(output / "manifest.json", manifest)
+    report_investigation(output)
+    pub.save_latest(args.preset, output)
+    print(f"Result directory: {output}", flush=True)
+
+
+def run_explicit_roots(args):
+    """Opt-in staged sizes independent of the tiny publication selection."""
+    if args.selection or args.selection_output:
+        raise ValueError("--roots is incompatible with selection options")
+    if not args.heap or not __import__("re").fullmatch(r"[1-9][0-9]*[mgMG]", args.heap):
+        raise ValueError("--heap must be a positive JVM size such as 2g")
+    if (args.max_eobjects < 1 or args.max_resources < 1 or
+            args.warmups < 0 or args.repetitions < 1):
+        raise ValueError("caps must be positive; warmups nonnegative")
+    try:
+        roots = [int(value) for value in args.roots.split(",")]
+    except ValueError as exc:
+        raise ValueError("--roots requires comma-separated positive integers") from exc
+    if not roots or any(value < 1 for value in roots) or roots != sorted(set(roots)):
+        raise ValueError("--roots must be positive, unique, and ascending")
+    scenarios = args.scenarios.split(",")
+    factors = {"plugin-eclipse": 14, "extlibrary": 4, "ant": 9}
+    if not scenarios or len(scenarios) != len(set(scenarios)) or any(
+            scenario not in factors for scenario in scenarios):
+        raise ValueError("--scenarios supports unique plugin-eclipse,extlibrary,ant names")
+    cases = []
+    for scenario in scenarios:
+        spec = next(spec for spec in pub.SERIES
+                    if spec[0] == {"plugin-eclipse": "plugin-eclipse-roots",
+                                   "extlibrary": "extlibrary-roots",
+                                   "ant": "ant-roots"}[scenario])
+        for size in roots:
+            if size > args.max_resources or size * factors[scenario] > args.max_eobjects:
+                raise ValueError(f"{scenario} roots={size} exceeds configured projected "
+                                 "EObject/resource caps; reduce sizes or explicitly raise caps")
+            cases.append(pub.case_for(spec, size))
+    output = pub.new_output(args.preset, args.output)
+    current = pub.machine(args.heap)
+    manifest = {"schema_version": 2, "preset": args.preset, "mode": "explicit-roots",
+                "created_utc": pub.utc(), **current, "selected_cases": cases,
+                "skipped_cases": [], "invocations": [], "warmups": args.warmups,
+                "repetitions": args.repetitions, "timeout_seconds_per_invocation": args.timeout,
+                "caps": {"eobjects": args.max_eobjects,
+                         "resources": args.max_resources},
+                "projection_eobjects_per_root": factors}
+    pub.write_json(output / "manifest.json", manifest)
+    subprocess.run(["./mvnw", "-q", "-DskipTests", "test-compile"], cwd=base.ROOT,
+                   check=True, timeout=args.timeout)
+    for case in cases:
+        item = pub.invoke(case, output, "selection", args.heap, args.warmups,
+                          args.repetitions, args.timeout)
+        if item["status"] == "completed" and (
+                item["observed_eobjects"] > args.max_eobjects or
+                item["observed_resources"] > args.max_resources):
+            item["status"] = "cap-exceeded"
+            item["reason"] = "observed output exceeded configured cap"
+        manifest["invocations"].append(item)
+        pub.write_json(output / "manifest.json", manifest)
+        if item["status"] != "completed":
+            break  # Do not escalate to a larger configuration after failure or timeout.
     report_investigation(output)
     pub.save_latest(args.preset, output)
     print(f"Result directory: {output}", flush=True)
@@ -199,7 +281,13 @@ def validated_rows(output, item, manifest):
                     sum(int(key) * int(value) for key, value in hist.items()) !=
                     int(row["attempts"]) or
                     int(row["selected"]) + int(row["null_selections"]) != calls or
-                    int(row["rejected_unknown"]) > int(row["attempts"])):
+                    sum(int(row[key]) for key in
+                        ("rejected_unknown", "self_rejected", "opposite_single_occupied",
+                         "opposite_many_full")) !=
+                    int(row["attempts"]) - int(row["selected"]) +
+                    int(row["custom_selected"]) or
+                    int(row["unique_retries"]) > int(row["multi_selection_calls"]) or
+                    int(row["contains_checks"]) < int(row["unique_retries"])):
                 raise ValueError(f"{item['stem']}: inconsistent attempt counters")
     return raw, rows
 
@@ -209,7 +297,8 @@ def report_investigation(output):
     manifest = json.loads((output / "manifest.json").read_text())
     if manifest["preset"] != "crossref-investigation":
         raise ValueError("Wrong report preset")
-    if pub.file_hash(output / "selection.json") != manifest["selection_sha256"]:
+    selected_mode = manifest.get("mode") != "explicit-roots"
+    if selected_mode and pub.file_hash(output / "selection.json") != manifest["selection_sha256"]:
         raise ValueError("Selection checksum changed")
     cases = []
     features = []
@@ -229,7 +318,13 @@ def report_investigation(output):
                       **{key: statistics.median(sum(int(row[key]) for row in rows
                                                      if int(row["run_index"]) == index)
                                                  for index in range(1, len(raw) + 1))
-                         for key in ("calls", "attempts", "rejected_unknown",
+                         for key in ("calls", "attempts", "rejected_unknown", "self_rejected",
+                                     "opposite_single_occupied", "opposite_many_full",
+                                     "multi_selection_calls", "unique_retries",
+                                     "unique_exhaustions", "contains_checks",
+                                     "contains_list_elements", "contains_elapsed_ns",
+                                     "single_assignments", "single_assignment_elapsed_ns",
+                                     "multi_assignments", "multi_assignment_elapsed_ns",
                                      "null_selections", "exhausted_cycles",
                                      "selection_elapsed_ns", "retrieval_elapsed_ns")},
                       "compute_elapsed_ns": statistics.median(
@@ -241,7 +336,12 @@ def report_investigation(output):
     base.write_csv(output / "selection-cases.csv", list(cases[0]) if cases else
                    ["series", "scenario", "roots", "eobjects", "resources", "samples",
                     "generation_median_ns_instrumented", "calls", "attempts",
-                    "rejected_unknown", "null_selections", "exhausted_cycles",
+                    "rejected_unknown", "self_rejected", "opposite_single_occupied",
+                    "opposite_many_full", "multi_selection_calls", "unique_retries",
+                    "unique_exhaustions", "contains_checks", "contains_list_elements",
+                    "contains_elapsed_ns", "single_assignments",
+                    "single_assignment_elapsed_ns", "multi_assignments",
+                    "multi_assignment_elapsed_ns", "null_selections", "exhausted_cycles",
                     "selection_elapsed_ns", "retrieval_elapsed_ns", "compute_elapsed_ns"], cases)
     base.write_csv(output / "selection-features.csv", ["series", "roots"] + COLUMNS, features)
     hotspot_rows = []
@@ -252,12 +352,24 @@ def report_investigation(output):
                                                row["reference"]) == (series, roots, reference)]
         hotspot_rows.append({"series": series, "roots": roots, "reference": reference,
                              "samples": len(subset),
+                             "rejected_total_median": statistics.median(
+                                 sum(int(row[key]) for key in
+                                     ("self_rejected", "opposite_single_occupied",
+                                      "opposite_many_full", "rejected_unknown"))
+                                 for row in subset),
                              **{key + "_median": statistics.median(int(row[key]) for row in subset)
                                 for key in ("calls", "attempts", "rejected_unknown",
+                                            "unique_retries", "contains_elapsed_ns",
+                                            "single_assignment_elapsed_ns",
+                                            "multi_assignment_elapsed_ns",
                                             "null_selections", "exhausted_cycles",
                                             "selection_elapsed_ns")}})
-    hotspot_columns = ["series", "roots", "reference", "samples"] + [
+    hotspot_columns = ["series", "roots", "reference", "samples",
+                       "rejected_total_median"] + [
         key + "_median" for key in ("calls", "attempts", "rejected_unknown",
+                                    "unique_retries", "contains_elapsed_ns",
+                                    "single_assignment_elapsed_ns",
+                                    "multi_assignment_elapsed_ns",
                                     "null_selections", "exhausted_cycles",
                                     "selection_elapsed_ns")]
     base.write_csv(output / "selection-hotspots.csv", hotspot_columns, hotspot_rows)
@@ -265,25 +377,37 @@ def report_investigation(output):
                    failures + [{**case, "status": "skipped"} for case in manifest["skipped_cases"]])
     lines = ["# Cross-reference selection investigation", "",
              "**Diagnostic measurements only; no uninstrumented speed comparison.**", "",
-             f"Calibration revision: `{manifest['calibration_host']['git_revision']}`; "
-             f"diagnostic revision: `{manifest['host']['git_revision']}`; "
-             f"allowed changed benchmark files: {manifest['allowed_diagnostic_changes']}.",
+             (f"Calibration revision: `{manifest['calibration_host']['git_revision']}`; "
+              f"diagnostic revision: `{manifest['host']['git_revision']}`; "
+              f"allowed changed benchmark files: {manifest['allowed_diagnostic_changes']}."
+              if selected_mode else
+              f"Explicit root sweep at revision `{manifest['host']['git_revision']}`; "
+              f"caps: {manifest['caps']}; timeout: "
+              f"{manifest['timeout_seconds_per_invocation']} seconds per fork."),
              f"Host: {manifest['host']['platform']}; heap: {manifest['heap']}; "
              f"JDK: {manifest['host']['java_version_output']}; "
              f"JVM flags: {manifest['fixed_jvm_flags']}.",
-             "Production Java, scenario configuration, Maven POM, metamodel hashes, "
-             "JVM and physical host match the calibrated selection. Only the listed "
-             "benchmark driver/runner files may differ. Git revision alone is not a "
-             "compatibility test; the original selection is archived intact.", "",
+             ("Production Java, scenario configuration, Maven POM, metamodel hashes, "
+              "JVM and physical host match the calibrated selection. Only the listed "
+              "benchmark driver/runner files may differ under the exact audited hash "
+              "transitions. Git revision alone is not a "
+              "compatibility test; the original selection is archived intact."
+              if selected_mode else
+              "This explicit sweep has no calibration selection; each observed size, "
+              "failure and source fingerprint is retained in the raw files."), "",
              "| Series | Roots | EObjects | Samples | Calls | Attempts | Rejected "
-             "(cause unknown) | Exhausted | Selection ms | Compute ms |",
-             "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+             "(opposite single / many / self / unknown) | Unique retries | "
+             "contains ms | assignment ms | Selection ms |",
+             "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for case in cases:
         lines.append(f"| {case['series']} | {case['roots']} | {case['eobjects']} | "
                      f"{case['samples']} | {case['calls']} | {case['attempts']} | "
-                     f"{case['rejected_unknown']} | {case['exhausted_cycles']} | "
-                     f"{case['selection_elapsed_ns']/1e6:.3f} | "
-                     f"{case['compute_elapsed_ns']/1e6:.3f} |")
+                     f"{case['opposite_single_occupied']} / {case['opposite_many_full']} / "
+                     f"{case['self_rejected']} / {case['rejected_unknown']} | "
+                     f"{case['unique_retries']} | "
+                     f"{case['contains_elapsed_ns']/1e6:.3f} | "
+                     f"{(case['single_assignment_elapsed_ns'] + case['multi_assignment_elapsed_ns'])/1e6:.3f} | "
+                     f"{case['selection_elapsed_ns']/1e6:.3f} |")
     lines += ["", "`selection-features.csv` contains each measured repetition and reference, "
               "including an exact attempts-per-call histogram, median, p95 and maximum. "
               "`selection-cases.csv` gives per-case medians; `selection-hotspots.csv` "
@@ -295,18 +419,22 @@ def report_investigation(output):
     for row in sorted(hotspot_rows, key=lambda row: row["selection_elapsed_ns_median"],
                       reverse=True)[:12]:
         lines.append(f"| {row['series']} | {row['roots']} | {row['reference']} | "
-                     f"{row['attempts_median']} | {row['rejected_unknown_median']} | "
+                     f"{row['attempts_median']} | {row['rejected_total_median']} | "
                      f"{row['selection_elapsed_ns_median']/1e6:.3f} |")
     lines += ["",
               "A selector call returning the first candidate again closes an exhausted cycle "
               "and is not a second attempted candidate. A null first retrieval means zero "
               "attempts. A non-null custom-function result with no selector call is counted "
-              "separately. Each `selectValue` invocation is counted once; unique-list retries "
-              "are separate invocations, and list membership cost is not isolated here. "
-              "Rejected causes remain unknown because the production validity predicate is "
-              "private; no extra policy/predicate invocation was made.", "",
+              "separately. Each `selectValue` invocation is counted once. Unique-list retries, "
+              "membership checks and checked list lengths are measured separately. Rejection "
+              "reasons are inferred only after the original predicate rejects a selector "
+              "candidate: non-self opposite saturation is classified by opposite multiplicity; "
+              "self rejection is certain only without an opposite. Ambiguous self/opposite "
+              "cases remain unknown. The predicate and self policy are never called again.", "",
               "Selection elapsed includes selector retrieval and candidate compute. Retrieval "
-              "includes compute; these are nested timings and must not be added. All elapsed "
+              "includes compute; these are nested timings and must not be added. Assignment "
+              "elapsed includes EMF inverse/opposite maintenance but does not isolate it from "
+              "other EMF list work. All elapsed "
               "values are instrumented, include probe overhead, and are not comparable to "
               "the old uninstrumented publication wall times. EMF eSet/opposite maintenance, "
               "list.contains, setup and GC can also contribute to generation time.", "",

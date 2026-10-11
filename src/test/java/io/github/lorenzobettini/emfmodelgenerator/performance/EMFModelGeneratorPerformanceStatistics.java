@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import jdk.jfr.Recording;
+
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -50,7 +52,11 @@ public final class EMFModelGeneratorPerformanceStatistics {
 			"attempts", "rejected_unknown", "max_attempts", "median_attempts",
 			"p95_attempts", "attempt_histogram", "selection_elapsed_ns",
 			"retrieval_elapsed_ns", "compute_calls", "candidate_entries",
-			"compute_elapsed_ns", "status");
+			"compute_elapsed_ns", "status", "self_rejected", "opposite_single_occupied",
+			"opposite_many_full", "multi_selection_calls", "unique_retries",
+			"unique_exhaustions", "contains_checks", "contains_list_elements",
+			"contains_elapsed_ns", "single_assignments", "single_assignment_elapsed_ns",
+			"multi_assignments", "multi_assignment_elapsed_ns");
 
 	private EMFModelGeneratorPerformanceStatistics() {
 	}
@@ -371,10 +377,21 @@ public final class EMFModelGeneratorPerformanceStatistics {
 				? null : config.selectionAttempts() ? null : new InstrumentedEObjectCandidateSelector();
 		final var selectionProbe = config.selectionAttempts() ? new SelectionAttemptProbe() : null;
 		final var generator = configured(config, selector, selectionProbe);
-		try {
+		final String jfrPath = System.getProperty("benchmark.jfr.path");
+		final boolean profile = measured && index == 1 && config.diagnosticPath() == null
+				&& jfrPath != null && !jfrPath.isBlank();
+		try (var recording = profile
+				? new Recording(jdk.jfr.Configuration.getConfiguration("profile")) : null) {
+			if (profile) {
+				recording.start();
+			}
 			final long start = measured ? System.nanoTime() : 0;
 			final var models = generator.generateFromSeveral(root);
 			final long elapsed = measured ? System.nanoTime() - start : 0;
+			if (profile) {
+				recording.stop();
+				recording.dump(Path.of(jfrPath));
+			}
 			final var counts = count(generator, models.size());
 			if (preflight) {
 				final var result = config.preflight() == Preflight.ROUNDTRIP
@@ -486,7 +503,12 @@ public final class EMFModelGeneratorPerformanceStatistics {
 							c.maximumAttempts, c.percentile(0.5), c.percentile(0.95),
 							c.histogramText(), c.selectionNanos, c.retrievalNanos,
 							discovery.computeCalls(), discovery.candidateEntries(),
-							discovery.computeNanos(), sample.status())).append('\n');
+							discovery.computeNanos(), sample.status(), c.selfRejected,
+							c.oppositeSingleOccupied, c.oppositeManyFull, c.multiSelectionCalls,
+							c.uniqueRetries, c.uniqueExhaustions, c.containsChecks,
+							c.containsListElements, c.containsNanos, c.singleAssignments,
+							c.singleAssignmentNanos, c.multiAssignments,
+							c.multiAssignmentNanos)).append('\n');
 				}
 			}
 			writeFile(config.diagnosticPath(), selection.toString());

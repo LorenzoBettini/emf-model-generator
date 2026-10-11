@@ -96,6 +96,13 @@ class SelectionAttemptProbeTest {
 		final var counters = probe.features().values().iterator().next();
 		assertThat(counters.calls).isGreaterThan(3);
 		assertThat(counters.rejectedUnknown).isZero();
+		assertThat(counters.uniqueRetries).isPositive();
+		assertThat(counters.uniqueExhaustions).isEqualTo(1);
+		assertThat(counters.multiSelectionCalls).isEqualTo(counters.calls);
+		assertThat(counters.containsChecks).isGreaterThanOrEqualTo(counters.uniqueRetries);
+		assertThat(counters.containsListElements).isPositive();
+		assertThat(counters.multiAssignments).isEqualTo(2);
+		assertThat(counters.singleAssignments).isZero();
 		assertThat(Diagnostician.INSTANCE.validate(observed.owner()).getSeverity()).isZero();
 	}
 
@@ -108,7 +115,7 @@ class SelectionAttemptProbeTest {
 		final var counters = probe.features().values().iterator().next();
 		assertThat(counters.exhausted).isEqualTo(1);
 		assertThat(counters.attempts).isEqualTo(1);
-		assertThat(counters.rejectedUnknown).isEqualTo(1);
+		assertThat(counters.selfRejected).isEqualTo(1);
 		probe.setSelfReferencePolicy((owner, reference) -> true);
 		assertThat(probe.selectValue(graph.owner(), graph.reference())).isSameAs(graph.owner());
 		assertThat(counters.selected).isEqualTo(1);
@@ -138,7 +145,9 @@ class SelectionAttemptProbeTest {
 		assertThat(probe.selectValue(observed.owner(), observed.reference()))
 				.isSameAs(observed.candidates().get(1));
 		assertThat(probe.features().values().iterator().next().attempts).isEqualTo(2);
-		assertThat(probe.features().values().iterator().next().rejectedUnknown).isEqualTo(1);
+		assertThat(probe.features().values().iterator().next().rejectedUnknown).isZero();
+		assertThat(probe.features().values().iterator().next().oppositeSingleOccupied)
+				.isEqualTo(1);
 		baseSetter.setCrossReference(baseline.owner(), baseline.reference());
 		probe.setCrossReference(observed.owner(), observed.reference());
 		final var group = (FeatureMap) observed.owner().eGet(
@@ -176,6 +185,7 @@ class SelectionAttemptProbeTest {
 		assertThat(probe.selectValue(observed.owner(), observed.reference()))
 				.isSameAs(observed.candidates().get(1));
 		assertThat(probe.features().values().iterator().next().attempts).isEqualTo(2);
-		assertThat(probe.features().values().iterator().next().rejectedUnknown).isEqualTo(1);
+		assertThat(probe.features().values().iterator().next().rejectedUnknown).isZero();
+		assertThat(probe.features().values().iterator().next().oppositeManyFull).isEqualTo(1);
 	}
 }

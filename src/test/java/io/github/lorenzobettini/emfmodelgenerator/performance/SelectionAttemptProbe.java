@@ -9,6 +9,7 @@ import org.eclipse.emf.ecore.EReference;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter;
 import io.github.lorenzobettini.emfmodelgenerator.EMFRoundRobinEObjectCandidateSelector;
+import io.github.lorenzobettini.emfmodelgenerator.EMFUtils;
 
 /** Test-only observer around the unchanged selection algorithm and round-robin selector. */
 final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
@@ -18,6 +19,11 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 	private long retrievalNanosInSelection;
 	private boolean firstWasNull;
 	private boolean selecting;
+	private EObject previousCandidate;
+	private EObject currentOwner;
+	private EReference currentReference;
+	private Counters currentCounters;
+	private int classifiedInSelection;
 
 	SelectionAttemptProbe() {
 		setCandidateSelectorStrategy(selector);
@@ -25,13 +31,17 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 
 	@Override
 	public EObject selectValue(final EObject owner, final EReference reference) {
-		final String name = reference.getEContainingClass().getEPackage().getName() + "::"
-				+ reference.getEContainingClass().getName() + "." + reference.getName();
+		final var counters = counters(reference);
 		final long start = System.nanoTime();
 		callsInSelection = 0;
 		retrievalNanosInSelection = 0;
 		firstWasNull = false;
 		selecting = true;
+		previousCandidate = null;
+		currentOwner = owner;
+		currentReference = reference;
+		currentCounters = counters;
+		classifiedInSelection = 0;
 		EObject result = null;
 		try {
 			result = super.selectValue(owner, reference);
@@ -42,10 +52,74 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 			final int attempts = callsInSelection - (exhausted ? 1 : 0)
 					- (firstWasNull ? 1 : 0);
 			final int accepted = result != null && callsInSelection > 0 ? 1 : 0;
-			features.computeIfAbsent(name, ignored -> new Counters()).add(
-					attempts, attempts - accepted, result == null, exhausted,
+			counters.add(
+					attempts, attempts - accepted - classifiedInSelection,
+					result == null, exhausted,
 					firstWasNull, result != null && callsInSelection == 0,
 					System.nanoTime() - start, retrievalNanosInSelection);
+			previousCandidate = null;
+			currentOwner = null;
+			currentReference = null;
+			currentCounters = null;
+		}
+	}
+
+	private Counters counters(final EReference reference) {
+		final String name = reference.getEContainingClass().getEPackage().getName() + "::"
+				+ reference.getEContainingClass().getName() + "." + reference.getName();
+		return features.computeIfAbsent(name, ignored -> new Counters());
+	}
+
+	/* Mirrors the production loops solely to isolate membership and inverse assignment cost. */
+	@Override
+	protected void setSingleFeature(final EObject owner, final EReference reference) {
+		final EObject value = selectValue(owner, reference);
+		if (value != null) {
+			final long start = System.nanoTime();
+			owner.eSet(reference, value);
+			final var c = counters(reference);
+			c.singleAssignments++;
+			c.singleAssignmentNanos += System.nanoTime() - start;
+		}
+	}
+
+	@Override
+	protected void setMultiFeature(final EObject owner, final EReference reference) {
+		final var list = EMFUtils.getAsList(owner, reference);
+		final int count = EMFUtils.getEffectiveCount(reference, getMaxCountFor(owner, reference));
+		final int missingCount = count - list.size();
+		final var c = counters(reference);
+		for (int i = 0; i < missingCount; i++) {
+			c.multiSelectionCalls++;
+			EObject value = selectValue(owner, reference);
+			if (reference.isUnique()) {
+				final EObject firstCandidate = value;
+				while (value != null) {
+					final int length = list.size();
+					final long start = System.nanoTime();
+					final boolean present = list.contains(value);
+					c.containsNanos += System.nanoTime() - start;
+					c.containsChecks++;
+					c.containsListElements += length;
+					if (!present) {
+						break;
+					}
+					c.uniqueRetries++;
+					c.multiSelectionCalls++;
+					value = selectValue(owner, reference);
+					if (value == firstCandidate) {
+						c.uniqueExhaustions++;
+						return;
+					}
+				}
+			}
+			if (value == null) {
+				return;
+			}
+			final long start = System.nanoTime();
+			list.add(value);
+			c.multiAssignments++;
+			c.multiAssignmentNanos += System.nanoTime() - start;
 		}
 	}
 
@@ -60,11 +134,15 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 	final class Selector extends InstrumentedEObjectCandidateSelector {
 		@Override
 		public EObject getNextCandidate(final EObject context, final EClass type) {
+			if (selecting && previousCandidate != null) {
+				classifyRejected(previousCandidate);
+			}
 			final long start = System.nanoTime();
 			try {
 				final EObject candidate = super.getNextCandidate(context, type);
 				if (selecting) {
 					callsInSelection++;
+					previousCandidate = candidate;
 					if (callsInSelection == 1 && candidate == null) {
 						firstWasNull = true;
 					}
@@ -82,6 +160,27 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 		}
 	}
 
+	private void classifyRejected(final EObject candidate) {
+		classifiedInSelection++;
+		final var opposite = currentReference.getEOpposite();
+		if (candidate == currentOwner) {
+			if (opposite == null) {
+				currentCounters.selfRejected++;
+			} else {
+				// The private self policy may have allowed it before the opposite rejected it.
+				currentCounters.rejectedUnknown++;
+			}
+		} else if (opposite != null && candidate.eClass().getEAllReferences().contains(opposite)) {
+			if (opposite.isMany()) {
+				currentCounters.oppositeManyFull++;
+			} else {
+				currentCounters.oppositeSingleOccupied++;
+			}
+		} else {
+			currentCounters.rejectedUnknown++;
+		}
+	}
+
 	static final class Counters {
 		long calls;
 		long selected;
@@ -91,6 +190,19 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 		long exhausted;
 		long attempts;
 		long rejectedUnknown;
+		long selfRejected;
+		long oppositeSingleOccupied;
+		long oppositeManyFull;
+		long multiSelectionCalls;
+		long uniqueRetries;
+		long uniqueExhaustions;
+		long containsChecks;
+		long containsListElements;
+		long containsNanos;
+		long singleAssignments;
+		long singleAssignmentNanos;
+		long multiAssignments;
+		long multiAssignmentNanos;
 		long selectionNanos;
 		long retrievalNanos;
 		int maximumAttempts;

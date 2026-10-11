@@ -27,24 +27,76 @@ report. It contains an archived selection, manifest, raw CSVs, fork logs,
 Compatibility checks the calibrated Ecore and production Java hashes, POM,
 scenario profile, host, JDK, JVM flags, and heap. Benchmark driver/runner source
 may differ only when its calibrated version matches the vetted publication
-implementation at `ac673ba` and its current version matches the audited
-diagnostic hashes exactly; other changed sources are rejected. The
+implementation at `ac673ba`, or the preserved test-only selection matches the
+exact previous diagnostic hashes, and its current version matches the new
+audited hashes. Other changed sources are rejected. The
 calibration and diagnostic revision/dirty state are both retained. Use a new
 calibration from the same host if this policy rejects the old one; never edit the
 selection to force a match.
 
-The test-only probe overrides `selectValue` and observes calls to the existing
-round-robin selector. It does not implement its own validity or selection rule.
-A full-cycle closing lookup is excluded from attempted candidates. Unknown
-rejections include self-policy and opposite checks because the private validity
-predicate cannot be observed without changing production code. A successful
-custom-function short circuit has zero selector attempts. Unique-list retries
-are distinct `selectValue` calls; list membership cost is not separately timed.
-Selection elapsed contains retrieval and compute; these nested times must not be
-added. Instrumented generation times are not a speed comparison with the old
-baseline. EMF `eSet`/opposite maintenance, `list.contains`, and GC remain possible
-hot paths until independently profiled. There is no supported experimental fast
-path, so `crossref-comparison` reports `not available: no supported optimization`.
+The test-only probe overrides `selectValue` and observes the existing round-robin
+selector. It invokes the original private validity predicate once per candidate.
+A full-cycle closing lookup is excluded from attempts. A null first lookup means
+zero attempts. A successful custom-function short circuit has zero selector
+attempts. Rejected selector candidates are classified *after* rejection: a
+non-self candidate with an applicable opposite is classified as occupied single
+or full many opposite; a self candidate without an opposite is self rejection.
+Self candidates with opposites and other ambiguous cases remain unknown. No
+policy or validity predicate is reevaluated. These are diagnostic inferences,
+not a replacement validity rule.
+
+The test-only setter mirrors the current production single/many assignment
+loops to isolate `multi_selection_calls`, `unique_retries`, `unique_exhaustions`,
+`contains_checks`, `contains_list_elements` (sum of list lengths checked),
+`contains_elapsed_ns`, and single/many assignment count and elapsed nanoseconds.
+Assignment time includes EMF inverse/opposite maintenance, notification and
+list operations; it cannot isolate those internal costs. `selectValue` elapsed
+contains selector retrieval and candidate compute; these nested times must not
+be added. All timings include instrumentation overhead. The test suite compares
+selected identity/order, XMI, validation and opposite behavior with the normal
+setter. There is no supported optimization; `crossref-comparison` reports
+`not available: no supported optimization`.
+
+### Explicit root sweep for the follow-up
+
+The calibrated selection currently reaches only tiny models. `--roots` runs
+independent, opt-in, ascending configurations without that selection. It records
+source/host metadata, actual counts, raw rows, failures and caps in a new result
+directory. A projected EObject bound (14 per PluginEclipse root, 4 for
+EXTLibrary, 9 for Ant) checks each request before launch; the observed count is
+checked after each fork. It stops the sweep after a failure, timeout or cap.
+Keep the Mac smoke bounded to 5 roots:
+
+```sh
+./mvnw -q -DskipTests test-compile
+python3 scripts/performance_evaluation.py run --preset crossref-investigation --roots 1,2,5 --scenarios plugin-eclipse --heap 512m --timeout 120 --max-eobjects 1000 --max-resources 10 --warmups 1 --repetitions 2
+python3 scripts/performance_evaluation.py report --latest crossref-investigation
+```
+
+On the Dell workstation, stage the same fixed PluginEclipse profile toward the
+previous ~293,000 EObject region. Raise caps only with an explicit new command:
+
+```sh
+./mvnw -q -DskipTests test-compile
+python3 scripts/performance_evaluation.py run --preset crossref-investigation --roots 100,1000,5000,10000,20000 --scenarios plugin-eclipse --heap 2g --timeout 1800 --max-eobjects 400000 --max-resources 25000 --warmups 1 --repetitions 2
+python3 scripts/performance_evaluation.py report --latest crossref-investigation
+```
+
+Profile one separate **uninstrumented** PluginEclipse fork with JFR at a size
+the staged sweep has shown feasible. The benchmark driver starts JFR around
+the first measured `generateFromSeveral` call only, excluding metamodel loading
+and post-generation validation. This preserves a separate raw baseline and a
+`.jfr` file; it is diagnostic, not a publication measurement:
+
+```sh
+python3 scripts/profile_crossref_jfr.py --roots 20000 --heap 2g --timeout 1800 --max-eobjects 400000 --max-resources 25000
+jfr view --width 160 hot-methods target/benchmark/crossref-jfr-*/plugin-eclipse.jfr
+```
+
+Inspect `gc`, `allocation-by-site` and `hot-methods` views, and compare the
+dominant stacks with per-reference counters. Keep JFR timings separate from
+uninstrumented baseline and instrumented counter timings. The Mac smoke does
+not establish the cause of the previously observed large-model slowdown.
 
 ## Calibrated publication-scale workflow
 
