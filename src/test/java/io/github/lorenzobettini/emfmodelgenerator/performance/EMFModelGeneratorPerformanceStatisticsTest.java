@@ -3,6 +3,9 @@ package io.github.lorenzobettini.emfmodelgenerator.performance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -115,7 +118,9 @@ class EMFModelGeneratorPerformanceStatisticsTest {
 				"--roots", "2", "--depth", "0", "--warmups", "1",
 				"--repetitions", "2", "--raw", raw.toString(),
 				"--summary", summary.toString());
-		final var samples = EMFModelGeneratorPerformanceStatistics.run(config);
+		final var console = new ByteArrayOutputStream();
+		final var samples = EMFModelGeneratorPerformanceStatistics.run(config,
+				new PrintStream(console, true, StandardCharsets.UTF_8));
 		assertThat(samples).hasSize(2);
 		assertThat(samples).allSatisfy(sample -> {
 			assertThat(sample.status()).isEqualTo("ok");
@@ -132,6 +137,20 @@ class EMFModelGeneratorPerformanceStatisticsTest {
 		final var summaryLines = Files.readAllLines(summary);
 		assertThat(summaryLines).hasSize(2);
 		assertThat(summaryLines.get(1)).contains("\"small\"", "\"2\"", "\"ok\"");
+		final var output = console.toString(StandardCharsets.UTF_8);
+		assertThat(output).containsSubsequence("warmup 1/1 start", "warmup 1/1 done status=ok",
+				"measurement 1/2 start", "measurement 1/2 done status=ok",
+				"measurement 2/2 start", "measurement 2/2 done status=ok", "summary samples=2");
+		assertThat(output).contains("scenario=small mode=baseline", "actual_roots=2 eobjects=2"
+				+ " model_resources=2", "median_ns=", "p25_ns=", "p75_ns=",
+				"raw=" + raw, "summary=" + summary);
+		for (final var sample : samples) {
+			assertThat(output).contains("elapsed_ns=" + sample.elapsedNanos());
+			assertThat(rawLines.get(sample.index())).contains("\"" + sample.elapsedNanos() + "\"");
+		}
+		final var stats = EMFModelGeneratorPerformanceStatistics.summarize(samples);
+		assertThat(output).contains("median_ns=" + stats.median(),
+				"p25_ns=" + stats.p25(), "p75_ns=" + stats.p75());
 	}
 
 	@Test
@@ -143,7 +162,9 @@ class EMFModelGeneratorPerformanceStatisticsTest {
 				"--profile", "extlibrary", "--roots", "2", "--depth", "1",
 				"--warmups", "1", "--repetitions", "2", "--raw", raw.toString(),
 				"--summary", summary.toString(), "--diagnostics", diagnostics.toString());
-		final var samples = EMFModelGeneratorPerformanceStatistics.run(config);
+		final var console = new ByteArrayOutputStream();
+		final var samples = EMFModelGeneratorPerformanceStatistics.run(config,
+				new PrintStream(console, true, StandardCharsets.UTF_8));
 		assertThat(samples).hasSize(2).allSatisfy(sample -> {
 			assertThat(sample.status()).isEqualTo("ok");
 			assertThat(sample.counts()).isEqualTo(new Counts(2, 8, 2));
@@ -155,5 +176,39 @@ class EMFModelGeneratorPerformanceStatisticsTest {
 		assertThat(Files.readAllLines(diagnostics)).hasSize(3);
 		assertThat(Files.readAllLines(diagnostics).getFirst())
 				.contains("compute_calls", "candidate_entries", "compute_elapsed_ns");
+		assertThat(console.toString(StandardCharsets.UTF_8))
+				.containsSubsequence("preflight start", "preflight done status=ok",
+						"warmup 1/1 start", "warmup 1/1 done status=ok",
+						"measurement 1/2 start", "measurement 1/2 done status=ok",
+						"measurement 2/2 start", "measurement 2/2 done status=ok")
+				.contains("mode=instrumented", "diagnostics=" + diagnostics);
+		for (final var sample : samples) {
+			assertThat(console.toString(StandardCharsets.UTF_8))
+					.contains("compute_calls=" + sample.diagnostic().computeCalls(),
+							"candidate_entries=" + sample.diagnostic().candidateEntries(),
+							"compute_elapsed_ns=" + sample.diagnostic().computeNanos());
+		}
+	}
+
+	@Test
+	void failedPreflightIsReportedBeforeAborting() throws Exception {
+		final var raw = temporary.resolve("invalid-raw.csv");
+		final var summary = temporary.resolve("invalid-summary.csv");
+		final var config = EMFModelGeneratorPerformanceStatistics.parse(
+				"--scenario", "invalid-plugin-depth",
+				"--metamodel", "src/test/resources/external-metamodels/PluginEclipse.ecore",
+				"--package", "PluginEclipse", "--root", "Eclipse", "--roots", "1",
+				"--depth", "3", "--preflight", "roundtrip", "--warmups", "0",
+				"--repetitions", "1", "--raw", raw.toString(),
+				"--summary", summary.toString());
+		final var console = new ByteArrayOutputStream();
+		assertThatThrownBy(() -> EMFModelGeneratorPerformanceStatistics.run(config,
+				new PrintStream(console, true, StandardCharsets.UTF_8)))
+				.isInstanceOf(IllegalStateException.class).hasMessageContaining("Preflight failed");
+		assertThat(console.toString(StandardCharsets.UTF_8))
+				.containsSubsequence("preflight start", "preflight done status=invalid")
+				.contains("error=")
+				.doesNotContain("measurement 1/1 start");
+		assertThat(Files.readAllLines(raw)).hasSize(2);
 	}
 }

@@ -177,6 +177,26 @@ p25 and p75 nanoseconds (linear interpolation, rounded to a nanosecond).
 Neither file is append-only: give every run a distinct pair of output paths.
 Do not combine invalid or instrumented runs with baseline timings.
 
+The forked CLI also prints a start and completion line for each preflight,
+warmup, and measured generation. Completion lines show status and actual
+root, EObject, and model-resource counts; measured lines include the exact
+`elapsed_ns` written to raw CSV. After successful measurements, a final line
+shows sample count, median, p25, p75, and output paths. Failures show their
+status and error before the CLI aborts. Instrumented measured lines also show
+`compute_calls`, `candidate_entries`, and `compute_elapsed_ns`. For example:
+
+```text
+[benchmark] scenario=extlibrary mode=baseline measurement 1/2 start requested_roots=1 depth=1
+[benchmark] scenario=extlibrary mode=baseline measurement 1/2 done status=ok actual_roots=1 eobjects=4 model_resources=1 elapsed_ns=1234567
+[benchmark] scenario=extlibrary mode=baseline summary samples=2 median_ns=1234567 p25_ns=1200000 p75_ns=1300000 raw=target/benchmark/raw.csv summary=target/benchmark/summary.csv
+```
+
+These numbers illustrate the format; actual results come from each run.
+Console output is on by default and is flushed before timing begins. The
+timer still surrounds only `generateFromSeveral`; output and CSV writing are
+outside the timed interval. Console activity may still indirectly influence
+JIT, GC, or scheduling, so use the same output behavior for compared runs.
+
 ## Candidate discovery diagnostic
 
 The default `benchmark.diagnostics=off` uses the ordinary selector. Set the

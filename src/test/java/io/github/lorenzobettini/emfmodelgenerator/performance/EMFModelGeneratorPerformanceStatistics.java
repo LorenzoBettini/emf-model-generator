@@ -1,6 +1,7 @@
 package io.github.lorenzobettini.emfmodelgenerator.performance;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -230,6 +231,11 @@ public final class EMFModelGeneratorPerformanceStatistics {
 	}
 
 	static List<Sample> run(final Configuration config) throws IOException {
+		return run(config, System.out);
+	}
+
+	static List<Sample> run(final Configuration config, final PrintStream output)
+			throws IOException {
 		final var metadata = Metadata.capture(config.metamodel());
 		final var loader = new EMFModelGenerator();
 		final var samples = new ArrayList<Sample>();
@@ -237,7 +243,9 @@ public final class EMFModelGeneratorPerformanceStatistics {
 			final var packages = loader.loadEcoreModelPackages(config.metamodel().toString());
 			final var root = selectRoot(packages, config.packageName(), config.rootClass());
 			if (config.preflight() != Preflight.NONE) {
+				printStart(output, config, "preflight");
 				final var checked = observe(config, root, 0, false, true);
+				printResult(output, config, "preflight", checked, false);
 				if (!checked.status().equals("ok")) {
 					samples.add(checked);
 					write(config, metadata, samples);
@@ -245,7 +253,10 @@ public final class EMFModelGeneratorPerformanceStatistics {
 				}
 			}
 			for (int i = 0; i < config.warmups(); i++) {
+				final var phase = "warmup " + (i + 1) + "/" + config.warmups();
+				printStart(output, config, phase);
 				final var warmup = observe(config, root, 0, false, false);
+				printResult(output, config, phase, warmup, false);
 				if (!warmup.status().equals("ok")) {
 					samples.add(warmup);
 					write(config, metadata, samples);
@@ -253,17 +264,58 @@ public final class EMFModelGeneratorPerformanceStatistics {
 				}
 			}
 			for (int i = 1; i <= config.repetitions(); i++) {
+				final var phase = "measurement " + i + "/" + config.repetitions();
+				printStart(output, config, phase);
 				final var sample = observe(config, root, i, true, false);
+				printResult(output, config, phase, sample, true);
 				samples.add(sample);
 				write(config, metadata, samples);
 				if (!sample.status().equals("ok")) {
 					throw new IllegalStateException("Measurement failed: " + sample.error());
 				}
 			}
+			final var stats = summarize(samples);
+			output.println(prefix(config) + "summary samples=" + samples.size()
+					+ " median_ns=" + stats.median() + " p25_ns=" + stats.p25()
+					+ " p75_ns=" + stats.p75() + " raw=" + config.rawPath()
+					+ " summary=" + config.summaryPath()
+					+ (config.diagnosticPath() == null ? ""
+							: " diagnostics=" + config.diagnosticPath()));
+			output.flush();
 			return List.copyOf(samples);
 		} finally {
 			loader.unloadEcoreModels();
 		}
+	}
+
+	private static String prefix(final Configuration config) {
+		return "[benchmark] scenario=" + config.scenario() + " mode="
+				+ (config.diagnosticPath() == null ? "baseline" : "instrumented") + " ";
+	}
+
+	private static void printStart(final PrintStream output, final Configuration config,
+			final String phase) {
+		output.println(prefix(config) + phase + " start requested_roots=" + config.roots()
+				+ " depth=" + config.depth());
+		output.flush();
+	}
+
+	private static void printResult(final PrintStream output, final Configuration config,
+			final String phase, final Sample sample, final boolean measured) {
+		final var counts = sample.counts();
+		final var diagnostic = sample.diagnostic();
+		output.println(prefix(config) + phase + " done status=" + sample.status()
+				+ " actual_roots=" + counts.roots() + " eobjects=" + counts.objects()
+				+ " model_resources=" + counts.resources()
+				+ (measured && sample.status().equals("ok")
+						? " elapsed_ns=" + sample.elapsedNanos() : "")
+				+ (measured && diagnostic != null
+						? " compute_calls=" + diagnostic.computeCalls()
+								+ " candidate_entries=" + diagnostic.candidateEntries()
+								+ " compute_elapsed_ns=" + diagnostic.computeNanos() : "")
+				+ (sample.error().isEmpty() ? "" : " error="
+						+ sample.error().replace('\n', ' ').replace('\r', ' ')));
+		output.flush();
 	}
 
 	static EClass selectRoot(final List<EPackage> packages, final String packageName,
