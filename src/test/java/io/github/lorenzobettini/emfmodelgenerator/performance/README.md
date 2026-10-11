@@ -1,5 +1,51 @@
 # Benchmark harness
 
+## Cross-reference selection investigation
+
+Run from the core repository root using a calibrated selection from this physical
+host. The first command compiles test sources; `run` writes its report automatically.
+The final command regenerates it from retained raw files without generation.
+
+```sh
+./mvnw -q -DskipTests test-compile
+python3 scripts/performance_evaluation.py run --preset crossref-investigation --heap 2g --timeout 900 --selection target/benchmark/publication-selection.json
+python3 scripts/performance_evaluation.py report --latest crossref-investigation
+```
+
+This opt-in diagnostic chooses up to three calibrated many-root sizes each for
+PluginEclipse, EXTLibrary and Ant, with a 200,000 EObject and 5,000 resource cap.
+It records skipped sizes and failed forks. Each selected size runs in its own fork
+with one warmup and two measured repetitions. These short instrumented runs are
+diagnostic samples, not new publication timings. The directory is unique under
+`target/benchmark/crossref-investigation-*/`, and
+`target/benchmark/latest-crossref-investigation.json` points to the last complete
+report. It contains an archived selection, manifest, raw CSVs, fork logs,
+`selection-features.csv`, `selection-cases.csv`, `selection-hotspots.csv`,
+`failure-capped-cases.csv`, and
+`report.md`.
+
+Compatibility checks the calibrated Ecore and production Java hashes, POM,
+scenario profile, host, JDK, JVM flags, and heap. Benchmark driver/runner source
+may differ only when its calibrated version matches the vetted publication
+implementation at `ac673ba` and its current version matches the audited
+diagnostic hashes exactly; other changed sources are rejected. The
+calibration and diagnostic revision/dirty state are both retained. Use a new
+calibration from the same host if this policy rejects the old one; never edit the
+selection to force a match.
+
+The test-only probe overrides `selectValue` and observes calls to the existing
+round-robin selector. It does not implement its own validity or selection rule.
+A full-cycle closing lookup is excluded from attempted candidates. Unknown
+rejections include self-policy and opposite checks because the private validity
+predicate cannot be observed without changing production code. A successful
+custom-function short circuit has zero selector attempts. Unique-list retries
+are distinct `selectValue` calls; list membership cost is not separately timed.
+Selection elapsed contains retrieval and compute; these nested times must not be
+added. Instrumented generation times are not a speed comparison with the old
+baseline. EMF `eSet`/opposite maintenance, `list.contains`, and GC remain possible
+hot paths until independently profiled. There is no supported experimental fast
+path, so `crossref-comparison` reports `not available: no supported optimization`.
+
 ## Calibrated publication-scale workflow
 
 Run these four commands from the core repository root on a quiet physical host

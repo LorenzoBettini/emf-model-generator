@@ -377,7 +377,8 @@ def main():
     launch = sub.add_parser("run")
     launch.add_argument("--preset", choices=("smoke", "pilot", "paper",
                                              "bpmn-pilot", "bpmn-paper",
-                                             "large-calibration", "large-paper"), required=True)
+                                             "large-calibration", "large-paper",
+                                             "crossref-investigation", "crossref-comparison"), required=True)
     launch.add_argument("--output", help="new, nonexisting result directory")
     launch.add_argument("--heap", default="512m")
     launch.add_argument("--timeout", type=int, default=120,
@@ -386,13 +387,19 @@ def main():
     launch.add_argument("--selection", help="compatible calibration selection JSON path")
     analyze = sub.add_parser("report")
     analyze.add_argument("output", nargs="?", help="existing result directory")
-    analyze.add_argument("--latest", choices=("large-paper",),
+    analyze.add_argument("--latest", choices=("large-paper", "crossref-investigation",
+                                             "crossref-comparison"),
                          help="regenerate the latest publication result")
     args = parser.parse_args()
     if args.action == "run" and args.timeout <= 0:
         parser.error("--timeout must be positive")
     if args.action == "run":
-        if args.preset.startswith("large-"):
+        if args.preset == "crossref-comparison":
+            raise ValueError("not available: no supported optimization")
+        if args.preset == "crossref-investigation":
+            from crossref_investigation import run_investigation
+            run_investigation(args)
+        elif args.preset.startswith("large-"):
             from publication_evaluation import run_publication
             run_publication(args)
         else:
@@ -404,10 +411,19 @@ def main():
             if args.output:
                 parser.error("report accepts a path or --latest, not both")
             from publication_evaluation import latest_output, report_publication
-            report_publication(latest_output(args.latest))
+            if args.latest == "crossref-comparison":
+                raise ValueError("not available: no supported optimization")
+            if args.latest == "crossref-investigation":
+                from crossref_investigation import report_investigation
+                report_investigation(latest_output(args.latest))
+            else:
+                report_publication(latest_output(args.latest))
         elif args.output:
             manifest = json.loads((Path(args.output) / "manifest.json").read_text())
-            if manifest["preset"] == "large-paper":
+            if manifest["preset"] == "crossref-investigation":
+                from crossref_investigation import report_investigation
+                report_investigation(args.output)
+            elif manifest["preset"] == "large-paper":
                 from publication_evaluation import report_publication
                 report_publication(args.output)
             else:

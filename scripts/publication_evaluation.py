@@ -175,7 +175,7 @@ def command(case, output, mode, heap, warmups, repetitions):
            f"-Dbenchmark.preflight={case['preflight']}", f"-Dbenchmark.heap={heap}",
            f"-Dbenchmark.warmups={warmups}", f"-Dbenchmark.repetitions={repetitions}",
            f"-Dbenchmark.raw={paths['raw']}", f"-Dbenchmark.summary={paths['summary']}",
-           f"-Dbenchmark.diagnostics={paths['diagnostics'] if mode == 'instrumented' else 'off'}"]
+           f"-Dbenchmark.diagnostics={('selection:' + str(paths['diagnostics'])) if mode == 'selection' else paths['diagnostics'] if mode == 'instrumented' else 'off'}"]
     return cmd
 
 
