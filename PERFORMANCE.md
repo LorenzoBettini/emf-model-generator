@@ -16,6 +16,8 @@ Run from the repository root with JDK 21 and Python 3.12 or later:
 python3 scripts/performance_evaluation.py run --preset smoke
 python3 scripts/performance_evaluation.py run --preset pilot
 python3 scripts/performance_evaluation.py run --preset paper --heap 512m --timeout 120
+python3 scripts/performance_evaluation.py run --preset bpmn-pilot
+python3 scripts/performance_evaluation.py run --preset bpmn-paper --heap 512m --timeout 120
 ```
 
 Use `python` instead of `python3` on Windows. `smoke` launches two forked JVMs for
@@ -25,8 +27,14 @@ counts each for EXTLibrary, BibTeX, Ant, PluginEclipse, and RSS, with one warmup
 two measurements. `paper` is explicitly opt-in: the same 25 baseline points plus
 10 separate instrumented EXTLibrary/Ant points, each with three matched warmups and
 seven measurements. These are initial bounded configurations; inspect the pilot
-and recalibrate before any larger physical-host experiment. BPMN remains a bounded
-stress supplement outside the main comparison. No preset runs through `verify`.
+and recalibrate before any larger physical-host experiment. `bpmn-pilot` and
+`bpmn-paper` are separate stress supplements: each forks eight baseline JVMs
+for `bpmn-bounded`, sweeping roots 1, 2, 3, 5 at depths 1 and 2. The pilot
+uses one warmup and two measurements; the controlled-host command uses three
+warmups and seven measurements. This keeps BPMN out of the primary five-profile
+comparison and makes its depth sensitivity visible without treating its small,
+recursive outputs as equivalent to the other profiles. No preset runs through
+`verify`.
 
 Each profile/size/mode runs **serially in a separate forked Java process** through
 `exec:exec@run-profile-pilot`. Maven first compiles test sources without running
@@ -90,7 +98,8 @@ is the reproducible, collision-resistant series launcher.
 
 1. Plot baseline median generation milliseconds (p25–p75 intervals) against
    **actual median EObject count** from `figure-scaling.csv`, one series per
-   metamodel, with root count labels. Check the EObjects min/max at each point.
+   metamodel and depth, with root count labels. Check the EObjects min/max at
+   each point. BPMN depth curves belong in its separate stress panel/report.
 2. Plot instrumented candidate `super.compute` milliseconds against actual
    EObject count from `figure-diagnostic.csv`. Annotate median cache-miss calls
    and returned candidate entries. Do not mix instrumented generation timings

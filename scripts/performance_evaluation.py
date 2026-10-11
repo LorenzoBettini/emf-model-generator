@@ -24,6 +24,8 @@ PROFILES = {
     "plugin-eclipse": (4, (1, 2, 5, 10, 20)),
     "rss": (3, (1, 2, 5, 10, 20)),
 }
+BPMN_DEPTHS = (1, 2)
+BPMN_ROOTS = (1, 2, 3, 5)
 RAW = "run_id started_utc measurement_mode scenario metamodel metamodel_sha256 package root_class requested_roots depth attribute_max containment_max cross_reference_max feature_map_max warmups repetitions preflight run_index elapsed_ns actual_roots eobjects model_resources status error java_version java_vm jvm_args os_name os_arch cpu_count max_heap_bytes".split()
 SUMMARY = "run_id measurement_mode scenario successful_samples median_ns p25_ns p75_ns status".split()
 DIAGNOSTIC = "run_id scenario run_index requested_roots depth actual_roots eobjects model_resources generation_elapsed_ns compute_calls candidate_entries compute_elapsed_ns status error".split()
@@ -85,6 +87,9 @@ def host_metadata():
 def invocation_list(preset):
     if preset == "smoke":
         return [("extlibrary", 1, 1, mode) for mode in ("baseline", "instrumented")]
+    if preset in ("bpmn-pilot", "bpmn-paper"):
+        return [("bpmn-bounded", depth, roots, "baseline")
+                for depth in BPMN_DEPTHS for roots in BPMN_ROOTS]
     profiles = list(PROFILES.items())
     result = [(name, depth, roots, "baseline")
               for name, (depth, sizes) in profiles for roots in sizes]
@@ -96,7 +101,8 @@ def invocation_list(preset):
 
 def run(args):
     warmups, repetitions = {"smoke": (1, 2), "pilot": (1, 2),
-                            "paper": (3, 7)}[args.preset]
+                            "paper": (3, 7), "bpmn-pilot": (1, 2),
+                            "bpmn-paper": (3, 7)}[args.preset]
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     revision = (command_output(["git", "rev-parse", "--short", "HEAD"]) or "unknown")
     output = Path(args.output or ROOT / "target" / "benchmark" / f"{args.preset}-{stamp}-{revision}")
@@ -286,11 +292,12 @@ def report(output):
         }
         if item["mode"] == "baseline":
             scaling.append(record)
-            if item["profile"] not in {entry["scenario"] for entry in table}:
+            group = (item["profile"], item["depth"])
+            if group not in {(entry["scenario"], entry["depth"]) for entry in table}:
                 table.append(record)
             else:
                 table[next(i for i, entry in enumerate(table)
-                           if entry["scenario"] == item["profile"])] = record
+                           if (entry["scenario"], entry["depth"]) == group)] = record
         else:
             diagnostics.append({
                 "scenario": item["profile"], "depth": item["depth"],
@@ -326,7 +333,7 @@ def report(output):
                      f"{row['median_ms']:.6f} | {row['p25_ms']:.6f}–{row['p75_ms']:.6f} |")
     lines += ["", "Figure 1 specification: plot `figure-scaling.csv` with "
               "`eobjects_median` on x and `median_ms` on y; one connected series per "
-              "scenario, with p25–p75 vertical intervals. Label each point with its "
+              "scenario and depth, with p25–p75 vertical intervals. Label each point with its "
               "requested root count. Use actual EObjects, not roots, as the x axis."]
     if diagnostics:
         lines += ["", "Figure 2 specification: plot `figure-diagnostic.csv` with "
@@ -334,16 +341,26 @@ def report(output):
                   "scenario; annotate `compute_calls_median` and "
                   "`candidate_entries_median`. These instrumented runs are separate "
                   "from baseline generation timing."]
-    lines += ["", "## Reviewer 2 mapping", "",
-              "(a) The scaling table and Figure 1 show observed generation time against "
-              "actual output size. " +
-              ("Figure 2 shows measured cache-miss computation and its cost. "
-               if diagnostics else "A separate instrumented series is needed for Figure 2. ") +
-              "These observations cannot assign a single cause to a "
-              "superlinear-looking trend because resources and EObjects co-vary.",
-              "(b) The independently sourced BibTeX, Ant, PluginEclipse and RSS profiles "
-              "cover distinct containment and reference structures; EXTLibrary is a "
-              "continuity case. Compare only matched configurations and preflight modes.",
+    scaling_mapping = (
+        "(a) The two BPMN depth series show observed time against actual output size. "
+        "Changing depth also changes the generated shape and EObject count, so the "
+        "timing difference cannot be attributed to depth alone."
+        if manifest["preset"].startswith("bpmn-") else
+        "(a) The scaling table and Figure 1 show observed generation time against "
+        "actual output size. " +
+        ("Figure 2 shows measured cache-miss computation and its cost. "
+         if diagnostics else "A separate instrumented series is needed for Figure 2. ") +
+        "These observations cannot assign a single cause to a "
+        "superlinear-looking trend because resources and EObjects co-vary."
+    )
+    lines += ["", "## Reviewer 2 mapping", "", scaling_mapping,
+              ("(b) BPMN is a separate recursive/FeatureMap stress supplement at "
+               "depths 1–2 with in-memory validation; it is not part of the "
+               "round-trip-validated primary comparison."
+               if manifest["preset"].startswith("bpmn-") else
+               "(b) The independently sourced BibTeX, Ant, PluginEclipse and RSS profiles "
+               "cover distinct containment and reference structures; EXTLibrary is a "
+               "continuity case. Compare only matched configurations and preflight modes."),
               "", "## Limits", "",
               "These are implementation, platform, heap and scenario dependent observations. "
               "Preflight checks EMF validity, not full semantic correctness. Short smoke/pilot "
@@ -358,7 +375,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)
     launch = sub.add_parser("run")
-    launch.add_argument("--preset", choices=("smoke", "pilot", "paper"), required=True)
+    launch.add_argument("--preset", choices=("smoke", "pilot", "paper",
+                                             "bpmn-pilot", "bpmn-paper"), required=True)
     launch.add_argument("--output", help="new, nonexisting result directory")
     launch.add_argument("--heap", default="512m")
     launch.add_argument("--timeout", type=int, default=120,
