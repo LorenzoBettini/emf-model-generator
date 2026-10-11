@@ -1,223 +1,113 @@
-# EMF Model Generator Performance Tests
+# Reproducing the performance evaluation
 
-This document describes how to run performance tests for the EMF Model Generator.
+The benchmark is a test-source CLI that generates from **one selected concrete EClass**.
+One observation creates the requested number of roots with a fresh generator. Its timer
+covers only `generateFromSeveral`, including model resource creation and population.
+Ecore loading, preflight validation, EObject/resource counting, XMI round trip, console
+output, CSV writing, and cleanup are outside that interval. Start lines are flushed
+before each execution; completion lines show measured values and status afterwards.
+Normal `./mvnw verify` does not run benchmark series.
 
-## Overview
+## Commands
 
-The performance tests measure how execution time increases with different metrics:
-- **Generation Depth**: How performance scales with containment hierarchy depth
-- **Number of Models**: How performance scales with the number of instances generated
+Run from the repository root with JDK 21 and Python 3.12 or later:
 
-Results are presented in both table format and CSV format for easy analysis.
-
-## Running Performance Tests
-
-### Basic Execution
-
-Run with default configuration:
-
-```bash
-./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests
+```sh
+python3 scripts/performance_evaluation.py run --preset smoke
+python3 scripts/performance_evaluation.py run --preset pilot
+python3 scripts/performance_evaluation.py run --preset paper --heap 512m --timeout 120
 ```
 
-Default configuration:
-- Depth range: 1-10 (step: 1)
-- Models range: 1, 100, 200, ..., 1000 (step: 100)
-- Repetitions: 3
-- Warmup iterations: 10
-- Metamodel: `src/test/resources/inputs/extlibrary.ecore`
+Use `python` instead of `python3` on Windows. `smoke` launches two forked JVMs for
+EXTLibrary baseline and instrumented observations (one root, depth 1, one matched
+warmup and two measurements each). `pilot` launches 25 baseline JVMs: five root
+counts each for EXTLibrary, BibTeX, Ant, PluginEclipse, and RSS, with one warmup and
+two measurements. `paper` is explicitly opt-in: the same 25 baseline points plus
+10 separate instrumented EXTLibrary/Ant points, each with three matched warmups and
+seven measurements. These are initial bounded configurations; inspect the pilot
+and recalibrate before any larger physical-host experiment. BPMN remains a bounded
+stress supplement outside the main comparison. No preset runs through `verify`.
 
-### Custom Configuration via Maven Properties
+Each profile/size/mode runs **serially in a separate forked Java process** through
+`exec:exec@run-profile-pilot`. Maven first compiles test sources without running
+tests. The child JVM uses equal initial and maximum heap (`512m` by default),
+`-XX:+UseG1GC`, and `-Dfile.encoding=UTF-8`. The same profile, size, depth,
+multiplicities, preflight, heap and JVM flags apply to all repetitions in that
+process. The profile sets all four multiplicity maxima to one. Preflight uses an
+XMI round trip except the optional BPMN profile, which uses in-memory validation.
+The `--timeout` is a wall-clock cap for each Maven invocation, including the fork.
+The driver does not request GC between observations. Avoid coverage or mutation
+instrumentation during timed experiments.
 
-Override specific parameters:
+Results go to a new directory under `target/benchmark/`, named with the preset,
+UTC timestamp and short git revision. Use `--output /path/to/new-directory` to
+choose a new empty location. Existing paths are rejected, preventing accidental
+overwrite. Each configuration has a descriptive basename containing profile,
+depth, roots and baseline/instrumented mode. It receives `-raw.csv`,
+`-summary.csv`, an optional `-diagnostics.csv`, and a `.log`. `manifest.json`
+records the exact commands, exits/timeouts, platform, CPU model, logical cores,
+physical RAM when available, JDK vendor/version, git revision and dirty state,
+heap, fixed JVM flags, run counts, and one-at-a-time process policy. Raw CSV also
+records the selected Ecore SHA-256, Java/OS/JVM details, actual EObject and model
+resource counts, configuration, run index, status and unrounded elapsed ns.
+Do not edit or discard failed rows or logs. Failed/incomplete series retain their
+files and cause reporting to stop until inspected.
 
-```bash
-# Run with reduced ranges for quick testing
-./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests \
-  -Ddepth.max=10 \
-  -Dmodels.max=100 \
-  -Drepetitions=2
+Validate and regenerate a report from existing results:
 
-# Run with specific depth range
-./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests \
-  -Ddepth.min=1 \
-  -Ddepth.max=5 \
-  -Ddepth.step=1
-
-# Run with different metamodel
-./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests \
-  -Dmetamodel=src/test/resources/inputs/library.ecore
+```sh
+python3 scripts/performance_evaluation.py report target/benchmark/<result-directory>
 ```
 
-Available properties:
-- `depth.min` - Minimum depth (default: 1)
-- `depth.max` - Maximum depth (default: 10)
-- `depth.step` - Depth step size (default: 1)
-- `models.min` - Minimum number of models (default: 1)
-- `models.max` - Maximum number of models (default: 1000)
-- `models.step` - Models step size (default: 100)
-- `repetitions` - Number of repetitions per measurement (default: 3)
-- `warmup` - Number of warmup iterations (default: 10)
-- `metamodel` - Path to metamodel file (default: extlibrary.ecore)
+The report command checks the exact raw, summary and diagnostic CSV schemas,
+row counts, run identity, status, preflight/warmup progress, per-measurement
+console counts and nanoseconds, diagnostic counters, and median/p25/p75 values.
+It then writes `report.md`, `figure-scaling.csv`, `figure-diagnostic.csv` when
+instrumented data exist, and a compact scaling table in the report. Summary
+quartiles use the same linear interpolation and nanosecond rounding as the Java
+harness. The raw CSVs remain the authoritative per-run observations.
 
-### Running Directly with Java
+## Controlled measurement protocol
 
-You can also run the performance test class directly:
+Run the `paper` command on one documented physical host with a fixed JDK 21
+installation, fixed heap, stable power/performance policy and minimal competing
+load. Record those policies, CPU throttling/thermal conditions if known, and any
+container or VM limits alongside `manifest.json`. Use one process at a time and
+keep its console behavior identical across compared cases. Repeat the whole
+series on another day/session to assess session variation before making paper
+claims. A GitHub-hosted runner or an interactive developer workstation can run
+smoke/pilot checks, but its absolute times are not controlled-host evidence.
+The GitHub Actions `performance.yml` workflow defaults to `smoke` on Linux,
+macOS and Windows. Its manually selected `pilot` runs on the same hosted OS
+matrix. Neither
+CI option is a paper measurement. The Eclipse launch file is a small validated
+EXTLibrary smoke invocation and writes fixed `eclipse-smoke-*` paths; the script
+is the reproducible, collision-resistant series launcher.
 
-```bash
-# Compile test classes first
-./mvnw test-compile
+## Paper output and limits
 
-# Run with default configuration
-./mvnw exec:java -Dexec.classpathScope=test \
-  -Dexec.mainClass=io.github.lorenzobettini.emfmodelgenerator.performance.EMFModelGeneratorPerformanceStatistics
+`report.md` gives at most two figure specifications and a compact table:
 
-# Run with custom arguments
-./mvnw exec:java -Dexec.classpathScope=test \
-  -Dexec.mainClass=io.github.lorenzobettini.emfmodelgenerator.performance.EMFModelGeneratorPerformanceStatistics \
-  -Dexec.args="--depth-max 10 --models-max 50 --repetitions 5"
+1. Plot baseline median generation milliseconds (p25–p75 intervals) against
+   **actual median EObject count** from `figure-scaling.csv`, one series per
+   metamodel, with root count labels. Check the EObjects min/max at each point.
+2. Plot instrumented candidate `super.compute` milliseconds against actual
+   EObject count from `figure-diagnostic.csv`. Annotate median cache-miss calls
+   and returned candidate entries. Do not mix instrumented generation timings
+   with baseline timings.
 
-# Show help
-./mvnw exec:java -Dexec.classpathScope=test \
-  -Dexec.mainClass=io.github.lorenzobettini.emfmodelgenerator.performance.EMFModelGeneratorPerformanceStatistics \
-  -Dexec.args="--help"
-```
-
-## Command-Line Arguments
-
-When running directly with Java, you can use these arguments:
-
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `--depth-min <n>` | Minimum depth | 1 |
-| `--depth-max <n>` | Maximum depth | 20 |
-| `--depth-step <n>` | Depth step size | 1 |
-| `--models-min <n>` | Minimum number of models | 1 |
-| `--models-max <n>` | Maximum number of models | 200 |
-| `--models-step <n>` | Models step size | 10 |
-| `--repetitions <n>` | Number of repetitions per measurement | 3 |
-| `--warmup <n>` | Number of warmup iterations | 10 |
-| `--metamodel <path>` | Path to metamodel file | extlibrary.ecore |
-| `--help` | Show help message | - |
-
-## Understanding the Output
-
-### Console Output
-
-The performance tests output results in two formats:
-
-1. **Table Format**: Human-readable table with columns:
-   - Metric value (Depth or Models)
-   - Objects: Total number of EObjects generated (including nested)
-   - Avg (ms): Average execution time
-   - Min (ms): Minimum execution time
-   - Max (ms): Maximum execution time
-   - StdDev (ms): Standard deviation
-
-2. **CSV Format**: Easy to import into spreadsheet tools (Excel, Google Sheets, etc.)
-   - Same columns as table format
-   - Can be copied directly into a spreadsheet
-
-### Example Output
-
-```
-================================================================================
-MEASUREMENT 1: Generation Depth Performance
-================================================================================
-Measuring how execution time increases with containment depth
-Baseline: 10 instances per EClass
-
-Depth:   1 | Objects:    140 | Avg:     3.20 ms | Min:     2.57 ms | Max:     3.83 ms | StdDev:     0.63 ms
-Depth:   2 | Objects:    260 | Avg:     2.97 ms | Min:     2.76 ms | Max:     3.17 ms | StdDev:     0.21 ms
-Depth:   3 | Objects:    500 | Avg:     5.17 ms | Min:     5.10 ms | Max:     5.24 ms | StdDev:     0.07 ms
-
-CSV FORMAT:
-Depth,Objects,Avg_ms,Min_ms,Max_ms,StdDev_ms
-1,140,3.20,2.57,3.83,0.63
-2,260,2.97,2.76,3.17,0.21
-3,500,5.17,5.10,5.24,0.07
-```
-
-### Analyzing Results
-
-To analyze the results:
-
-1. **Copy CSV output** to a spreadsheet tool
-2. **Create charts** to visualize trends:
-   - Line chart: Metric (x-axis) vs Avg Time (y-axis)
-   - Scatter plot: Objects (x-axis) vs Avg Time (y-axis)
-3. **Check standard deviation** to assess measurement stability
-   - Low StdDev: Consistent measurements
-   - High StdDev: May need more repetitions or longer warmup
-
-## Baseline Configuration
-
-The performance tests use these baseline values when measuring one metric independently:
-
-- **When measuring depth**: Fixed 10 instances per EClass
-- **When measuring models**: Fixed depth of 3
-
-This ensures each metric is measured independently while keeping other factors constant.
-
-## Tips for Running Performance Tests
-
-1. **Close unnecessary applications** to reduce system noise
-2. **Run multiple times** to verify consistency
-3. **Increase warmup iterations** (e.g., `--warmup 20`) for more stable results
-4. **Start with small ranges** to estimate total runtime
-5. **Use reduced ranges** for quick testing during development
-
-## Example Workflows
-
-### Testing Specific Metamodel
-
-```bash
-./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests \
-  -Dmetamodel=src/test/resources/inputs/library.ecore \
-  -Ddepth.max=10 \
-  -Dmodels.max=100
-```
-
-## Redirecting Output to File
-
-Save results to a file for later analysis:
-
-```bash
-./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests > performance-results.txt 2>&1
-
-# Or just save the important parts
-./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests 2>&1 | tee performance-results.txt
-```
-
-Extract just the CSV data:
-
-```bash
-./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests 2>&1 | grep -A 100 "CSV FORMAT:" > results.csv
-```
-
-## Troubleshooting
-
-### OutOfMemoryError
-
-If you encounter memory issues with large ranges:
-
-```bash
-# Increase heap size
-export MAVEN_OPTS="-Xmx4g"
-./mvnw test-compile exec:java@run-performance-tests -Pperformance-tests
-```
-
-### Slow Execution
-
-For very large ranges, tests may take considerable time. Consider:
-- Reducing the range or step size
-- Decreasing repetitions
-- Using a simpler metamodel
-
-### Inconsistent Results
-
-If results vary significantly between runs:
-- Increase warmup iterations
-- Increase number of repetitions
-- Close other applications
-- Run on a less loaded system
+These figures address Reviewer 2's scaling question with observed output size
+and a measured candidate-discovery diagnostic; they do not prove an asymptotic
+complexity or identify a single cause. Candidate lists are cached per target
+EClass, so whole-ResourceSet scans occur on cache misses, not on every root.
+Resource and EObject counts co-vary in the root-count series, and allocation,
+reference population, JIT, GC and platform effects remain alternatives.
+The BibTeX, Ant, PluginEclipse and RSS profiles address the metamodel-diversity
+request with distinct containment/reference topologies; EXTLibrary preserves
+continuity with the earlier case. AADL/BPEL/WSDL are not claimed as performance
+profiles. PluginEclipse depth 3 failed round-trip validity in calibration and
+is excluded; depth 4 is used. Generated models pass the stated EMF preflight,
+which does not establish full domain-level semantic correctness. A short pilot
+cannot justify a universal growth exponent, cross-host ranking, or manuscript
+claim. See the [benchmark harness notes](src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/README.md)
+for profile bounds, schema details and earlier calibration counts.

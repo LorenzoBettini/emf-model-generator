@@ -383,6 +383,8 @@
 									<arguments>
 										<argument>-Xms${benchmark.heap}</argument>
 										<argument>-Xmx${benchmark.heap}</argument>
+										<argument>-XX:+UseG1GC</argument>
+										<argument>-Dfile.encoding=UTF-8</argument>
 										<argument>-cp</argument>
 										<classpath/>
 										<argument>io.github.lorenzobettini.emfmodelgenerator.performance.EMFModelGeneratorPerformanceStatistics</argument>
@@ -416,6 +418,8 @@
 									<arguments>
 										<argument>-Xms${benchmark.heap}</argument>
 										<argument>-Xmx${benchmark.heap}</argument>
+										<argument>-XX:+UseG1GC</argument>
+										<argument>-Dfile.encoding=UTF-8</argument>
 										<argument>-cp</argument>
 										<classpath/>
 										<argument>io.github.lorenzobettini.emfmodelgenerator.performance.EMFModelGeneratorPerformanceStatistics</argument>

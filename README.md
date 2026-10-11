@@ -152,13 +152,13 @@ The latest reports generated from the `master` branch are available on the
 
 ### Run Performance Tests
 
-To measure how execution time scales with different metrics:
+Run the bounded, forked benchmark smoke check:
 
 ```bash
-./mvnw test -Pperformance-tests
+python3 scripts/performance_evaluation.py run --preset smoke
 ```
 
-See [PERFORMANCE.md](PERFORMANCE.md) for detailed instructions on running and analyzing performance tests.
+See [PERFORMANCE.md](PERFORMANCE.md) for pilot and controlled measurement commands, CSV outputs, and reporting.
 
 ## Basic Examples
 
