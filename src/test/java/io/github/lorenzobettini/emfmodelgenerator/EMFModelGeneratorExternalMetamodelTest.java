@@ -925,7 +925,11 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.anyMatch(proxy -> !proxy.reference().isResolveProxies());
 		var example = bpmnProxies(reloaded).stream()
 				.filter(proxy -> !proxy.reference().isResolveProxies())
+				.filter(proxy -> !proxy.uri().trimFragment().equals(
+						proxy.owner().eResource().getURI()))
 				.findFirst().orElseThrow();
+		assertThat(example.uri().trimFragment())
+				.isNotEqualTo(example.owner().eResource().getURI());
 		assertThat(reloaded.getResource(example.uri().trimFragment(), false)).isNotNull();
 		var target = reloaded.getEObject(example.uri(), true);
 		assertThat(target).isNotNull();
@@ -1058,6 +1062,11 @@ class EMFModelGeneratorExternalMetamodelTest {
 	@Test
 	void testBpmnResourceAwareCrossReferencesRoundTrip() throws Exception {
 		var diagramClass = bpmnDiagramClass();
+		var messagingEdgeClass = assertEClassExists(diagramClass.getEPackage(), "MessagingEdge");
+		var sourceReference = assertEReferenceExists(messagingEdgeClass, "source");
+		var targetReference = assertEReferenceExists(messagingEdgeClass, "target");
+		var activityClass = assertEClassExists(diagramClass.getEPackage(), "Activity");
+		var groupsReference = assertEReferenceExists(activityClass, "groups");
 		var populator = generator.getInstancePopulator();
 		// Both nonresolving references and derived/transient opposite views require
 		// local targets. In particular, MessageVertex message views use a FeatureMap.
@@ -1090,6 +1099,28 @@ class EMFModelGeneratorExternalMetamodelTest {
 		assertThat(allBpmnObjects(generator.getResourceSet())).hasSize(80);
 		assertThat(generator.validate().isValid()).isTrue();
 		assertBpmnOppositesConsistent(generator.getResourceSet());
+		var populatedEdge = allBpmnObjects(generator.getResourceSet()).stream()
+				.filter(messagingEdgeClass::isInstance)
+				.filter(edge -> edge.eGet(sourceReference) != null
+						&& edge.eGet(targetReference) != null)
+				.findFirst().orElseThrow();
+		var source = (EObject) populatedEdge.eGet(sourceReference);
+		var target = (EObject) populatedEdge.eGet(targetReference);
+		assertThat(source.eResource()).isSameAs(populatedEdge.eResource());
+		assertThat(target.eResource()).isSameAs(populatedEdge.eResource());
+		assertThat(bpmnReferenceValues(source, sourceReference.getEOpposite())
+				.contains(populatedEdge)).isTrue();
+		assertThat(bpmnReferenceValues(target, targetReference.getEOpposite())
+				.contains(populatedEdge)).isTrue();
+		var groupedActivity = allBpmnObjects(generator.getResourceSet()).stream()
+				.filter(activityClass::isInstance)
+				.filter(activity -> !bpmnReferenceValues(activity, groupsReference).isEmpty())
+				.findFirst().orElseThrow();
+		var group = (EObject) bpmnReferenceValues(groupedActivity, groupsReference)
+				.iterator().next();
+		assertThat(group.eResource()).isSameAs(groupedActivity.eResource());
+		assertThat(bpmnReferenceValues(group, groupsReference.getEOpposite())
+				.contains(groupedActivity)).isTrue();
 		for (var owner : allBpmnObjects(generator.getResourceSet())) {
 			for (var reference : owner.eClass().getEAllReferences()) {
 				if (!requiresBpmnLocalTarget(reference)) {
@@ -1106,6 +1137,29 @@ class EMFModelGeneratorExternalMetamodelTest {
 		assertThat(bpmnRoots(reloaded)).hasSize(5);
 		assertThat(bpmnProxies(reloaded)).isEmpty();
 		assertBpmnOppositesConsistent(reloaded);
+		var reloadedEdge = reloaded.getEObject(EcoreUtil.getURI(populatedEdge), true);
+		assertThat(reloadedEdge).isNotNull();
+		var reloadedSource = (EObject) reloadedEdge.eGet(sourceReference);
+		var reloadedTarget = (EObject) reloadedEdge.eGet(targetReference);
+		assertThat(reloadedSource).isNotNull();
+		assertThat(reloadedTarget).isNotNull();
+		assertThat(EcoreUtil.getURI(reloadedSource)).isEqualTo(EcoreUtil.getURI(source));
+		assertThat(EcoreUtil.getURI(reloadedTarget)).isEqualTo(EcoreUtil.getURI(target));
+		assertThat(reloadedSource.eResource()).isSameAs(reloadedEdge.eResource());
+		assertThat(reloadedTarget.eResource()).isSameAs(reloadedEdge.eResource());
+		assertThat(bpmnReferenceValues(reloadedSource, sourceReference.getEOpposite())
+				.contains(reloadedEdge)).isTrue();
+		assertThat(bpmnReferenceValues(reloadedTarget, targetReference.getEOpposite())
+				.contains(reloadedEdge)).isTrue();
+		var reloadedActivity = reloaded.getEObject(EcoreUtil.getURI(groupedActivity), true);
+		var reloadedGroup = reloaded.getEObject(EcoreUtil.getURI(group), true);
+		assertThat(reloadedActivity).isNotNull();
+		assertThat(reloadedGroup).isNotNull();
+		assertThat(reloadedGroup.eResource()).isSameAs(reloadedActivity.eResource());
+		assertThat(bpmnReferenceValues(reloadedActivity, groupsReference)
+				.contains(reloadedGroup)).isTrue();
+		assertThat(bpmnReferenceValues(reloadedGroup, groupsReference.getEOpposite())
+				.contains(reloadedActivity)).isTrue();
 	}
 
 	@Test
