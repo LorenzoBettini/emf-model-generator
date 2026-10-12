@@ -159,6 +159,7 @@ class SelectionAttemptProbeTest {
 		assertThat(xmi(observed.resource())).isEqualTo(xmi(baseline.resource()));
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	void boundedManyValuedOppositeRejectsFirstCandidateWithoutChangingSelection() {
 		final var model = EMFTestUtils.loadEPackage("inputs/standalone-references.ecore");
