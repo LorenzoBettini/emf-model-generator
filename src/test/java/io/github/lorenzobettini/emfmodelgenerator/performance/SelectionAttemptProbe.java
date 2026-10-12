@@ -8,7 +8,6 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter;
-import io.github.lorenzobettini.emfmodelgenerator.EMFRoundRobinEObjectCandidateSelector;
 import io.github.lorenzobettini.emfmodelgenerator.EMFUtils;
 
 /** Test-only observer around the unchanged selection algorithm and round-robin selector. */
