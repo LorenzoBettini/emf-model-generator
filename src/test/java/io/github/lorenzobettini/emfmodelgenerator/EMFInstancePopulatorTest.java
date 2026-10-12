@@ -31,9 +31,14 @@ import org.eclipse.emf.ecore.util.FeatureMap;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class EMFInstancePopulatorTest {
+	@AfterEach
+	void cleanupRegisteredPackages() {
+		EMFTestUtils.cleanupRegisteredPackages();
+	}
 	private static final class RecordingFeatureMapSetter extends EMFFeatureMapSetter {
 		private EMFAttributeSetter attributeSetter;
 		private EMFContainmentReferenceSetter containmentReferenceSetter;

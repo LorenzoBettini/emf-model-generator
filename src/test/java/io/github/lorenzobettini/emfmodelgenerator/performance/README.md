@@ -1,5 +1,52 @@
 # Benchmark harness
 
+## Opt-in reference-aware monotonic selector
+
+Install `new EMFReferenceAwareEObjectCandidateSelector()` through
+`generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(...)`
+only when a saturated opposite cannot become available again before the next
+selector reset. `eUnset`, reassignment, inverse updates, FeatureMap changes,
+callbacks, custom functions and external edits can restore capacity. Reset
+after changing resources or metamodels; the selector rejects a different
+resource scope without reset. Self-reference policies should be pure. The
+ordinary round-robin selector remains the default. The opt-in selector uses
+one `EClass` candidate list and cursor plus a `TreeSet` of stable active indices
+per bounded `EReference` (O(N log N) construction, O(log N) navigation and
+retirement, O(N) extra entries per bounded reference). Large numbers of
+bounded references to the same type may justify using the default instead.
+
+The new `reference-aware-comparison` preset runs the current default and the
+opt-in selector in separate serial uninstrumented JVM forks. It preserves raw
+nanoseconds, actual EObjects/resources, round-trip preflight, graph fingerprints,
+source and host hashes, failures, medians, quartiles, CSV/SVG figures, and a
+report-only regeneration path. The small development smoke is:
+
+```sh
+python3 scripts/performance_evaluation.py run --preset reference-aware-comparison --roots 1,2,5 --scenarios plugin-eclipse,ant,extlibrary --heap 512m --timeout 120 --max-eobjects 1000 --max-resources 10 --warmups 1 --repetitions 2
+python3 scripts/performance_evaluation.py report --latest reference-aware-comparison
+```
+
+Candidate-work diagnostics use a separate instrumented runner. It records
+attempts, opposite rejections, retirements, pool build nanoseconds, initial and
+remaining index entries, and a rough 64-byte-per-entry footprint estimate.
+Diagnostic times must not be compared with the uninstrumented A/B medians.
+
+```sh
+python3 scripts/reference_aware_diagnostics.py --roots 1,2,5 --scenarios plugin-eclipse,ant,extlibrary --heap 512m --timeout 120 --max-eobjects 1000 --max-resources 10
+```
+
+The bounded 1/2/5-root PluginEclipse diagnostic found opposite rejections
+of 2/8/50 with the default and 2/4/10 with the opt-in selector; Ant and
+EXTLibrary had none at these sizes. Every diagnostic pair matched its graph
+fingerprint, actual counts and round-trip preflight. These are mechanism and
+interface checks, not Dell-scale speedup evidence.
+An optional 100-root PluginEclipse check also matched all fingerprints and
+validation (1,466 EObjects / 100 resources). Separate diagnostics found
+20,000 versus 200 opposite rejections and 20,400 versus 600 candidate attempts;
+the opt-in selector built 200 pool entries and retired all 200. The rough
+pool-index footprint was 12,800 bytes. This shows reduced rejection work at
+this size, without establishing Dell-scale time or memory behavior.
+
 ## Archived cross-reference cursor comparison
 
 Production now uses mutable cursor bookkeeping. New `crossref-comparison` runs

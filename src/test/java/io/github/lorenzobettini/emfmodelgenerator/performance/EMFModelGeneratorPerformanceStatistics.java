@@ -26,6 +26,7 @@ import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
+import io.github.lorenzobettini.emfmodelgenerator.EMFReferenceAwareEObjectCandidateSelector;
 
 /**
  * Explicit-root benchmark harness. Launch in a separate JVM; see
@@ -247,7 +248,7 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		}
 		final var config = parse(args);
 		final var variant = System.getenv("BENCHMARK_SELECTION_VARIANT");
-		if (variant != null && !variant.equals("cursor")) {
+		if (variant != null && !variant.equals("cursor") && !variant.equals("reference-aware")) {
 			throw new IllegalArgumentException("Unknown experimental selector: " + variant);
 		}
 		run(config);
@@ -324,8 +325,9 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		if (config.diagnosticPath() != null) {
 			return "instrumented";
 		}
-		return "cursor".equals(System.getenv("BENCHMARK_SELECTION_VARIANT"))
-				? "experimental-cursor" : "baseline";
+		final var variant = System.getenv("BENCHMARK_SELECTION_VARIANT");
+		return "cursor".equals(variant) ? "experimental-cursor"
+				: "reference-aware".equals(variant) ? "reference-aware" : "baseline";
 	}
 
 	private static void printStart(final PrintStream output, final Configuration config,
@@ -387,6 +389,10 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		} else if (selectionProbe == null &&
 				"cursor".equals(System.getenv("BENCHMARK_SELECTION_VARIANT"))) {
 			populator.setCrossReferenceCandidateSelectorStrategy(new ExperimentalCursorSelector());
+		} else if (selectionProbe == null &&
+				"reference-aware".equals(System.getenv("BENCHMARK_SELECTION_VARIANT"))) {
+			populator.setCrossReferenceCandidateSelectorStrategy(
+					new EMFReferenceAwareEObjectCandidateSelector());
 		}
 		return generator;
 	}

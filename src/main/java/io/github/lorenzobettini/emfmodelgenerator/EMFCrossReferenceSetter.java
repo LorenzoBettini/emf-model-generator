@@ -222,6 +222,10 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 				return candidate;
 			}
 		}
+		if (candidateSelectorStrategy
+				instanceof EMFReferenceAwareEObjectCandidateSelector referenceAware) {
+			return referenceAware.selectCandidate(owner, crossReference, this::allowSelfReferenceFor);
+		}
 
 		// Try to get candidates using the configured selector strategy until we find one
 		// that passes the opposite reference check and is not the owner itself (unless a direct

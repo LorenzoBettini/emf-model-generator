@@ -378,7 +378,8 @@ def main():
     launch.add_argument("--preset", choices=("smoke", "pilot", "paper",
                                              "bpmn-pilot", "bpmn-paper",
                                              "large-calibration", "large-paper",
-                                             "crossref-investigation", "crossref-comparison"), required=True)
+                                             "crossref-investigation", "crossref-comparison",
+                                             "reference-aware-comparison"), required=True)
     launch.add_argument("--output", help="new, nonexisting result directory")
     launch.add_argument("--heap", default="512m")
     launch.add_argument("--timeout", type=int, default=120,
@@ -395,13 +396,19 @@ def main():
     analyze = sub.add_parser("report")
     analyze.add_argument("output", nargs="?", help="existing result directory")
     analyze.add_argument("--latest", choices=("large-paper", "crossref-investigation",
-                                             "crossref-comparison"),
+                                             "crossref-comparison", "reference-aware-comparison"),
                          help="regenerate the latest publication result")
     args = parser.parse_args()
     if args.action == "run" and args.timeout <= 0:
         parser.error("--timeout must be positive")
     if args.action == "run":
-        if args.preset == "crossref-comparison":
+        if args.preset == "reference-aware-comparison":
+            from reference_aware_comparison import run_comparison
+            try:
+                run_comparison(args)
+            except ValueError as exc:
+                parser.error(str(exc))
+        elif args.preset == "crossref-comparison":
             from crossref_comparison import run_comparison
             try:
                 run_comparison(args)
@@ -422,7 +429,10 @@ def main():
             if args.output:
                 parser.error("report accepts a path or --latest, not both")
             from publication_evaluation import latest_output, report_publication
-            if args.latest == "crossref-comparison":
+            if args.latest == "reference-aware-comparison":
+                from reference_aware_comparison import report_comparison
+                report_comparison(latest_output(args.latest))
+            elif args.latest == "crossref-comparison":
                 from crossref_comparison import report_comparison
                 report_comparison(latest_output(args.latest))
             elif args.latest == "crossref-investigation":
@@ -435,6 +445,9 @@ def main():
             if manifest["preset"] == "crossref-investigation":
                 from crossref_investigation import report_investigation
                 report_investigation(args.output)
+            elif manifest["preset"] == "reference-aware-comparison":
+                from reference_aware_comparison import report_comparison
+                report_comparison(args.output)
             elif manifest["preset"] == "crossref-comparison":
                 from crossref_comparison import report_comparison
                 report_comparison(args.output)
