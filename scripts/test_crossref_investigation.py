@@ -68,7 +68,7 @@ class CrossReferenceInvestigationTest(unittest.TestCase):
                                  "--selection", "target/benchmark/publication-selection.json"],
                                 text=True, capture_output=True)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("not available: no supported optimization", result.stderr)
+        self.assertIn("explicit --roots", result.stderr)
 
     def test_vetted_publication_revision_is_compatible_for_diagnostics(self):
         selection, current = self.selection()

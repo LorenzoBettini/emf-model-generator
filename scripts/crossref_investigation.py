@@ -34,6 +34,18 @@ VETTED_DIAGNOSTIC_HASHES = {
     "EMFModelGeneratorPerformanceStatistics.java":
         "85e4263e75390c246e91aa13bdd8fb888e83357421c1ecdfee2969a3485d92eb",
 }
+# The comparison experiment changes only the opt-in benchmark driver and parser.
+# The original diagnostic defaults remain unchanged; this exact version can still
+# read older host-calibrated selections after the existing production/Ecore audit.
+VETTED_COMPARISON_HASHES = {
+    "scripts/performance_evaluation.py":
+        "d9b2a168fdb4967e0e55a32222239d31aab57c1229fe71e55c8d38fddee4b9fe",
+    "scripts/publication_evaluation.py":
+        "a3d30c7530c7ef45499448437ef7d4e4d3219b778d5371e2ea2b3e11abbdb1ee",
+    "src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/"
+    "EMFModelGeneratorPerformanceStatistics.java":
+        "362a35ed1ea08a761284e54ebdaf7090be94dd48ce849f4e578b9413703aa4a3",
+}
 PREVIOUS_DIAGNOSTIC_HASHES = {
     "scripts/performance_evaluation.py":
         "96bb0e81501b4ec115fcd94ffb9a9523b62455d7e7e743447c318363ce9ffd49",
@@ -69,10 +81,11 @@ def selection_compatible(selection, current):
                          ", ".join(sorted(changes - ALLOWED_DIAGNOSTIC_CHANGES)))
     # A differing benchmark file must be the exact historical input recorded by
     # calibration, rather than an arbitrary edit to scenario setup or timing.
+    if {path: new[path] for path in ALLOWED_DIAGNOSTIC_CHANGES} not in (
+            VETTED_DIAGNOSTIC_HASHES, VETTED_COMPARISON_HASHES):
+        raise ValueError("Diagnostic source differs from audited version; "
+                         "recalibrate or review the compatibility policy")
     for path in changes:
-        if new[path] != VETTED_DIAGNOSTIC_HASHES[path]:
-            raise ValueError(f"Diagnostic source {path} differs from audited version; "
-                             "recalibrate or review the compatibility policy")
         if selection.get("test_only") and old[path] == PREVIOUS_DIAGNOSTIC_HASHES[path]:
             # The preserved Mac smoke selection was made with precisely this
             # audited, but then uncommitted, diagnostic implementation.

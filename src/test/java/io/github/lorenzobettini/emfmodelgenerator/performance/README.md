@@ -1,5 +1,46 @@
 # Benchmark harness
 
+## Experimental cross-reference cursor comparison
+
+The opt-in comparison is implemented with a test-source
+`ExperimentalCursorSelector` installed through the existing selector strategy
+hook. Baseline forks use the untouched production selector. The variant keeps
+the same cached candidate list, `getOrCompute` call sequence, live validity
+checks, wrap behavior and reset, but stores a mutable cursor instead of replacing
+a boxed map value on every candidate retrieval. It does **not** skip saturated
+candidates or cache exhaustion: EMF inverse removal, reassignment, proxy
+resolution and custom code can restore eligibility. Custom selector strategies
+installed by a caller replace the experimental strategy; custom reference
+functions and self policies still execute in the ordinary setter.
+
+After a bounded development smoke, the Dell operator can run exactly:
+
+```sh
+./mvnw -q -DskipTests test-compile
+python3 scripts/performance_evaluation.py run --preset crossref-comparison --roots 100,1000,5000,10000,20000 --scenarios plugin-eclipse,ant,extlibrary --heap 2g --timeout 1800 --max-eobjects 400000 --max-resources 25000 --warmups 3 --repetitions 7
+python3 scripts/performance_evaluation.py report --latest crossref-comparison
+```
+
+The last command only regenerates the report; `run` reports automatically.
+No calibration selection is needed. Each alternative uses its own serial,
+uninstrumented fork, with pair order alternating by case. Every successful
+repetition records elapsed nanoseconds, actual EObjects/resources and a graph
+fingerprint that includes ordered feature values and reference target indices.
+The fingerprint and XMI round-trip validation run outside the generation timer.
+Only equivalent matched cases receive a speedup ratio. The unique output folder
+under `target/benchmark/crossref-comparison-*/` contains raw/summary/fingerprint
+CSVs, fork logs, a source/host/command manifest, `comparison-cases.csv`,
+`failure-capped-cases.csv`, `figure-comparison.csv` and SVG, and `report.md`.
+`latest-crossref-comparison.json` points to the last result. A failure or cap
+stops larger sizes for that scenario and remains visible in the report.
+
+The bounded 1–2-root three-scenario smoke and a separate 100-root PluginEclipse
+check matched all graph signatures. These small development-host times are
+interface/correctness checks, not Dell performance evidence. An independent
+2-root counter sample found identical 16 attempts and 8 occupied-single-opposite
+rejections per measured repetition for both alternatives. This is a
+constant-factor experiment; production adoption requires a separate decision.
+
 ## Cross-reference selection investigation
 
 Run from the core repository root using a calibrated selection from this physical
@@ -54,8 +95,8 @@ list operations; it cannot isolate those internal costs. `selectValue` elapsed
 contains selector retrieval and candidate compute; these nested times must not
 be added. All timings include instrumentation overhead. The test suite compares
 selected identity/order, XMI, validation and opposite behavior with the normal
-setter. There is no supported optimization; `crossref-comparison` reports
-`not available: no supported optimization`.
+setter. The later cursor comparison above remains a separate uninstrumented
+experiment; diagnostic elapsed times must never be mixed into its A/B table.
 
 ### Explicit root sweep for the follow-up
 

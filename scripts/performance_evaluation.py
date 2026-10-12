@@ -402,8 +402,9 @@ def main():
         parser.error("--timeout must be positive")
     if args.action == "run":
         if args.preset == "crossref-comparison":
-            raise ValueError("not available: no supported optimization")
-        if args.preset == "crossref-investigation":
+            from crossref_comparison import run_comparison
+            run_comparison(args)
+        elif args.preset == "crossref-investigation":
             from crossref_investigation import run_investigation
             run_investigation(args)
         elif args.preset.startswith("large-"):
@@ -419,8 +420,9 @@ def main():
                 parser.error("report accepts a path or --latest, not both")
             from publication_evaluation import latest_output, report_publication
             if args.latest == "crossref-comparison":
-                raise ValueError("not available: no supported optimization")
-            if args.latest == "crossref-investigation":
+                from crossref_comparison import report_comparison
+                report_comparison(latest_output(args.latest))
+            elif args.latest == "crossref-investigation":
                 from crossref_investigation import report_investigation
                 report_investigation(latest_output(args.latest))
             else:
@@ -430,6 +432,9 @@ def main():
             if manifest["preset"] == "crossref-investigation":
                 from crossref_investigation import report_investigation
                 report_investigation(args.output)
+            elif manifest["preset"] == "crossref-comparison":
+                from crossref_comparison import report_comparison
+                report_comparison(args.output)
             elif manifest["preset"] == "large-paper":
                 from publication_evaluation import report_publication
                 report_publication(args.output)

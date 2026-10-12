@@ -6,6 +6,7 @@ import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -245,6 +246,10 @@ public final class EMFModelGeneratorPerformanceStatistics {
 			return;
 		}
 		final var config = parse(args);
+		final var variant = System.getenv("BENCHMARK_SELECTION_VARIANT");
+		if (variant != null && !variant.equals("cursor")) {
+			throw new IllegalArgumentException("Unknown experimental selector: " + variant);
+		}
 		run(config);
 	}
 
@@ -254,6 +259,10 @@ public final class EMFModelGeneratorPerformanceStatistics {
 
 	static List<Sample> run(final Configuration config, final PrintStream output)
 			throws IOException {
+		final var fingerprintPath = System.getenv("BENCHMARK_FINGERPRINTS");
+		if (fingerprintPath != null) {
+			writeFile(Path.of(fingerprintPath), "phase,run_index,sha256\n");
+		}
 		final var metadata = Metadata.capture(config.metamodel());
 		final var loader = new EMFModelGenerator();
 		final var samples = new ArrayList<Sample>();
@@ -308,7 +317,15 @@ public final class EMFModelGeneratorPerformanceStatistics {
 
 	private static String prefix(final Configuration config) {
 		return "[benchmark] scenario=" + config.scenario() + " mode="
-				+ (config.diagnosticPath() == null ? "baseline" : "instrumented") + " ";
+				+ mode(config) + " ";
+	}
+
+	private static String mode(final Configuration config) {
+		if (config.diagnosticPath() != null) {
+			return "instrumented";
+		}
+		return "cursor".equals(System.getenv("BENCHMARK_SELECTION_VARIANT"))
+				? "experimental-cursor" : "baseline";
 	}
 
 	private static void printStart(final PrintStream output, final Configuration config,
@@ -367,6 +384,9 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		populator.setFeatureMapDefaultMaxCount(config.featureMapMax());
 		if (selector != null) {
 			populator.setCrossReferenceCandidateSelectorStrategy(selector);
+		} else if (selectionProbe == null &&
+				"cursor".equals(System.getenv("BENCHMARK_SELECTION_VARIANT"))) {
+			populator.setCrossReferenceCandidateSelectorStrategy(new ExperimentalCursorSelector());
 		}
 		return generator;
 	}
@@ -375,7 +395,9 @@ public final class EMFModelGeneratorPerformanceStatistics {
 			final int index, final boolean measured, final boolean preflight) {
 		final var selector = config.diagnosticPath() == null
 				? null : config.selectionAttempts() ? null : new InstrumentedEObjectCandidateSelector();
-		final var selectionProbe = config.selectionAttempts() ? new SelectionAttemptProbe() : null;
+		final var selectionProbe = config.selectionAttempts()
+				? new SelectionAttemptProbe("cursor".equals(
+						System.getenv("BENCHMARK_SELECTION_VARIANT"))) : null;
 		final var generator = configured(config, selector, selectionProbe);
 		final String jfrPath = System.getProperty("benchmark.jfr.path");
 		final boolean profile = measured && index == 1 && config.diagnosticPath() == null
@@ -401,6 +423,12 @@ public final class EMFModelGeneratorPerformanceStatistics {
 							result.diagnostic().toString(), diagnostic(selector, selectionProbe),
 							selectionProbe == null ? null : selectionProbe.features());
 				}
+			}
+			if ((preflight || measured) && System.getenv("BENCHMARK_FINGERPRINTS") != null) {
+				Files.writeString(Path.of(System.getenv("BENCHMARK_FINGERPRINTS")),
+						(preflight ? "preflight" : "measurement") + "," + index + ","
+								+ GraphFingerprint.compute(generator.getResourceSet()) + "\n",
+						StandardOpenOption.APPEND);
 			}
 			return new Sample(index, elapsed, counts, "ok", "",
 					diagnostic(selector, selectionProbe),
@@ -460,7 +488,7 @@ public final class EMFModelGeneratorPerformanceStatistics {
 	static void write(final Configuration config, final Metadata metadata,
 			final List<Sample> samples) throws IOException {
 		final var raw = new StringBuilder(RAW_HEADER).append('\n');
-		final var mode = config.diagnosticPath() == null ? "baseline" : "instrumented";
+		final var mode = mode(config);
 		for (final var sample : samples) {
 			raw.append(csv(metadata.runId(), metadata.started(), mode, config.scenario(),
 					config.metamodel().toString(), metadata.fingerprint(), config.packageName(),
