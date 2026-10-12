@@ -17,9 +17,36 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter;
 import io.github.lorenzobettini.emfmodelgenerator.EMFCandidateSelectorStrategy;
 import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
 import io.github.lorenzobettini.emfmodelgenerator.EMFRoundRobinEObjectCandidateSelector;
+import io.github.lorenzobettini.emfmodelgenerator.LegacyRoundRobinSelectors;
 
 class ExperimentalCursorSelectorTest {
 	private EMFModelGenerator generator;
+
+	private static final class CountingSelector
+			implements EMFCandidateSelectorStrategy<EClass, EObject> {
+		private final EMFCandidateSelectorStrategy<EClass, EObject> delegate;
+		private int calls;
+
+		private CountingSelector(final EMFCandidateSelectorStrategy<EClass, EObject> delegate) {
+			this.delegate = delegate;
+		}
+
+		@Override
+		public EObject getNextCandidate(final EObject context, final EClass type) {
+			calls++;
+			return delegate.getNextCandidate(context, type);
+		}
+
+		@Override
+		public boolean hasCandidates(final EObject context, final EClass type) {
+			return delegate.hasCandidates(context, type);
+		}
+
+		@Override
+		public void reset() {
+			delegate.reset();
+		}
+	}
 
 	@AfterEach
 	void cleanup() {
@@ -55,7 +82,7 @@ class ExperimentalCursorSelectorTest {
 			populator.setFeatureMapDefaultMaxCount(1);
 			if (experimental) {
 				populator.setCrossReferenceCandidateSelectorStrategy(
-						new ExperimentalCursorSelector());
+						new LegacyRoundRobinSelectors.EObjects());
 			}
 			modelGenerator.generateFromSeveral(root);
 			final var fingerprint = GraphFingerprint.compute(modelGenerator.getResourceSet());
@@ -82,7 +109,7 @@ class ExperimentalCursorSelectorTest {
 		resource.getContents().add(other);
 		final var baseline = new EMFCrossReferenceSetter();
 		final var variant = new EMFCrossReferenceSetter();
-		variant.setCandidateSelectorStrategy(new ExperimentalCursorSelector());
+		baseline.setCandidateSelectorStrategy(new LegacyRoundRobinSelectors.EObjects());
 		final int[] baselineCalls = {0};
 		final int[] variantCalls = {0};
 		baseline.setSelfReferencePolicy((ignored, reference) -> ++baselineCalls[0] > 1);
@@ -128,16 +155,19 @@ class ExperimentalCursorSelectorTest {
 		}
 		final var owner = EcoreUtil.create(exportClass);
 		resource.getContents().add(owner);
-		final var baselineSelector = new EMFRoundRobinEObjectCandidateSelector();
-		final var variantSelector = new ExperimentalCursorSelector();
+		final var baselineSelector = new LegacyRoundRobinSelectors.EObjects();
+		final var variantSelector = new EMFRoundRobinEObjectCandidateSelector();
+		final var baselineCounting = new CountingSelector(baselineSelector);
+		final var variantCounting = new CountingSelector(variantSelector);
 		final var baseline = new EMFCrossReferenceSetter();
 		final var variant = new EMFCrossReferenceSetter();
-		baseline.setCandidateSelectorStrategy(baselineSelector);
-		variant.setCandidateSelectorStrategy(variantSelector);
+		baseline.setCandidateSelectorStrategy(baselineCounting);
+		variant.setCandidateSelectorStrategy(variantCounting);
 
 		for (int i = 0; i < 7; i++) {
 			assertThat(variant.selectValue(owner, reference))
 					.isSameAs(baseline.selectValue(owner, reference));
+			assertThat(variantCounting.calls).isEqualTo(baselineCounting.calls);
 		}
 		final var exports = new ArrayList<EObject>();
 		for (final var candidate : candidates) {
@@ -148,13 +178,16 @@ class ExperimentalCursorSelectorTest {
 		for (int i = 0; i < 3; i++) {
 			assertThat(variant.selectValue(owner, reference)).isNull();
 			assertThat(baseline.selectValue(owner, reference)).isNull();
+			assertThat(variantCounting.calls).isEqualTo(baselineCounting.calls);
 		}
 		candidates.get(1).eUnset(opposite);
 		assertThat(variant.selectValue(owner, reference))
 				.isSameAs(baseline.selectValue(owner, reference)).isSameAs(candidates.get(1));
+		assertThat(variantCounting.calls).isEqualTo(baselineCounting.calls);
 		exports.get(0).eSet(reference, candidates.get(1));
 		assertThat(variant.selectValue(owner, reference))
 				.isSameAs(baseline.selectValue(owner, reference)).isSameAs(candidates.get(0));
+		assertThat(variantCounting.calls).isEqualTo(baselineCounting.calls);
 		final int[] baselineFunctions = {0};
 		final int[] variantFunctions = {0};
 		baseline.setFunctionFor(reference, ignored -> {
@@ -168,6 +201,7 @@ class ExperimentalCursorSelectorTest {
 		assertThat(variant.selectValue(owner, reference))
 				.isSameAs(baseline.selectValue(owner, reference));
 		assertThat(variantFunctions[0]).isEqualTo(baselineFunctions[0]);
+		assertThat(variantCounting.calls).isEqualTo(baselineCounting.calls);
 		baseline.reset();
 		variant.reset();
 		assertThat(variantSelector.getNextCandidate(owner, packageClass))

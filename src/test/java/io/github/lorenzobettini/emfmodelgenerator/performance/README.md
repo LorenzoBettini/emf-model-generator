@@ -1,10 +1,19 @@
 # Benchmark harness
 
-## Experimental cross-reference cursor comparison
+## Archived cross-reference cursor comparison
 
-The opt-in comparison is implemented with a test-source
+Production now uses mutable cursor bookkeeping. New `crossref-comparison` runs
+are disabled because both old CLI alternatives would use the adopted algorithm.
+`python3 scripts/performance_evaluation.py report --latest crossref-comparison`
+still regenerates reports from archived Task 06 raw results. Their `baseline`
+and `experimental-cursor` labels describe the original, pre-adoption comparison.
+Use a fresh `large-calibration` selection for publication measurements after
+the production change; an older selection fails source compatibility checks.
+
+The archived comparison was implemented with a test-source
 `ExperimentalCursorSelector` installed through the existing selector strategy
-hook. Baseline forks use the untouched production selector. The variant keeps
+hook. Historical baseline forks used the then-unchanged production selector.
+The variant kept
 the same cached candidate list, `getOrCompute` call sequence, live validity
 checks, wrap behavior and reset, but stores a mutable cursor instead of replacing
 a boxed map value on every candidate retrieval. It does **not** skip saturated
@@ -13,7 +22,7 @@ resolution and custom code can restore eligibility. Custom selector strategies
 installed by a caller replace the experimental strategy; custom reference
 functions and self policies still execute in the ordinary setter.
 
-After a bounded development smoke, the Dell operator can run exactly:
+The historical Dell comparison commands were:
 
 ```sh
 ./mvnw -q -DskipTests test-compile
@@ -21,7 +30,7 @@ python3 scripts/performance_evaluation.py run --preset crossref-comparison --roo
 python3 scripts/performance_evaluation.py report --latest crossref-comparison
 ```
 
-The last command only regenerates the report; `run` reports automatically.
+The last command only regenerated the report; the historical `run` reported automatically.
 No calibration selection is needed. Each alternative uses its own serial,
 uninstrumented fork, with pair order alternating by case. Every successful
 repetition records elapsed nanoseconds, actual EObjects/resources and a graph
@@ -141,7 +150,7 @@ not establish the cause of the previously observed large-model slowdown.
 
 ## Calibrated publication-scale workflow
 
-Run these four commands from the core repository root on a quiet physical host
+Run the first three commands from the core repository root on a quiet physical host
 with JDK 21+, Python 3, sufficient disk space, and a stable power/CPU policy.
 Calibration and publication measurements are lengthy and explicitly opt-in.
 The commands use a fixed 2 GiB heap, G1GC and UTF-8 in serial forked JVMs.
@@ -152,6 +161,10 @@ python3 scripts/performance_evaluation.py run --preset large-calibration --heap 
 python3 scripts/performance_evaluation.py run --preset large-paper --heap 2g --timeout 900 --selection target/benchmark/publication-selection.json
 python3 scripts/performance_evaluation.py report --latest large-paper
 ```
+
+The fourth command is optional and only regenerates the report. The calibration
+must be fresh after cursor adoption. Publication forks clear any inherited
+`BENCHMARK_SELECTION_VARIANT` and use the ordinary production selector.
 
 Calibration probes progressively larger one-root containment breadth and fixed-shape
 many-root workloads. It records every success, failure, timeout and capped case in

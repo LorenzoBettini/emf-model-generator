@@ -1,6 +1,7 @@
 """Fast publication-driver contract tests; no large models are generated here."""
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -76,6 +77,12 @@ class PublicationEvaluationTest(unittest.TestCase):
         changed["metamodel_sha256"]["bibtex"] = "0" * 64
         with self.assertRaisesRegex(ValueError, "metamodel_sha256"):
             publication.compatible(selection, changed)
+        changed = json.loads(json.dumps(current))
+        selector_path = next(path for path in changed["source_sha256"]
+                             if path.endswith("EMFRoundRobinCandidateSelector.java"))
+        changed["source_sha256"][selector_path] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "source_sha256"):
+            publication.compatible(selection, changed)
         selection["selected"][0]["preflight"] = "none"
         with self.assertRaisesRegex(ValueError, "settings"):
             publication.compatible(selection, current)
@@ -110,6 +117,15 @@ class PublicationEvaluationTest(unittest.TestCase):
             item = publication.invoke(case, Path(temp), "baseline", "2g", 1, 2, 1)
             self.assertEqual(item["status"], "timeout")
             self.assertIn("started", (Path(temp) / f"{item['stem']}.log").read_text())
+
+    def test_publication_fork_clears_inherited_experimental_selector(self):
+        case = publication.case_for(publication.SERIES[0], 1)
+        with tempfile.TemporaryDirectory() as temp, mock.patch.dict(
+                os.environ, {"BENCHMARK_SELECTION_VARIANT": "cursor"}), mock.patch.object(
+                publication.subprocess, "run", side_effect=subprocess.TimeoutExpired(
+                    "mvnw", 1, output=b"started\n")) as run:
+            publication.invoke(case, Path(temp), "baseline", "512m", 1, 2, 1)
+            self.assertNotIn("BENCHMARK_SELECTION_VARIANT", run.call_args.kwargs["env"])
 
     def test_oom_and_invalid_preflight_are_preserved(self):
         case = publication.case_for(publication.SERIES[0], 1)

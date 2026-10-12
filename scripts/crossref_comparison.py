@@ -1,4 +1,4 @@
-"""Serial, uninstrumented comparison of the original and experimental cursor selector."""
+"""Read archived original-versus-experimental cursor comparisons."""
 
 import json
 import os
@@ -106,50 +106,10 @@ def invoke(case, output, mode, args):
 
 
 def run_comparison(args):
-    cases = parse_cases(args)
-    output = pub.new_output(args.preset, args.output)
-    manifest = {"schema_version": 1, "preset": args.preset, "created_utc": pub.utc(),
-                **pub.machine(args.heap), "warmups": args.warmups,
-                "repetitions": args.repetitions,
-                "timeout_seconds_per_invocation": args.timeout,
-                "caps": {"eobjects": args.max_eobjects,
-                         "resources": args.max_resources},
-                "variant": "test-only ExperimentalCursorSelector; unchanged production setter",
-                "selector_source_sha256": pub.file_hash(base.ROOT / "src/test/java/io/github/"
-                    "lorenzobettini/emfmodelgenerator/performance/ExperimentalCursorSelector.java"),
-                "graph_fingerprint_source_sha256": pub.file_hash(base.ROOT / "src/test/java/"
-                    "io/github/lorenzobettini/emfmodelgenerator/performance/GraphFingerprint.java"),
-                "comparison_runner_sha256": pub.file_hash(Path(__file__)),
-                "selected_cases": cases, "invocations": [], "skipped_cases": []}
-    manifest_path = output / "manifest.json"
-    pub.write_json(manifest_path, manifest)
-    subprocess.run(["./mvnw", "-q", "-DskipTests", "test-compile"], cwd=base.ROOT,
-                   check=True, timeout=args.timeout)
-    stopped = set()
-    for position, case in enumerate(cases):
-        scenario, roots = case["scenario"], case["roots"]
-        reason = ("previous size failed or exceeded a cap" if scenario in stopped else
-                  "projected EObject/resource cap" if roots > args.max_resources or
-                  roots * FACTORS[scenario] > args.max_eobjects else None)
-        if reason:
-            manifest["skipped_cases"].append({"scenario": scenario, "roots": roots,
-                                              "status": "capped" if "cap" in reason else "skipped",
-                                              "reason": reason})
-            pub.write_json(manifest_path, manifest)
-            if "cap" in reason:
-                stopped.add(scenario)
-            continue
-        order = MODES if position % 2 == 0 else tuple(reversed(MODES))
-        for mode in order:
-            item = invoke(case, output, mode, args)
-            manifest["invocations"].append(item)
-            pub.write_json(manifest_path, manifest)
-            if item["status"] != "completed":
-                stopped.add(scenario)
-                break
-    report_comparison(output)
-    pub.save_latest(args.preset, output)
-    print(f"Result directory: {output}", flush=True)
+    raise ValueError("New crossref-comparison runs are disabled after production cursor "
+                     "adoption: baseline and experimental-cursor now use the same "
+                     "bookkeeping. Use report --latest crossref-comparison for archived "
+                     "results; run fresh large-calibration for publication measurements.")
 
 
 def checked(output, item, manifest):

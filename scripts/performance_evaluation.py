@@ -403,7 +403,10 @@ def main():
     if args.action == "run":
         if args.preset == "crossref-comparison":
             from crossref_comparison import run_comparison
-            run_comparison(args)
+            try:
+                run_comparison(args)
+            except ValueError as exc:
+                parser.error(str(exc))
         elif args.preset == "crossref-investigation":
             from crossref_investigation import run_investigation
             run_investigation(args)

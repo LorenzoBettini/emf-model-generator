@@ -76,6 +76,8 @@ def selection_compatible(selection, current):
     if old.keys() != new.keys():
         raise ValueError("Source inventory changed; cannot prove selection compatibility")
     changes = {key for key in old if old[key] != new[key]}
+    if not changes:
+        return []
     if changes - ALLOWED_DIAGNOSTIC_CHANGES:
         raise ValueError("Production/workload source changed: " +
                          ", ".join(sorted(changes - ALLOWED_DIAGNOSTIC_CHANGES)))

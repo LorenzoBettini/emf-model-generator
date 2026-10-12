@@ -186,8 +186,10 @@ def invoke(case, output, mode, heap, warmups, repetitions, timeout):
     item["command"] = command(case, output, mode, heap, warmups, repetitions)
     print(f"{name}: starting forked JVM", flush=True)
     start = dt.datetime.now(dt.timezone.utc)
+    env = os.environ.copy()
+    env.pop("BENCHMARK_SELECTION_VARIANT", None)
     try:
-        proc = subprocess.run(item["command"], cwd=base.ROOT, text=True,
+        proc = subprocess.run(item["command"], cwd=base.ROOT, env=env, text=True,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               timeout=timeout)
         log = proc.stdout or ""

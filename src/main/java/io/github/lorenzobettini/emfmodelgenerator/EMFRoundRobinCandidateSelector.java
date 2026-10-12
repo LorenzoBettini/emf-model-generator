@@ -17,7 +17,11 @@ import org.eclipse.emf.ecore.EObject;
  */
 public abstract class EMFRoundRobinCandidateSelector<K extends ENamedElement, V extends EObject> implements EMFCandidateSelectorStrategy<K, V> {
 
-	private final Map<K, Integer> nextIndexMap = new HashMap<>();
+	private final Map<K, Cursor> nextIndexMap = new HashMap<>();
+
+	private static final class Cursor {
+		int index;
+	}
 
 	/**
 	 * Get or compute the list of possible candidates for the specified key within
@@ -57,15 +61,12 @@ public abstract class EMFRoundRobinCandidateSelector<K extends ENamedElement, V 
 			return null;
 		}
 
-		// Get the current index for this type, defaulting to 0
-		final int currentIndex = nextIndexMap.getOrDefault(type, 0);
-
-		// Get the next candidate
-		final V candidate = allCandidates.get(currentIndex);
-
-		// Update the next index for this type (wrap around)
-		final int nextIndex = (currentIndex + 1) % allCandidates.size();
-		nextIndexMap.put(type, nextIndex);
+		final Cursor cursor = nextIndexMap.computeIfAbsent(type, ignored -> new Cursor());
+		final V candidate = allCandidates.get(cursor.index);
+		cursor.index++;
+		if (cursor.index == allCandidates.size()) {
+			cursor.index = 0;
+		}
 
 		return candidate;
 	}

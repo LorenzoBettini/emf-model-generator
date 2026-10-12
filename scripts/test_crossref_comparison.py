@@ -11,6 +11,12 @@ import publication_evaluation as publication
 
 
 class CrossReferenceComparisonTest(unittest.TestCase):
+    def test_new_comparison_is_disabled_without_creating_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "disabled after production cursor"):
+                comparison.run_comparison(self.args(output=str(Path(directory) / "new")))
+            self.assertFalse((Path(directory) / "new").exists())
+
     def args(self, **overrides):
         values = dict(roots="100,1000,5000,10000,20000",
                       scenarios="plugin-eclipse,ant,extlibrary", heap="2g",

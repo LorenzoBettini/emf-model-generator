@@ -28,15 +28,19 @@ class CrossReferenceInvestigationTest(unittest.TestCase):
                      "probes": [{**case, "status": "completed"} for case in cases]}
         return selection, current
 
-    def test_source_policy_accepts_diagnostic_edits_and_rejects_production(self):
+    def test_fresh_calibration_with_identical_source_is_compatible(self):
+        selection, current = self.selection()
+        self.assertEqual(investigation.selection_compatible(selection, current), [])
+
+    def test_source_policy_rejects_pre_adoption_diagnostics_and_production_changes(self):
         selection, current = self.selection()
         selection = json.loads(json.dumps(selection))
         selection["source_sha256"]["scripts/performance_evaluation.py"] = \
             hashlib.sha256(b"baseline").hexdigest()
         with mock.patch.object(investigation.subprocess, "check_output",
                                return_value=b"baseline"):
-            self.assertEqual(investigation.selection_compatible(selection, current),
-                             ["scripts/performance_evaluation.py"])
+            with self.assertRaisesRegex(ValueError, "audited version"):
+                investigation.selection_compatible(selection, current)
         current_changed = json.loads(json.dumps(current))
         current_changed["source_sha256"]["scripts/performance_evaluation.py"] = "f" * 64
         with self.assertRaisesRegex(ValueError, "audited version"):
@@ -68,9 +72,9 @@ class CrossReferenceInvestigationTest(unittest.TestCase):
                                  "--selection", "target/benchmark/publication-selection.json"],
                                 text=True, capture_output=True)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("explicit --roots", result.stderr)
+        self.assertIn("disabled after production cursor adoption", result.stderr)
 
-    def test_vetted_publication_revision_is_compatible_for_diagnostics(self):
+    def test_vetted_pre_adoption_revision_requires_recalibration_for_diagnostics(self):
         selection, current = self.selection()
         selection = json.loads(json.dumps(selection))
         selection["host"]["git_revision"] = "ac673ba"
@@ -78,8 +82,8 @@ class CrossReferenceInvestigationTest(unittest.TestCase):
             previous = subprocess.check_output(["git", "show", f"ac673ba:{path}"],
                                                cwd=publication.base.ROOT)
             selection["source_sha256"][path] = hashlib.sha256(previous).hexdigest()
-        self.assertEqual(set(investigation.selection_compatible(selection, current)),
-                         investigation.ALLOWED_DIAGNOSTIC_CHANGES)
+        with self.assertRaisesRegex(ValueError, "audited version"):
+            investigation.selection_compatible(selection, current)
 
     def test_prior_audited_diagnostic_requires_test_only_selection(self):
         selection, current = self.selection()
@@ -88,10 +92,8 @@ class CrossReferenceInvestigationTest(unittest.TestCase):
         for path in investigation.ALLOWED_DIAGNOSTIC_CHANGES:
             selection["source_sha256"][path] = \
                 investigation.PREVIOUS_DIAGNOSTIC_HASHES[path]
-        self.assertEqual(set(investigation.selection_compatible(selection, current)),
-                         {path for path in investigation.ALLOWED_DIAGNOSTIC_CHANGES
-                          if investigation.PREVIOUS_DIAGNOSTIC_HASHES[path] !=
-                          current["source_sha256"][path]})
+        with self.assertRaisesRegex(ValueError, "audited version"):
+            investigation.selection_compatible(selection, current)
         selection["test_only"] = False
         with self.assertRaises(ValueError):
             investigation.selection_compatible(selection, current)
