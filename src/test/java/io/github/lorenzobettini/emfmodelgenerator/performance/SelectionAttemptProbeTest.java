@@ -20,7 +20,13 @@ import org.junit.jupiter.api.Test;
 import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter;
 import io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class SelectionAttemptProbeTest {
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private record Graph(Resource resource, EObject owner, List<EObject> candidates,
 			EReference reference) {
 	}

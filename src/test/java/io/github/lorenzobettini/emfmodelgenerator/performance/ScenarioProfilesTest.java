@@ -12,6 +12,9 @@ import org.junit.jupiter.api.Test;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class ScenarioProfilesTest {
 
 	@Test

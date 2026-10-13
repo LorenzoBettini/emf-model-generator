@@ -20,6 +20,9 @@ import org.eclipse.emf.common.util.URI;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFReferenceAwareEObjectCandidateSelectorTest {
 
 	@AfterEach
@@ -27,6 +30,9 @@ class EMFReferenceAwareEObjectCandidateSelectorTest {
 		EMFTestUtils.cleanupRegisteredPackages();
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private record LibraryFixture(ResourceSet resources, List<EObject> libraries,
 			List<EObject> books, EObject author, EReference libraryBooks,
 			EReference authorBooks, EClass bookClass) {

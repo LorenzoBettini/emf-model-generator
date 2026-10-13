@@ -11,6 +11,9 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter;
 import io.github.lorenzobettini.emfmodelgenerator.EMFUtils;
 
 /** Test-only observer around the unchanged selection algorithm and round-robin selector. */
+/**
+ * @author Lorenzo Bettini
+ */
 final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 	private final Selector selector = new Selector();
 	private final ExperimentalCursorSelector experimentalSelector;
@@ -136,6 +139,9 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 		return selector.discovery();
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	final class Selector extends InstrumentedEObjectCandidateSelector {
 		@Override
 		public EObject getNextCandidate(final EObject context, final EClass type) {
@@ -202,6 +208,9 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 		}
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	static final class Counters {
 		long calls;
 		long selected;

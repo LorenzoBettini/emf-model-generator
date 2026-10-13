@@ -13,10 +13,16 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 
 /** Test-only reference for the original boxed-index algorithm. */
+/**
+ * @author Lorenzo Bettini
+ */
 public final class LegacyRoundRobinSelectors {
 	private LegacyRoundRobinSelectors() {
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private static final class Index<K extends ENamedElement> {
 		private final Map<K, Integer> nextIndexMap = new HashMap<>();
 
@@ -36,6 +42,9 @@ public final class LegacyRoundRobinSelectors {
 		}
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	public static final class EObjects extends EMFRoundRobinEObjectCandidateSelector {
 		private final Index<EClass> index = new Index<>();
 
@@ -51,6 +60,9 @@ public final class LegacyRoundRobinSelectors {
 		}
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	public static final class EClasses extends EMFRoundRobinEClassCandidateSelector {
 		private final Index<EClass> index = new Index<>();
 
@@ -66,6 +78,9 @@ public final class LegacyRoundRobinSelectors {
 		}
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	public static final class EEnumLiterals extends EMFRoundRobinEEnumLiteralCandidateSelector {
 		private final Index<EEnum> index = new Index<>();
 
@@ -81,6 +96,9 @@ public final class LegacyRoundRobinSelectors {
 		}
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	public static final class FeatureMapMembers
 			extends EMFRoundRobinFeatureMapGroupMemberSelector {
 		private final Index<EAttribute> index = new Index<>();

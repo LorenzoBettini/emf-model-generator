@@ -17,7 +17,13 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class LegacyRoundRobinEquivalenceTest {
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private static final class Lists extends EMFRoundRobinCandidateSelector<EClass, EObject> {
 		private final Map<EClass, List<EObject>> values = new HashMap<>();
 
@@ -27,6 +33,9 @@ class LegacyRoundRobinEquivalenceTest {
 		}
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private static final class OldLists extends EMFRoundRobinCandidateSelector<EClass, EObject> {
 		private final Map<EClass, List<EObject>> values;
 		private final Map<EClass, Integer> indices = new HashMap<>();

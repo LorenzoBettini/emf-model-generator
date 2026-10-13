@@ -19,6 +19,9 @@ public abstract class EMFRoundRobinCandidateSelector<K extends ENamedElement, V 
 
 	private final Map<K, Cursor> nextIndexMap = new HashMap<>();
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private static final class Cursor {
 		int index;
 	}

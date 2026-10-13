@@ -17,6 +17,9 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
 import io.github.lorenzobettini.emfmodelgenerator.performance.EMFModelGeneratorPerformanceStatistics.Counts;
 import io.github.lorenzobettini.emfmodelgenerator.performance.EMFModelGeneratorPerformanceStatistics.Sample;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFModelGeneratorPerformanceStatisticsTest {
 
 	@TempDir

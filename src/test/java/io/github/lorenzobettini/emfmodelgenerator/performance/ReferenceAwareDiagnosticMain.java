@@ -9,6 +9,9 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
 import io.github.lorenzobettini.emfmodelgenerator.EMFReferenceAwareEObjectCandidateSelector;
 
 /** Separate instrumented mechanism probe; never use its elapsed time as A/B timing. */
+/**
+ * @author Lorenzo Bettini
+ */
 public final class ReferenceAwareDiagnosticMain {
 	private ReferenceAwareDiagnosticMain() {
 	}

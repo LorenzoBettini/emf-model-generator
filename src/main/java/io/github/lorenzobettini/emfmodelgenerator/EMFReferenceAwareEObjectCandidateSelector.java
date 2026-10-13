@@ -43,10 +43,15 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
  * generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(
  *     new EMFReferenceAwareEObjectCandidateSelector());
  * }
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFReferenceAwareEObjectCandidateSelector
 		implements EMFCandidateSelectorStrategy<EClass, EObject> {
 	/** Optional counters for separate diagnostic runs; do not use for timing comparisons. */
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	public static final class Diagnostics {
 		private long attempts;
 		private long oppositeRejections;

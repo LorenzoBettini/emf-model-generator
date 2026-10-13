@@ -9,6 +9,9 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFRoundRobinEObjectCandidateS
 import io.github.lorenzobettini.emfmodelgenerator.EMFUtils;
 
 /** Diagnostic wrapper that keeps the production setter's assignment loops intact. */
+/**
+ * @author Lorenzo Bettini
+ */
 final class ReferenceAwareBaselineProbe extends EMFCrossReferenceSetter {
 	private final Selector selector = new Selector();
 	private EObject previous;
@@ -49,6 +52,9 @@ final class ReferenceAwareBaselineProbe extends EMFCrossReferenceSetter {
 		return oppositeRejections;
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private final class Selector extends EMFRoundRobinEObjectCandidateSelector {
 		@Override
 		public EObject getNextCandidate(final EObject context, final EClass type) {

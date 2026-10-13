@@ -9,6 +9,9 @@ import org.junit.jupiter.api.Test;
 import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
 import io.github.lorenzobettini.emfmodelgenerator.EMFReferenceAwareEObjectCandidateSelector;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class ReferenceAwareEquivalenceTest {
 	@Test
 	void preservesBoundedExternalGraphFingerprints() throws IOException {

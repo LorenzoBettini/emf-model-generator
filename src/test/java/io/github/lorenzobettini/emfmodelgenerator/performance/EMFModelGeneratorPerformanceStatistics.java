@@ -31,6 +31,8 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFReferenceAwareEObjectCandid
 /**
  * Explicit-root benchmark harness. Launch in a separate JVM; see
  * {@code src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/README.md}.
+ *
+ * @author Lorenzo Bettini
  */
 public final class EMFModelGeneratorPerformanceStatistics {
 
@@ -63,6 +65,9 @@ public final class EMFModelGeneratorPerformanceStatistics {
 	private EMFModelGeneratorPerformanceStatistics() {
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	record Configuration(String scenario, Path metamodel, String packageName, String rootClass,
 			int roots, int depth, int attributeMax, int containmentMax, int crossReferenceMax,
 			int featureMapMax, int warmups, int repetitions, Preflight preflight,
@@ -87,13 +92,22 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		}
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	enum Preflight {
 		NONE, VALIDATE, ROUNDTRIP
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	record Counts(int roots, long objects, int resources) {
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	record Sample(int index, long elapsedNanos, Counts counts, String status, String error,
 			InstrumentedEObjectCandidateSelector.Snapshot diagnostic,
 			Map<String, SelectionAttemptProbe.Counters> selection) {
@@ -102,9 +116,15 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		}
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	record Summary(long median, long p25, long p75) {
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	record Metadata(String runId, String started, String fingerprint, String javaVersion,
 			String javaVm, String jvmArgs, String osName, String osArch, int cpuCount,
 			long maxHeapBytes) {

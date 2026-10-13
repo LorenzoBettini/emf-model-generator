@@ -15,6 +15,9 @@ import org.junit.jupiter.api.Test;
 import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
 import io.github.lorenzobettini.emfmodelgenerator.EMFRoundRobinEObjectCandidateSelector;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class InstrumentedEObjectCandidateSelectorTest {
 
 	@Test

@@ -19,9 +19,15 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
 import io.github.lorenzobettini.emfmodelgenerator.EMFRoundRobinEObjectCandidateSelector;
 import io.github.lorenzobettini.emfmodelgenerator.LegacyRoundRobinSelectors;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class ExperimentalCursorSelectorTest {
 	private EMFModelGenerator generator;
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private static final class CountingSelector
 			implements EMFCandidateSelectorStrategy<EClass, EObject> {
 		private final EMFCandidateSelectorStrategy<EClass, EObject> delegate;

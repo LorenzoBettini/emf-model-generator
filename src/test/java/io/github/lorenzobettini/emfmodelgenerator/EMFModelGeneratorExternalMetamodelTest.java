@@ -831,6 +831,9 @@ class EMFModelGeneratorExternalMetamodelTest {
 		return objects;
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private record BpmnProxy(EObject owner, EReference reference, EObject value) {
 		URI uri() {
 			return ((org.eclipse.emf.ecore.InternalEObject) value).eProxyURI();

@@ -5,8 +5,14 @@ import java.util.List;
 import java.util.Map;
 
 /** Bounded, explicit-root configurations for short calibration pilots. */
+/**
+ * @author Lorenzo Bettini
+ */
 final class ScenarioProfiles {
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	record Profile(String id, Path metamodel, String packageName, String rootClass,
 			List<Integer> roots, List<Integer> depths, int defaultDepth, int attributeMax,
 			int containmentMax, int crossReferenceMax, int featureMapMax,
