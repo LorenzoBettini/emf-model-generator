@@ -240,7 +240,7 @@ public class EMFInstancePopulator {
 	 * 
 	 * @param strategy the heterogeneous structural-feature selector strategy
 	 */
-	public void setInstantiableSubclassSelectorStrategy(EMFCandidateSelectorStrategy<EClass, EClass> strategy) {
+	public void setInstantiableSubclassSelectorStrategy(EMFEClassCandidateSelectorStrategy strategy) {
 		containmentReferenceSetter.setInstantiableSubclassSelectorStrategy(strategy);
 	}
 
@@ -261,7 +261,7 @@ public class EMFInstancePopulator {
 	 * 
 	 * @param strategy the candidate selector strategy
 	 */
-	public void setEnumLiteralSelectorStrategy(EMFCandidateSelectorStrategy<EEnum, EEnumLiteral> strategy) {
+	public void setEnumLiteralSelectorStrategy(EMFEEnumLiteralCandidateSelectorStrategy strategy) {
 		attributeSetter.setEnumLiteralSelectorStrategy(strategy);
 	}
 
@@ -271,7 +271,7 @@ public class EMFInstancePopulator {
 	 * @param strategy the candidate selector strategy
 	 */
 	public void setGroupMemberSelectorStrategy(
-			EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> strategy) {
+			EMFFeatureMapGroupMemberSelectorStrategy strategy) {
 		featureMapSetter.setGroupMemberSelectorStrategy(strategy);
 	}
 

@@ -20,7 +20,7 @@ public class EMFContainmentReferenceSetter
 		extends EMFConfigurableFeatureSetter<EReference, EReference, EObject> {
 
 	private static final int DEFAULT_MULTI_VALUED_COUNT = 2;
-	private EMFCandidateSelectorStrategy<EClass, EClass> instantiableSubclassSelectorStrategy =
+	private EMFEClassCandidateSelectorStrategy instantiableSubclassSelectorStrategy =
 			new EMFRoundRobinEClassCandidateSelector();
 	private Collection<EObject> assignedEObjects;
 
@@ -43,7 +43,7 @@ public class EMFContainmentReferenceSetter
 	 * @param strategy the candidate selector strategy to use
 	 */
 	public void setInstantiableSubclassSelectorStrategy(
-			final EMFCandidateSelectorStrategy<EClass, EClass> strategy) {
+			final EMFEClassCandidateSelectorStrategy strategy) {
 		this.instantiableSubclassSelectorStrategy = strategy;
 	}
 

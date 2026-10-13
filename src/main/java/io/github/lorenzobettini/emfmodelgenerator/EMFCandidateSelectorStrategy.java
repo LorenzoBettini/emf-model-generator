@@ -5,30 +5,30 @@ import org.eclipse.emf.ecore.EObject;
 
 /**
  * Strategy interface for selecting EMF EObject candidates of a specified type.
- * @param <K> the type of ENamedElement used as key (e.g., EClassifier, EAttribute)
+ * @param <E> the type of ENamedElement supplied as a selection request
  * @param <V> the type of EObject to be selected
  *
  * @author Lorenzo Bettini
  */
-public interface EMFCandidateSelectorStrategy<K extends ENamedElement, V extends EObject> {
+public interface EMFCandidateSelectorStrategy<E extends ENamedElement, V extends EObject> {
 
 	/**
 	 * Get the next assignable candidate for the specified type.
 	 * 
 	 * @param context the EObject whose resource set will be scanned for candidates
-	 * @param type    the type of candidate to select
+	 * @param request the selection request
 	 * @return the next candidate, or null if no candidates are available
 	 */
-	V getNextCandidate(EObject context, K type);
+	V getNextCandidate(EObject context, E request);
 
 	/**
 	 * Check if there are any candidates available for the specified type.
 	 * 
 	 * @param context the EObject providing the resource set context
-	 * @param type    the type to check candidates for
+	 * @param request the selection request
 	 * @return true if there are candidates available, false otherwise
 	 */
-	boolean hasCandidates(EObject context, K type);
+	boolean hasCandidates(EObject context, E request);
 
 	/**
 	 * Reset the internal state of the candidate selector.

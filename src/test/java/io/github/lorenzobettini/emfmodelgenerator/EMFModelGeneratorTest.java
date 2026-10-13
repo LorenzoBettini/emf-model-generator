@@ -2814,7 +2814,7 @@ class EMFModelGeneratorTest {
 		
 		EReference children = createContainmentEReference(container, "children", abstractBase, -1);
 		
-		var customStrategy = new EMFCandidateSelectorStrategy<EClass, EClass>() {
+		var customStrategy = new EMFEClassCandidateSelectorStrategy() {
 			@Override
 			public EClass getNextCandidate(EObject context, EClass type) {
 				return subClass2;
@@ -2875,7 +2875,7 @@ class EMFModelGeneratorTest {
 		var statusEnum = (EEnum) ePackage.getEClassifier("Status");
 		var highLiteral = priorityEnum.getEEnumLiteral("HIGH");
 		var completedLiteral = statusEnum.getEEnumLiteral("COMPLETED");
-		var customStrategy = new EMFCandidateSelectorStrategy<EEnum, EEnumLiteral>() {
+		var customStrategy = new EMFEEnumLiteralCandidateSelectorStrategy() {
 			@Override
 			public EEnumLiteral getNextCandidate(EObject context, EEnum type) {
 				if (type == priorityEnum) {
@@ -3383,7 +3383,7 @@ class EMFModelGeneratorTest {
 		var employeesRef = (EReference) libraryClass.getEStructuralFeature("employees");
 		var borrowersRef = (EReference) libraryClass.getEStructuralFeature("borrowers");
 		
-		var customStrategy = new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+		var customStrategy = new EMFFeatureMapGroupMemberSelectorStrategy() {
 			@Override
 			public EStructuralFeature getNextCandidate(EObject context, EAttribute type) {
 				return writersRef;

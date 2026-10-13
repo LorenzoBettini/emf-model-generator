@@ -24,8 +24,13 @@ class LegacyRoundRobinEquivalenceTest {
 	/**
 	 * @author Lorenzo Bettini
 	 */
-	private static final class Lists extends EMFRoundRobinCandidateSelector<EClass, EObject> {
+	private static final class Lists extends EMFRoundRobinCandidateSelector<EClass, EClass, EObject> {
 		private final Map<EClass, List<EObject>> values = new HashMap<>();
+
+		@Override
+		protected EClass keyFor(final EClass request) {
+			return request;
+		}
 
 		@Override
 		protected List<EObject> getOrCompute(final EObject context, final EClass key) {
@@ -36,12 +41,17 @@ class LegacyRoundRobinEquivalenceTest {
 	/**
 	 * @author Lorenzo Bettini
 	 */
-	private static final class OldLists extends EMFRoundRobinCandidateSelector<EClass, EObject> {
+	private static final class OldLists extends EMFRoundRobinCandidateSelector<EClass, EClass, EObject> {
 		private final Map<EClass, List<EObject>> values;
 		private final Map<EClass, Integer> indices = new HashMap<>();
 
 		private OldLists(final Map<EClass, List<EObject>> values) {
 			this.values = values;
+		}
+
+		@Override
+		protected EClass keyFor(final EClass request) {
+			return request;
 		}
 
 		@Override

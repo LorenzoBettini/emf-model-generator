@@ -29,7 +29,14 @@ import org.eclipse.emf.ecore.EObject;
  *
  * @author Lorenzo Bettini
  */
-public class EMFRoundRobinEClassCandidateSelector extends EMFAbstractCachedRoundRobinCandidateSelector<EClass, EClass> {
+public class EMFRoundRobinEClassCandidateSelector
+		extends EMFAbstractCachedRoundRobinCandidateSelector<EClass, EClass, EClass>
+		implements EMFEClassCandidateSelectorStrategy {
+
+	@Override
+	protected EClass keyFor(final EClass request) {
+		return request;
+	}
 
 	@Override
 	protected List<EClass> compute(final EObject context, final EClass key) {

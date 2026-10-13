@@ -19,12 +19,14 @@ import org.eclipse.emf.ecore.EObject;
  * that all cache operations are managed by this base class.</p>
  * 
  * @param <K> the type of ENamedElement used as key (e.g., EClass, EAttribute)
+ * @param <E> the type of ENamedElement supplied as a selection request
  * @param <V> the type of EObject to be selected
  *
  * @author Lorenzo Bettini
  */
-public abstract class EMFAbstractCachedRoundRobinCandidateSelector<K extends ENamedElement, V extends EObject>
-		extends EMFRoundRobinCandidateSelector<K, V> {
+public abstract class EMFAbstractCachedRoundRobinCandidateSelector<K extends ENamedElement,
+		E extends ENamedElement, V extends EObject>
+		extends EMFRoundRobinCandidateSelector<K, E, V> {
 
 	/**
 	 * Internal cache storing computed candidate lists for each key.

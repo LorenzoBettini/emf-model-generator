@@ -1407,7 +1407,7 @@ class EMFInstancePopulatorTest {
 		container.getEStructuralFeatures().add(children);
 		
 		// Create a custom strategy that always returns SubClass2
-		final var customStrategy = new EMFCandidateSelectorStrategy<EClass, EClass>() {
+		final var customStrategy = new EMFEClassCandidateSelectorStrategy() {
 			@Override
 			public EClass getNextCandidate(EObject context, EClass type) {
 				return subClass2;
@@ -1483,7 +1483,7 @@ class EMFInstancePopulatorTest {
 		final var completedLiteral = statusEnum.getEEnumLiteral("COMPLETED");
 		
 		// Create a custom strategy that returns specific enum literals
-		final var customStrategy = new EMFCandidateSelectorStrategy<EEnum, EEnumLiteral>() {
+		final var customStrategy = new EMFEEnumLiteralCandidateSelectorStrategy() {
 			@Override
 			public EEnumLiteral getNextCandidate(EObject context, EEnum type) {
 				if (type == priorityEnum) {
@@ -1630,7 +1630,7 @@ class EMFInstancePopulatorTest {
 			}
 		});
 		populator.setGroupMemberSelectorStrategy(
-				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+				new EMFFeatureMapGroupMemberSelectorStrategy() {
 					@Override
 					public EStructuralFeature getNextCandidate(final EObject context,
 							final EAttribute type) {
@@ -1662,7 +1662,7 @@ class EMFInstancePopulatorTest {
 		
 		// Create a custom strategy that always returns the writers reference
 		final var customStrategy =
-				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+				new EMFFeatureMapGroupMemberSelectorStrategy() {
 			@Override
 			public EStructuralFeature getNextCandidate(EObject context, EAttribute type) {
 				return writersRef;

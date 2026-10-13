@@ -57,7 +57,7 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	private int idAttributeCounter;
 
 	// Selector for enum literal candidate selection
-	private EMFCandidateSelectorStrategy<EEnum, EEnumLiteral> enumLiteralSelectorStrategy = new EMFRoundRobinEEnumLiteralCandidateSelector();
+	private EMFEEnumLiteralCandidateSelectorStrategy enumLiteralSelectorStrategy = new EMFRoundRobinEEnumLiteralCandidateSelector();
 
 	/**
 	 * Function interface for attribute value operations.
@@ -77,7 +77,7 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	 * 
 	 * @param strategy the candidate selector strategy to use
 	 */
-	public void setEnumLiteralSelectorStrategy(EMFCandidateSelectorStrategy<EEnum, EEnumLiteral> strategy) {
+	public void setEnumLiteralSelectorStrategy(EMFEEnumLiteralCandidateSelectorStrategy strategy) {
 		this.enumLiteralSelectorStrategy = strategy;
 	}
 
