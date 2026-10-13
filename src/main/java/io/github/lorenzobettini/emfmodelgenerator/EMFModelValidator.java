@@ -1,6 +1,7 @@
 package io.github.lorenzobettini.emfmodelgenerator;
 
 import java.util.Collection;
+
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 
