@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.eclipse.emf.ecore.EAttribute;
+import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 
@@ -245,6 +246,19 @@ public class EMFInstancePopulator {
 	 * The ordinary round-robin selector remains the default. An explicitly
 	 * opt-in {@link EMFRoundRobinReferenceAwareEObjectCandidateSelector} is available when
 	 * the caller guarantees its documented monotonic opposite-capacity epoch.
+	 * The selector receives the actual {@link EReference}; references with the same
+	 * target {@link EClass} share one round-robin cursor.
+	 * {@snippet :
+	 * EMFModelGenerator generator = new EMFModelGenerator();
+	 * EMFInstancePopulator populator = generator.getInstancePopulator();
+	 * populator.setCrossReferenceCandidateSelectorStrategy(
+	 *     new EMFRoundRobinEObjectCandidateSelector()); // production default
+	 * // Only with caller-guaranteed monotonic opposite capacity until reset:
+	 * populator.setCrossReferenceCandidateSelectorStrategy(
+	 *     new EMFRoundRobinReferenceAwareEObjectCandidateSelector());
+	 * // Reset after eUnset, reassignment, inverse edits or resource changes:
+	 * populator.getCrossReferenceSetter().reset();
+	 * }
 	 * 
 	 * @param strategy the candidate selector strategy
 	 */

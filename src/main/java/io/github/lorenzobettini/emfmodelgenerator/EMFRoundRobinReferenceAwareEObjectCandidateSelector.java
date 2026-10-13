@@ -19,6 +19,14 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
  * FeatureMap edits and callbacks can break this guarantee. Reset after such changes.
  * Owner-specific self and uniqueness skips never retire targets. References targeting the
  * same EClass share the source list and cursor but keep separate retirement pools.
+ * {@snippet :
+ * EMFModelGenerator generator = new EMFModelGenerator();
+ * EMFInstancePopulator populator = generator.getInstancePopulator();
+ * populator.setCrossReferenceCandidateSelectorStrategy(
+ *     new EMFRoundRobinReferenceAwareEObjectCandidateSelector());
+ * // After an external eUnset or other nonmonotonic mutation:
+ * populator.getCrossReferenceSetter().reset();
+ * }
  *
  * @author Lorenzo Bettini
  */

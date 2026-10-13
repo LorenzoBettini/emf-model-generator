@@ -10,6 +10,18 @@ import performance_evaluation as base
 import publication_evaluation as pub
 
 MODES = ("baseline", "reference-aware")
+SELECTOR_SOURCES = {
+    "baseline": "EMFRoundRobinEObjectCandidateSelector.java",
+    "reference-aware": "EMFRoundRobinReferenceAwareEObjectCandidateSelector.java",
+}
+SHARED_SELECTION_SOURCES = (
+    "EMFCrossReferenceCandidateSelectorStrategy.java",
+    "EMFCrossReferenceSetter.java",
+    "EMFRoundRobinCandidateSelector.java",
+    "EMFAbstractCachedRoundRobinCandidateSelector.java",
+)
+SELECTOR_SOURCE_DIR = (base.ROOT / "src/main/java/io/github/lorenzobettini/"
+                       "emfmodelgenerator")
 FACTORS = {"plugin-eclipse": 15, "ant": 10, "extlibrary": 5}
 SERIES = {"plugin-eclipse": "plugin-eclipse-roots", "ant": "ant-roots",
           "extlibrary": "extlibrary-roots"}
@@ -22,7 +34,7 @@ TABLE_COLUMNS = ["scenario", "roots", "status", "reason", "eobjects", "resources
 
 def parse_cases(args):
     if args.selection or args.selection_output:
-        raise ValueError("crossref-comparison uses explicit --roots, not a selection")
+        raise ValueError("reference-aware-comparison uses explicit --roots, not a selection")
     if not args.roots or not re.fullmatch(r"[1-9][0-9]*(,[1-9][0-9]*)*", args.roots):
         raise ValueError("--roots requires ascending, comma-separated positive integers")
     roots = [int(value) for value in args.roots.split(",")]
@@ -52,6 +64,7 @@ def comparison_command(case, output, mode, heap, warmups, repetitions):
 def invoke(case, output, mode, args):
     name = pub.stem(case, mode)
     item = {**case, "profile": case["scenario"], "mode": mode, "stem": name, "status": "running",
+            "selector_class": SELECTOR_SOURCES[mode].removesuffix(".java"),
             "started_utc": pub.utc(), "command": comparison_command(
                 case, output, mode, args.heap, args.warmups, args.repetitions)}
     env = os.environ.copy()
@@ -112,7 +125,13 @@ def run_comparison(args):
     manifest = {"schema_version": 1, "preset": args.preset,
                 "created_utc": pub.utc(), **current,
                 "comparison_source_sha256": pub.file_hash(__file__),
-                "selector_source_sha256": pub.file_hash(base.ROOT / "src/main/java/io/github/lorenzobettini/emfmodelgenerator/EMFRoundRobinReferenceAwareEObjectCandidateSelector.java"),
+                "selector_sources": {
+                    mode: {"path": str((SELECTOR_SOURCE_DIR / filename).relative_to(base.ROOT)),
+                           "sha256": pub.file_hash(SELECTOR_SOURCE_DIR / filename)}
+                    for mode, filename in SELECTOR_SOURCES.items()},
+                "shared_selection_sources": {
+                    filename: pub.file_hash(SELECTOR_SOURCE_DIR / filename)
+                    for filename in SHARED_SELECTION_SOURCES},
                 "selected_cases": cases, "skipped_cases": [], "invocations": [],
                 "warmups": args.warmups, "repetitions": args.repetitions,
                 "timeout_seconds_per_invocation": args.timeout,
@@ -262,14 +281,19 @@ def report_comparison(output):
     base.write_csv(output / "figure-comparison.csv", TABLE_COLUMNS, records)
     failures = [row for row in records if row["status"] != "equivalent"]
     base.write_csv(output / "failure-capped-cases.csv", TABLE_COLUMNS, failures)
+    selector_label = (
+        "Baseline uses EMFRoundRobinEObjectCandidateSelector (the production default). "
+        "Variant uses EMFRoundRobinReferenceAwareEObjectCandidateSelector (explicit opt-in, "
+        "requiring monotonic opposite capacity). "
+        if "selector_sources" in manifest else
+        "Archived baseline and variant labels describe the selectors recorded by this run. "
+    )
     lines = ["# Reference-aware monotonic selector comparison", "",
-             "Baseline uses the current production default. Variant uses the opt-in reference-aware "
-             "monotonic selector. Both serial JVM forks use the same compiled classes, Ecores, "
+             selector_label + "Both serial JVM forks use the same compiled classes, Ecores, "
              "settings, JDK, heap and host. Timed calls contain only generation. Structural "
              "fingerprints and XMI round-trip validation run outside the timer.", "",
              f"Revision: `{manifest['host']['git_revision']}`; dirty: "
-             f"`{manifest['host']['git_dirty']}`; selector SHA-256: "
-             f"`{manifest['selector_source_sha256']}`.",
+             f"`{manifest['host']['git_dirty']}`.",
              f"Host: {manifest['host']['platform']}; CPU: {manifest['host']['cpu_model']}; "
              f"JDK: {manifest['host']['java_version_output']}; heap: {manifest['heap']}; "
              f"flags: {manifest['fixed_jvm_flags']}.",
@@ -278,6 +302,16 @@ def report_comparison(output):
              "", "| Scenario | Roots | Status | EObjects | Resources | Samples B/V | "
              "Median B/V ms | p25–p75 B/V ms | Speedup B/V |",
              "|---|---:|---|---:|---:|---:|---:|---|---:|"]
+    if "selector_sources" in manifest:
+        lines[7:7] = ["Selector source SHA-256: " + "; ".join(
+            f"{mode} `{entry['path']}` `{entry['sha256']}`"
+            for mode, entry in manifest["selector_sources"].items()) + ".",
+            "Shared selection source SHA-256: " + "; ".join(
+                f"{filename} `{digest}`" for filename, digest in
+                manifest["shared_selection_sources"].items()) + "."]
+    elif "selector_source_sha256" in manifest:
+        lines[7:7] = [f"Archived selector SHA-256: "
+                      f"`{manifest['selector_source_sha256']}`."]
     for row in records:
         if row["baseline_median_ns"]:
             ms = lambda key: f"{int(row[key])/1e6:.3f}"

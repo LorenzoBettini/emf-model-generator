@@ -11,8 +11,15 @@ import org.eclipse.emf.ecore.EReference;
  * Default conservative round-robin selector for cross-references. Requests use the actual
  * {@link EReference}; references with the same target {@link EClass} share a cache and cursor.
  * Rejected candidates remain visible when the model changes. The inherited
- * {@link #getNextCandidate(EObject, EReference)} returns a raw type-compatible candidate,
+ * {@code getNextCandidate(owner, reference)} returns a raw type-compatible candidate,
  * which need not be a valid assignment; the setter uses {@link #selectCandidate} instead.
+ * Round-robin means an ordered wrapping traversal; owner-specific skips and exhausted
+ * opposites can make the resulting assignments uneven. An unsuccessful traversal is finite.
+ * {@snippet :
+ * EMFModelGenerator generator = new EMFModelGenerator();
+ * generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(
+ *     new EMFRoundRobinEObjectCandidateSelector());
+ * }
  *
  * @author Lorenzo Bettini
  */
