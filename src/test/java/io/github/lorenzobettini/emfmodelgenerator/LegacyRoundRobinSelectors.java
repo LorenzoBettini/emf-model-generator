@@ -12,8 +12,9 @@ import org.eclipse.emf.ecore.ENamedElement;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 
-/** Test-only reference for the original boxed-index algorithm. */
 /**
+ * Test-only reference for the original boxed-index algorithm.
+ *
  * @author Lorenzo Bettini
  */
 public final class LegacyRoundRobinSelectors {

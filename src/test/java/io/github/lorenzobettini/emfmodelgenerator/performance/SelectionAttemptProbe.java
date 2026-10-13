@@ -10,8 +10,9 @@ import org.eclipse.emf.ecore.EReference;
 import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter;
 import io.github.lorenzobettini.emfmodelgenerator.EMFUtils;
 
-/** Test-only observer around the unchanged selection algorithm and round-robin selector. */
 /**
+ * Test-only observer around the unchanged selection algorithm and round-robin selector.
+ *
  * @author Lorenzo Bettini
  */
 final class SelectionAttemptProbe extends EMFCrossReferenceSetter {

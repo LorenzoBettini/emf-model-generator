@@ -8,8 +8,9 @@ import org.eclipse.emf.ecore.EObject;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFRoundRobinEObjectCandidateSelector;
 
-/** Experimental cursor bookkeeping only. Candidate discovery and validation stay unchanged. */
 /**
+ * Experimental cursor bookkeeping only. Candidate discovery and validation stay unchanged.
+ *
  * @author Lorenzo Bettini
  */
 final class ExperimentalCursorSelector extends EMFRoundRobinEObjectCandidateSelector {

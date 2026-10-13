@@ -13,8 +13,9 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.util.FeatureMap;
 
-/** Stable resource-order, feature-order and reference-target signature for A/B checks. */
 /**
+ * Stable resource-order, feature-order and reference-target signature for A/B checks.
+ *
  * @author Lorenzo Bettini
  */
 final class GraphFingerprint {

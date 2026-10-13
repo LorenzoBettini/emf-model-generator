@@ -4,8 +4,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-/** Bounded, explicit-root configurations for short calibration pilots. */
 /**
+ * Bounded, explicit-root configurations for short calibration pilots.
+ *
  * @author Lorenzo Bettini
  */
 final class ScenarioProfiles {

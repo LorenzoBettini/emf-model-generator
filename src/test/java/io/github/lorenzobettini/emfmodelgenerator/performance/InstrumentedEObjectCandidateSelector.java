@@ -7,8 +7,9 @@ import org.eclipse.emf.ecore.EObject;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFRoundRobinEObjectCandidateSelector;
 
-/** Counts actual candidate-list computations without changing the selector's cache or order. */
 /**
+ * Counts actual candidate-list computations without changing the selector's cache or order.
+ *
  * @author Lorenzo Bettini
  */
 class InstrumentedEObjectCandidateSelector extends EMFRoundRobinEObjectCandidateSelector {
