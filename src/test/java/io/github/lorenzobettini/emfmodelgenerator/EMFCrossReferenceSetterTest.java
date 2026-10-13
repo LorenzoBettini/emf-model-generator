@@ -27,6 +27,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Test class for EMFCrossReferenceSetter.
  * This class achieves 100% coverage of the cross reference setter functionality.
+ *
+ * @author Lorenzo Bettini
  */
 class EMFCrossReferenceSetterTest {
 

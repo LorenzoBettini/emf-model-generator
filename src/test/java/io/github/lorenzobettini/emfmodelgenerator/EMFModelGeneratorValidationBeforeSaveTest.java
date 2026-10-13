@@ -21,6 +21,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFModelGeneratorValidationBeforeSaveTest {
 
 	private static final String INPUTS = "target/inputs";
@@ -169,10 +172,16 @@ class EMFModelGeneratorValidationBeforeSaveTest {
 		return result;
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private enum StubResult {
 		VALID, INVALID, THROWING
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private static final class StubValidator implements EMFModelValidator {
 		private final StubResult result;
 		private final AtomicInteger validatedRoots;

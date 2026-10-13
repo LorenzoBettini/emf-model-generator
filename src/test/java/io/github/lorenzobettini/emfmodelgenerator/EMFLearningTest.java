@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Learning tests for EMF mechanisms.
+ *
+ * @author Lorenzo Bettini
  */
 class EMFLearningTest {
 

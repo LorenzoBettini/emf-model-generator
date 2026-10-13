@@ -20,6 +20,8 @@ public interface EMFModelValidator extends AutoCloseable {
 	 * Implementations that depend on resource-set-local state may use it; validators that
 	 * do not require such context may ignore it. The model roots to validate are supplied
 	 * separately through {@link #validate(EObject)} or {@link #validateAll(Collection)}.</p>
+	 *
+	 * @author Lorenzo Bettini
 	 */
 	@FunctionalInterface
 	interface Factory {

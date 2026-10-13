@@ -26,6 +26,8 @@ public class EMFContainmentReferenceSetter
 
 	/**
 	 * Function interface for containment reference operations.
+	 *
+	 * @author Lorenzo Bettini
 	 */
 	@FunctionalInterface
 	public static interface EMFContainmentReferenceValueFunction extends FeatureFunction<EObject> {

@@ -26,6 +26,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFModelGeneratorRoundTripValidationTest {
 
 	private static final String INPUTS = "target/inputs";
@@ -303,6 +306,9 @@ class EMFModelGeneratorRoundTripValidationTest {
 				Diagnostic.ERROR, EMFValidationKind.VALIDATION_FAILURE);
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private static final class RecordingValidator implements EMFModelValidator {
 		private final EMFValidationResult result;
 		private List<EObject> validatedRoots;

@@ -24,6 +24,9 @@ import org.eclipse.emf.ecore.EcorePackage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFAttributeSetterTest {
 
 	private EMFAttributeSetter setter;

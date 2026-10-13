@@ -15,6 +15,9 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFModelValidatorTest {
 
 	private static final EObject ROOT = EcoreFactory.eINSTANCE.createEObject();
@@ -81,6 +84,9 @@ class EMFModelValidatorTest {
 				EMFValidationKind.VALIDATION_FAILURE);
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private static final class StubValidator implements EMFModelValidator {
 		private final EMFValidationResult singleResult;
 		private final EMFValidationResult allResult;

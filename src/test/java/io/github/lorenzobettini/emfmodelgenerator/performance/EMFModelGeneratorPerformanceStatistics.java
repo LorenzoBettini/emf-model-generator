@@ -20,6 +20,8 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils;
  * 
  * Results are presented in table format and CSV format for easy import into
  * spreadsheet tools.
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFModelGeneratorPerformanceStatistics {
 
@@ -59,6 +61,8 @@ public class EMFModelGeneratorPerformanceStatistics {
 
 	/**
 	 * Measurement result for a single data point.
+	 *
+	 * @author Lorenzo Bettini
 	 */
 	private static class MeasurementResult {
 		int metricValue;

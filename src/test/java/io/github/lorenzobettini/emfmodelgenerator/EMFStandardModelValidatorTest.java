@@ -18,6 +18,9 @@ import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFStandardModelValidatorTest {
 
 	private static final String TEST_INPUTS_DIR = "target/inputs";

@@ -32,6 +32,8 @@ import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 
 /**
  * Utility class containing common test helper methods for EMF model testing.
+ *
+ * @author Lorenzo Bettini
  */
 public class EMFTestUtils {
 

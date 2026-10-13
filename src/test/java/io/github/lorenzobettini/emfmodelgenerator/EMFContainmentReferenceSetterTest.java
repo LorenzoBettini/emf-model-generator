@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Test class for EMFContainmentReferenceSetter.
  * This class achieves 100% coverage of the containment reference setter functionality.
+ *
+ * @author Lorenzo Bettini
  */
 class EMFContainmentReferenceSetterTest {
 

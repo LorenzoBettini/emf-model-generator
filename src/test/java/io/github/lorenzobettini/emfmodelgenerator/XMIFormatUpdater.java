@@ -15,6 +15,8 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 /**
  * Utility to regenerate expected XMI files with the new format (line width = 10).
  * Run this once to update all expected output files.
+ *
+ * @author Lorenzo Bettini
  */
 public class XMIFormatUpdater {
 

@@ -17,10 +17,16 @@ import org.eclipse.emf.ecore.EcorePackage;
 import org.eclipse.emf.ecore.impl.EStructuralFeatureImpl;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFConfigurableFeatureSetterTest {
 
 	static final int DEFAULT_MAX = 5;
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	static class TestableEMFConfigurableFeatureSetter<F1 extends EStructuralFeature, F2 extends EStructuralFeature, V>
 			extends EMFConfigurableFeatureSetter<F1, F2, V> {
 		public TestableEMFConfigurableFeatureSetter() {

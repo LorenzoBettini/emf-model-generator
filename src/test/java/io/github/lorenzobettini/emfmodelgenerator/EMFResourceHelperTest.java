@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for EMFResourceHelper.
+ *
+ * @author Lorenzo Bettini
  */
 class EMFResourceHelperTest {
 

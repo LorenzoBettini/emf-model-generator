@@ -56,6 +56,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFModelGeneratorTest {
 
 	private EMFModelGenerator generator;
@@ -3304,6 +3307,9 @@ class EMFModelGeneratorTest {
 				Diagnostic.ERROR, EMFValidationKind.VALID);
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private static final class RecordingValidator implements EMFModelValidator {
 		private final EMFValidationResult result;
 		private List<EObject> validatedRoots;

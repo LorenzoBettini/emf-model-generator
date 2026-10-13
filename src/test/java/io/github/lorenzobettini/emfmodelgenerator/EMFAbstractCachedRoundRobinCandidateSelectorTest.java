@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Test class for EMFAbstractCachedRoundRobinCandidateSelector.
  * This class achieves 100% coverage of the abstract cached round-robin candidate selector functionality.
+ *
+ * @author Lorenzo Bettini
  */
 class EMFAbstractCachedRoundRobinCandidateSelectorTest {
 
@@ -35,6 +37,8 @@ class EMFAbstractCachedRoundRobinCandidateSelectorTest {
 
 	/**
 	 * Concrete implementation of EMFAbstractCachedRoundRobinCandidateSelector for testing purposes.
+	 *
+	 * @author Lorenzo Bettini
 	 */
 	private static class TestableCachedRoundRobinSelector
 			extends EMFAbstractCachedRoundRobinCandidateSelector<EClass, EObject> {

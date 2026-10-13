@@ -37,6 +37,8 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	 * 
 	 * @param eClass the EClass
 	 * @param attribute the EAttribute
+	 *
+	 * @author Lorenzo Bettini
 	 */
 	private record CounterKey(EClass eClass, EAttribute attribute) {}
 
@@ -59,6 +61,8 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 
 	/**
 	 * Function interface for attribute value operations.
+	 *
+	 * @author Lorenzo Bettini
 	 */
 	@FunctionalInterface
 	public static interface EMFAttributeValueFunction extends FeatureFunction<Object> {

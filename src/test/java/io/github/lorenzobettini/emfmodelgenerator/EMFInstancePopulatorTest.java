@@ -33,7 +33,13 @@ import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFInstancePopulatorTest {
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private static final class RecordingFeatureMapSetter extends EMFFeatureMapSetter {
 		private EMFAttributeSetter attributeSetter;
 		private EMFContainmentReferenceSetter containmentReferenceSetter;

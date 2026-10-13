@@ -8,6 +8,9 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import org.eclipse.emf.common.util.Diagnostic;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFValidationExceptionTest {
 
 	@Test

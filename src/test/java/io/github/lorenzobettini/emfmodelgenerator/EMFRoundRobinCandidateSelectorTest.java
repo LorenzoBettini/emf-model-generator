@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Test class for EMFRoundRobinCandidateSelector.
  * This class achieves 100% coverage of the abstract round-robin candidate selector functionality.
+ *
+ * @author Lorenzo Bettini
  */
 class EMFRoundRobinCandidateSelectorTest {
 
@@ -36,6 +38,8 @@ class EMFRoundRobinCandidateSelectorTest {
 
 	/**
 	 * Concrete implementation of EMFRoundRobinCandidateSelector for testing purposes.
+	 *
+	 * @author Lorenzo Bettini
 	 */
 	private static class TestableRoundRobinSelector extends EMFRoundRobinCandidateSelector<EClass, EObject> {
 		private final List<EObject> candidatesList = new ArrayList<>();

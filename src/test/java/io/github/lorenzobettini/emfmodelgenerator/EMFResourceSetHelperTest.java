@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Test class for EMFResourceSetHelper.
  * Ensures 100% coverage of the ResourceSet configuration functionality.
+ *
+ * @author Lorenzo Bettini
  */
 class EMFResourceSetHelperTest {
 
