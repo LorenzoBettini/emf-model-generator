@@ -416,7 +416,6 @@ class EMFRoundRobinReferenceAwareEObjectCandidateSelectorTest {
 		final var ePackage = loadEPackage("inputs/graph.ecore");
 		final var node = createInstance(ePackage, "Node");
 		final var edge = createInstance(ePackage, "Edge");
-		final var nodeClass = (EClass) ePackage.getEClassifier("Node");
 		final var edgeClass = (EClass) ePackage.getEClassifier("Edge");
 		final var outgoing = (EReference) node.eClass().getEStructuralFeature("outgoing");
 		final var target = (EReference) edge.eClass().getEStructuralFeature("target");
