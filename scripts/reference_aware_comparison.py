@@ -112,7 +112,7 @@ def run_comparison(args):
     manifest = {"schema_version": 1, "preset": args.preset,
                 "created_utc": pub.utc(), **current,
                 "comparison_source_sha256": pub.file_hash(__file__),
-                "selector_source_sha256": pub.file_hash(base.ROOT / "src/main/java/io/github/lorenzobettini/emfmodelgenerator/EMFReferenceAwareRoundRobinEObjectCandidateSelector.java"),
+                "selector_source_sha256": pub.file_hash(base.ROOT / "src/main/java/io/github/lorenzobettini/emfmodelgenerator/EMFRoundRobinReferenceAwareEObjectCandidateSelector.java"),
                 "selected_cases": cases, "skipped_cases": [], "invocations": [],
                 "warmups": args.warmups, "repetitions": args.repetitions,
                 "timeout_seconds_per_invocation": args.timeout,
