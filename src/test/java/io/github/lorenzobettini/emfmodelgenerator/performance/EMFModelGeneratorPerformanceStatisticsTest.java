@@ -124,8 +124,7 @@ class EMFModelGeneratorPerformanceStatisticsTest {
 		final var console = new ByteArrayOutputStream();
 		final var samples = EMFModelGeneratorPerformanceStatistics.run(config,
 				new PrintStream(console, true, StandardCharsets.UTF_8));
-		assertThat(samples).hasSize(2);
-		assertThat(samples).allSatisfy(sample -> {
+		assertThat(samples).hasSize(2).allSatisfy(sample -> {
 			assertThat(sample.status()).isEqualTo("ok");
 			assertThat(sample.counts()).isEqualTo(new Counts(2, 2, 2));
 			assertThat(sample.elapsedNanos()).isPositive();
@@ -143,8 +142,8 @@ class EMFModelGeneratorPerformanceStatisticsTest {
 		final var output = console.toString(StandardCharsets.UTF_8);
 		assertThat(output).containsSubsequence("warmup 1/1 start", "warmup 1/1 done status=ok",
 				"measurement 1/2 start", "measurement 1/2 done status=ok",
-				"measurement 2/2 start", "measurement 2/2 done status=ok", "summary samples=2");
-		assertThat(output).contains("scenario=small mode=baseline", "actual_roots=2 eobjects=2"
+				"measurement 2/2 start", "measurement 2/2 done status=ok", "summary samples=2")
+				.contains("scenario=small mode=baseline", "actual_roots=2 eobjects=2"
 				+ " model_resources=2", "median_ns=", "p25_ns=", "p75_ns=",
 				"raw=" + raw, "summary=" + summary);
 		for (final var sample : samples) {
@@ -207,8 +206,11 @@ class EMFModelGeneratorPerformanceStatisticsTest {
 				"--repetitions", "1", "--raw", raw.toString(),
 				"--summary", summary.toString());
 		final var console = new ByteArrayOutputStream();
-		assertThatThrownBy(() -> EMFModelGeneratorPerformanceStatistics.run(config,
-				new PrintStream(console, true, StandardCharsets.UTF_8)))
+		var output = new PrintStream(console, true, StandardCharsets.UTF_8);
+		assertThatThrownBy(() -> {
+			EMFModelGeneratorPerformanceStatistics.run(config,
+					output);
+				})
 				.isInstanceOf(IllegalStateException.class).hasMessageContaining("Preflight failed");
 		assertThat(console.toString(StandardCharsets.UTF_8))
 				.containsSubsequence("preflight start", "preflight done status=invalid")

@@ -93,7 +93,9 @@ class EMFCrossReferenceSetterTest {
 						return evaluator.apply(existing1) == CandidateDecision.ACCEPT ? existing1 : null;
 					}
 					@Override
-					public void reset() { }
+					public void reset() {
+						// nothing to reset in this simple strategy
+					}
 				};
 		setter.setCandidateSelectorStrategy(customStrategy);
 

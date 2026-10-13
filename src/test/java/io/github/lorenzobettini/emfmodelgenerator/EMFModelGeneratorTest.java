@@ -2852,7 +2852,9 @@ class EMFModelGeneratorTest {
 				return evaluator.apply(entry2) == CandidateDecision.ACCEPT ? entry2 : null;
 			}
 			@Override
-			public void reset() { }
+			public void reset() {
+				// No state to reset in this simple strategy
+			}
 		};
 		generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(customStrategy);
 		var registry = generator.generateFrom(registryClass);

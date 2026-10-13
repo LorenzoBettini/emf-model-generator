@@ -132,6 +132,6 @@ class InstrumentedEObjectCandidateSelectorTest {
 			return entry.getEStructuralFeature().getName() + '='
 					+ value(entry.getValue(), false, ids);
 		}
-		return attribute ? String.valueOf(item) : String.valueOf(ids.get(item));
+		return attribute ? String.valueOf(item) : String.valueOf(ids.get(item)); // NOSONAR
 	}
 }

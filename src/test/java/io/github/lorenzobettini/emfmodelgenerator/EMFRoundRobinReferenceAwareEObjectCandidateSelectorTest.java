@@ -43,7 +43,9 @@ class EMFRoundRobinReferenceAwareEObjectCandidateSelectorTest {
 			}
 
 			@Override
-			public void reset() { }
+			public void reset() {
+				// No state to reset in this recording selector
+			}
 		};
 	}
 
@@ -378,7 +380,9 @@ class EMFRoundRobinReferenceAwareEObjectCandidateSelectorTest {
 		final var sameSet = createInstance(ePackage, "Book");
 		createResource(first.resources(), "same-set.xmi").getContents().add(sameSet);
 		assertThat(selector.hasCandidates(sameSet, first.authorBooks())).isTrue();
-		assertThatThrownBy(() -> selector.hasCandidates(second.author(), second.authorBooks()))
+		var secondAuthorBooks = second.authorBooks();
+		var secondAuthor = second.author();
+		assertThatThrownBy(() -> selector.hasCandidates(secondAuthor, secondAuthorBooks))
 				.isInstanceOf(IllegalStateException.class).hasMessageContaining("reset");
 		selector.reset();
 		assertThat(selector.getNextCandidate(second.author(), second.authorBooks()))
@@ -388,7 +392,8 @@ class EMFRoundRobinReferenceAwareEObjectCandidateSelectorTest {
 		final var detachedSecond = createInstance(ePackage, "Book");
 		assertThat(selector.getNextCandidate(detachedFirst, first.authorBooks()))
 				.isSameAs(detachedFirst);
-		assertThatThrownBy(() -> selector.hasCandidates(detachedSecond, first.authorBooks()))
+		var firstAuthorBooks = first.authorBooks();
+		assertThatThrownBy(() -> selector.hasCandidates(detachedSecond, firstAuthorBooks))
 				.isInstanceOf(IllegalStateException.class);
 	}
 

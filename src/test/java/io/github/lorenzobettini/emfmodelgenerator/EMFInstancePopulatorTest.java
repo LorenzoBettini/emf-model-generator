@@ -1450,7 +1450,9 @@ class EMFInstancePopulatorTest {
 				return evaluator.apply(entry2) == CandidateDecision.ACCEPT ? entry2 : null;
 			}
 			@Override
-			public void reset() { }
+			public void reset() {
+				// No state to reset in this simple strategy
+			}
 		};
 		populator.setCrossReferenceCandidateSelectorStrategy(customStrategy);
 		

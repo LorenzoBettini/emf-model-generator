@@ -205,19 +205,19 @@ class EMFAbstractCachedRoundRobinCandidateSelectorTest {
 			final var keyed = new ReferenceRequestSelector();
 			keyed.candidates.put(writer, List.of(firstWriter, secondWriter));
 			keyed.candidates.put(book, List.of(firstBook, secondBook));
-			final var context = EcoreUtil.create(library);
+			final var libraryContext = EcoreUtil.create(library);
 
-			assertThat(keyed.hasCandidates(context, author)).isTrue();
-			assertThat(keyed.getNextCandidate(context, author)).isSameAs(firstWriter);
-			assertThat(keyed.getNextCandidate(context, writers)).isSameAs(secondWriter);
-			assertThat(keyed.getNextCandidate(context, books)).isSameAs(firstBook);
-			assertThat(keyed.getNextCandidate(context, author)).isSameAs(firstWriter);
-			assertThat(keyed.getNextCandidate(context, books)).isSameAs(secondBook);
+			assertThat(keyed.hasCandidates(libraryContext, author)).isTrue();
+			assertThat(keyed.getNextCandidate(libraryContext, author)).isSameAs(firstWriter);
+			assertThat(keyed.getNextCandidate(libraryContext, writers)).isSameAs(secondWriter);
+			assertThat(keyed.getNextCandidate(libraryContext, books)).isSameAs(firstBook);
+			assertThat(keyed.getNextCandidate(libraryContext, author)).isSameAs(firstWriter);
+			assertThat(keyed.getNextCandidate(libraryContext, books)).isSameAs(secondBook);
 			assertThat(keyed.computeCount).isEqualTo(2);
 
 			keyed.reset();
-			assertThat(keyed.getNextCandidate(context, writers)).isSameAs(firstWriter);
-			assertThat(keyed.getNextCandidate(context, books)).isSameAs(firstBook);
+			assertThat(keyed.getNextCandidate(libraryContext, writers)).isSameAs(firstWriter);
+			assertThat(keyed.getNextCandidate(libraryContext, books)).isSameAs(firstBook);
 			assertThat(keyed.computeCount).isEqualTo(4);
 		} finally {
 			generator.unloadEcoreModels();
