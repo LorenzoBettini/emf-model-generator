@@ -16,7 +16,21 @@ import org.eclipse.emf.ecore.EObject;
  * previous call left off; this does not guarantee even distribution when
  * different references share an EClass or candidates fail validation.</p>
  * 
- * <p>Example:
+ * <p>Direct round-robin selection from a context and target EClass:</p>
+ * {@snippet :
+ * EMFRoundRobinEObjectCandidateSelector selector = new EMFRoundRobinEObjectCandidateSelector();
+ *
+ * // First call for personClass returns person1
+ * EObject candidate1 = selector.getNextCandidate(context, personClass);
+ *
+ * // Second call continues from where the first left off
+ * EObject candidate2 = selector.getNextCandidate(context, personClass);
+ *
+ * // If no candidates are available, returns null
+ * EObject noCandidate = selector.getNextCandidate(context, unknownClass);
+ * }
+ *
+ * <p>To configure the generator explicitly (this selector is already the default):</p>
  * {@snippet :
  * EMFModelGenerator generator = new EMFModelGenerator();
  * EClass rootClass = (EClass) generator.loadEcoreModel("model.ecore")

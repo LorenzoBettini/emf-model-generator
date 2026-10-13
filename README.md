@@ -551,14 +551,9 @@ The ordinary selector has no per-reference active pool. The opt-in selector buil
 `TreeSet` of stable indices for each bounded opposite: construction costs `O(N log N)`,
 successor lookup and retirement cost `O(log N)`, and each such reference adds `O(N)`
 boxed entries. This can reduce repeated saturated-candidate scans substantially, at a
-memory cost when many references share a large target type. The previous opt-in name,
-`EMFReferenceAwareEObjectCandidateSelector`, remains as a deprecated facade with the
-same no-argument behavior; switch to the longer name when updating source. Existing
-custom `EMFCandidateSelectorStrategy<EClass, EObject>` implementations still work through
-the same populator setter. The experimental `Diagnostics` nested type,
-diagnostic constructor and `activeIndexCount()` method were removed; archived
-diagnostic CSVs remain available through the report-only script described in
-the [benchmark README](src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/README.md).
+memory cost when many references share a large target type. Existing custom
+`EMFCandidateSelectorStrategy<EClass, EObject>` implementations still work through
+the same populator setter.
 
 ### Example 12: Custom Cross-Reference Function
 

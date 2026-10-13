@@ -24,19 +24,7 @@ import org.junit.jupiter.api.Test;
 /**
  * @author Lorenzo Bettini
  */
-class EMFReferenceAwareEObjectCandidateSelectorTest {
-	@Test
-	@SuppressWarnings("deprecation")
-	void previousPublicNameRemainsAWorkingFacade() {
-		final var ePackage = loadEPackage("inputs/graph.ecore");
-		final var node = createInstance(ePackage, "Node");
-		final var selector = new EMFReferenceAwareEObjectCandidateSelector();
-		assertThat(selector).isInstanceOf(
-				EMFReferenceAwareRoundRobinEObjectCandidateSelector.class);
-		assertThat(selector.getNextCandidate(node, (EClass) ePackage.getEClassifier("Node")))
-				.isSameAs(node);
-	}
-
+class EMFReferenceAwareRoundRobinEObjectCandidateSelectorTest {
 	@Test
 	void selfPolicyIsEvaluatedOnceForEachExaminedSelfCandidate() {
 		final var ePackage = loadEPackage("inputs/graph.ecore");
