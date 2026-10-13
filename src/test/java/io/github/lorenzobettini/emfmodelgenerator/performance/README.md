@@ -2,7 +2,7 @@
 
 ## Opt-in reference-aware monotonic selector
 
-Install `new EMFReferenceAwareEObjectCandidateSelector()` through
+Install `new EMFReferenceAwareRoundRobinEObjectCandidateSelector()` through
 `generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(...)`
 only when a saturated opposite cannot become available again before the next
 selector reset. `eUnset`, reassignment, inverse updates, FeatureMap changes,
@@ -26,14 +26,19 @@ python3 scripts/performance_evaluation.py run --preset reference-aware-compariso
 python3 scripts/performance_evaluation.py report --latest reference-aware-comparison
 ```
 
-Candidate-work diagnostics use a separate instrumented runner. It records
-attempts, opposite rejections, retirements, pool build nanoseconds, initial and
-remaining index entries, and a rough 64-byte-per-entry footprint estimate.
-Diagnostic times must not be compared with the uninstrumented A/B medians.
+The live candidate-work diagnostic command was retired after removing
+experimental counters from the production selector. Archived diagnostic CSVs
+and manifests remain readable, and their reports can be regenerated without
+running or instrumenting the current selector:
 
 ```sh
-python3 scripts/reference_aware_diagnostics.py --roots 1,2,5 --scenarios plugin-eclipse,ant,extlibrary --heap 512m --timeout 120 --max-eobjects 1000 --max-resources 10
+python3 scripts/reference_aware_diagnostics.py report --latest
+# Or: python3 scripts/reference_aware_diagnostics.py report --output PATH_TO_ARCHIVE
 ```
+
+Archived diagnostics recorded attempts, opposite rejections, retirements,
+pool build nanoseconds and a rough 64-byte-per-entry footprint estimate.
+Their instrumented times must not be compared with uninstrumented A/B medians.
 
 The bounded 1/2/5-root PluginEclipse diagnostic found opposite rejections
 of 2/8/50 with the default and 2/4/10 with the opt-in selector; Ant and

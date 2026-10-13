@@ -26,7 +26,7 @@ import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
-import io.github.lorenzobettini.emfmodelgenerator.EMFReferenceAwareEObjectCandidateSelector;
+import io.github.lorenzobettini.emfmodelgenerator.EMFReferenceAwareRoundRobinEObjectCandidateSelector;
 
 /**
  * Explicit-root benchmark harness. Launch in a separate JVM; see
@@ -412,7 +412,7 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		} else if (selectionProbe == null &&
 				"reference-aware".equals(System.getenv("BENCHMARK_SELECTION_VARIANT"))) {
 			populator.setCrossReferenceCandidateSelectorStrategy(
-					new EMFReferenceAwareEObjectCandidateSelector());
+					new EMFReferenceAwareRoundRobinEObjectCandidateSelector());
 		}
 		return generator;
 	}

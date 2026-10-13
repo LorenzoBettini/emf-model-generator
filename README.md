@@ -501,6 +501,65 @@ generator.generateFrom(libraryClass);
 generator.save();
 ```
 
+### Cross-reference candidate selection
+
+The default `EMFRoundRobinEObjectCandidateSelector` caches assignable EObjects by target
+`EClass` and advances one wrapping cursor per class. The cross-reference setter checks
+the selected target against its actual `EReference` opposite capacity and the configured
+self-reference policy. It scans again on later selections, so a target whose capacity is
+freed can become eligible again. Install it explicitly when desired:
+
+```java
+EMFModelGenerator generator = new EMFModelGenerator();
+EClass rootClass = (EClass) generator.loadEcoreModel("model.ecore")
+    .getEClassifier("Person");
+generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(
+    new EMFRoundRobinEObjectCandidateSelector());
+generator.generateFrom(rootClass);
+generator.unloadEcoreModels();
+```
+
+`EMFReferenceAwareRoundRobinEObjectCandidateSelector` is an **opt-in** alternative for
+models where a candidate whose opposite has reached its upper bound cannot become
+available again for that same `EReference` before the next `reset()`. It shares one
+`EClass` source list and wrapping cursor across references, but retires saturated
+candidates separately for each actual `EReference`. For example, `Library.books` and
+`Author.books` may both target `Book`: a book saturated for one reference can still be
+selected for the other. Interleaved references and different active sets mean neither
+strategy promises evenly distributed targets.
+
+```java
+EMFModelGenerator generator = new EMFModelGenerator();
+EClass rootClass = (EClass) generator.loadEcoreModel("model.ecore")
+    .getEClassifier("Person");
+generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(
+    new EMFReferenceAwareRoundRobinEObjectCandidateSelector());
+generator.generateFrom(rootClass);
+generator.unloadEcoreModels();
+```
+
+The monotonic guarantee applies from the first selection until `reset()`. `eUnset`,
+reassignment, inverse updates, FeatureMap changes, callbacks, custom functions and
+external edits can restore opposite capacity. Reset after such changes and after adding
+resources or changing metamodels; if capacity may change during selection, use the
+ordinary selector. Direct self-reference follows the setter's configurable owner policy;
+self and many-valued uniqueness rejections never retire a candidate. Keep custom
+self policies free of side effects because the opt-in selector skips retired targets.
+Custom function returns bypass the pool but still receive live self and opposite checks.
+
+The ordinary selector has no per-reference active pool. The opt-in selector builds a
+`TreeSet` of stable indices for each bounded opposite: construction costs `O(N log N)`,
+successor lookup and retirement cost `O(log N)`, and each such reference adds `O(N)`
+boxed entries. This can reduce repeated saturated-candidate scans substantially, at a
+memory cost when many references share a large target type. The previous opt-in name,
+`EMFReferenceAwareEObjectCandidateSelector`, remains as a deprecated facade with the
+same no-argument behavior; switch to the longer name when updating source. Existing
+custom `EMFCandidateSelectorStrategy<EClass, EObject>` implementations still work through
+the same populator setter. The experimental `Diagnostics` nested type,
+diagnostic constructor and `activeIndexCount()` method were removed; archived
+diagnostic CSVs remain available through the report-only script described in
+the [benchmark README](src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/README.md).
+
 ### Example 12: Custom Cross-Reference Function
 
 Customize one cross-reference while keeping the default validity checks for the rest:

@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
@@ -24,6 +25,96 @@ import org.junit.jupiter.api.Test;
  * @author Lorenzo Bettini
  */
 class EMFReferenceAwareEObjectCandidateSelectorTest {
+	@Test
+	@SuppressWarnings("deprecation")
+	void previousPublicNameRemainsAWorkingFacade() {
+		final var ePackage = loadEPackage("inputs/graph.ecore");
+		final var node = createInstance(ePackage, "Node");
+		final var selector = new EMFReferenceAwareEObjectCandidateSelector();
+		assertThat(selector).isInstanceOf(
+				EMFReferenceAwareRoundRobinEObjectCandidateSelector.class);
+		assertThat(selector.getNextCandidate(node, (EClass) ePackage.getEClassifier("Node")))
+				.isSameAs(node);
+	}
+
+	@Test
+	void selfPolicyIsEvaluatedOnceForEachExaminedSelfCandidate() {
+		final var ePackage = loadEPackage("inputs/graph.ecore");
+		final var node = createInstance(ePackage, "Node");
+		final var reference = (EReference) node.eClass().getEStructuralFeature("outgoing");
+		for (final EMFCandidateSelectorStrategy<EClass, EObject> selector :
+				List.of(new EMFRoundRobinEObjectCandidateSelector(),
+						new EMFReferenceAwareRoundRobinEObjectCandidateSelector())) {
+			final var setter = new EMFCrossReferenceSetter();
+			setter.setCandidateSelectorStrategy(selector);
+			final var calls = new AtomicInteger();
+			setter.setSelfReferencePolicy((owner, actual) -> calls.incrementAndGet() == 1);
+			assertThat(setter.selectValue(node, reference)).isSameAs(node);
+			assertThat(calls).hasValue(1);
+		}
+	}
+
+	@Test
+	void legacyUserSelectorStillScansPastAnOccupiedFirstCandidateAndResets() {
+		final var ePackage = loadEPackage("inputs/references-opposite.ecore");
+		final var f = libraryFixture(ePackage, "legacy-user.xmi");
+		EMFUtils.getAsEObjectsList(f.libraries().get(0), f.libraryBooks())
+				.add(f.books().get(0));
+		final var next = new AtomicInteger();
+		final var resets = new AtomicInteger();
+		final EMFCandidateSelectorStrategy<EClass, EObject> custom =
+				new EMFCandidateSelectorStrategy<>() {
+					@Override
+					public EObject getNextCandidate(final EObject context, final EClass type) {
+						return f.books().get(next.getAndIncrement() % f.books().size());
+					}
+
+					@Override
+					public boolean hasCandidates(final EObject context, final EClass type) {
+						return true;
+					}
+
+					@Override
+					public void reset() {
+						next.set(0);
+						resets.incrementAndGet();
+					}
+				};
+		final var setter = new EMFCrossReferenceSetter();
+		setter.setCandidateSelectorStrategy(custom);
+		assertThat(setter.selectValue(f.libraries().get(1), f.libraryBooks()))
+				.isSameAs(f.books().get(1));
+		assertThat(next).hasValue(2);
+		setter.reset();
+		assertThat(resets).hasValue(1);
+		assertThat(setter.selectValue(f.libraries().get(2), f.libraryBooks()))
+				.isSameAs(f.books().get(1));
+	}
+
+	@Test
+	void overriddenSelfPolicyAndUniqueManyValuesWorkWithOptInSelector() {
+		final var ePackage = loadEPackage("inputs/graph.ecore");
+		final var resources = createResourceSet();
+		final var resource = createResource(resources, "unique-graph.xmi");
+		final var first = createInstance(ePackage, "Node");
+		final var second = createInstance(ePackage, "Node");
+		resource.getContents().addAll(List.of(first, second));
+		final var outgoing = (EReference) first.eClass().getEStructuralFeature("outgoing");
+		final var setter = new EMFCrossReferenceSetter() {
+			@Override
+			protected boolean allowSelfReferenceFor(final EObject owner,
+					final EReference reference) {
+				return owner == second;
+			}
+		};
+		final var selector = new EMFReferenceAwareRoundRobinEObjectCandidateSelector();
+		setter.setCandidateSelectorStrategy(selector);
+		setter.setDefaultMaxCount(3);
+		setter.setCrossReference(first, outgoing);
+		assertThat(EMFUtils.getAsEObjectsList(first, outgoing)).containsExactly(second);
+		selector.getNextCandidate(second, (EClass) ePackage.getEClassifier("Node"));
+		assertThat(setter.selectValue(second, outgoing)).isSameAs(second);
+	}
 
 	@AfterEach
 	void cleanup() {
@@ -82,7 +173,7 @@ class EMFReferenceAwareEObjectCandidateSelectorTest {
 		final var awareFixture = libraryFixture(ePackage, "aware.xmi");
 		final var baseline = new EMFCrossReferenceSetter();
 		final var aware = new EMFCrossReferenceSetter();
-		final var selector = new EMFReferenceAwareEObjectCandidateSelector();
+		final var selector = new EMFReferenceAwareRoundRobinEObjectCandidateSelector();
 		aware.setCandidateSelectorStrategy(selector);
 		assertThat(trace(aware, awareFixture)).containsExactlyElementsOf(trace(baseline,
 				baselineFixture));
@@ -97,7 +188,7 @@ class EMFReferenceAwareEObjectCandidateSelectorTest {
 	void resetRestoresCapacityAndDiscoversNewResources() {
 		final var ePackage = loadEPackage("inputs/references-opposite.ecore");
 		final var f = libraryFixture(ePackage, "reset.xmi");
-		final var selector = new EMFReferenceAwareEObjectCandidateSelector();
+		final var selector = new EMFReferenceAwareRoundRobinEObjectCandidateSelector();
 		final var setter = new EMFCrossReferenceSetter();
 		setter.setCandidateSelectorStrategy(selector);
 		for (int i = 0; i < 3; i++) {
@@ -131,7 +222,7 @@ class EMFReferenceAwareEObjectCandidateSelectorTest {
 		final var ePackage = loadEPackage("inputs/references-opposite.ecore");
 		final var first = libraryFixture(ePackage, "first.xmi");
 		final var second = libraryFixture(ePackage, "second.xmi");
-		final var selector = new EMFReferenceAwareEObjectCandidateSelector();
+		final var selector = new EMFReferenceAwareRoundRobinEObjectCandidateSelector();
 		assertThat(selector.getNextCandidate(first.author(), first.bookClass()))
 				.isSameAs(first.books().get(0));
 		final var sameSet = createInstance(ePackage, "Book");
@@ -160,7 +251,7 @@ class EMFReferenceAwareEObjectCandidateSelectorTest {
 		final var second = createInstance(ePackage, "Node");
 		resource.getContents().addAll(List.of(first, second));
 		final var reference = (EReference) first.eClass().getEStructuralFeature("outgoing");
-		final var selector = new EMFReferenceAwareEObjectCandidateSelector();
+		final var selector = new EMFReferenceAwareRoundRobinEObjectCandidateSelector();
 		final var setter = new EMFCrossReferenceSetter();
 		setter.setCandidateSelectorStrategy(selector);
 		assertThat(setter.selectValue(first, reference)).isSameAs(second);
@@ -179,7 +270,7 @@ class EMFReferenceAwareEObjectCandidateSelectorTest {
 		final var edgeClass = (EClass) ePackage.getEClassifier("Edge");
 		final var outgoing = (EReference) node.eClass().getEStructuralFeature("outgoing");
 		final var target = (EReference) edge.eClass().getEStructuralFeature("target");
-		final var selector = new EMFReferenceAwareEObjectCandidateSelector();
+		final var selector = new EMFReferenceAwareRoundRobinEObjectCandidateSelector();
 		final var setter = new EMFCrossReferenceSetter();
 		setter.setCandidateSelectorStrategy(selector);
 		assertThat(selector.hasCandidates(node, edgeClass)).isFalse();
@@ -197,7 +288,7 @@ class EMFReferenceAwareEObjectCandidateSelectorTest {
 	void skipsRetiredIndicesAcrossWrapWithoutMovingOtherReferenceCursor() {
 		final var ePackage = loadEPackage("inputs/references-opposite.ecore");
 		final var f = libraryFixture(ePackage, "wrap.xmi");
-		final var selector = new EMFReferenceAwareEObjectCandidateSelector();
+		final var selector = new EMFReferenceAwareRoundRobinEObjectCandidateSelector();
 		final var setter = new EMFCrossReferenceSetter();
 		setter.setCandidateSelectorStrategy(selector);
 		selector.getNextCandidate(f.author(), f.bookClass());
@@ -215,7 +306,7 @@ class EMFReferenceAwareEObjectCandidateSelectorTest {
 	void scansEveryIndexWhenStartingAfterZero() {
 		final var ePackage = loadEPackage("inputs/references-opposite.ecore");
 		final var f = libraryFixture(ePackage, "offset.xmi");
-		final var selector = new EMFReferenceAwareEObjectCandidateSelector();
+		final var selector = new EMFReferenceAwareRoundRobinEObjectCandidateSelector();
 		final var setter = new EMFCrossReferenceSetter();
 		setter.setCandidateSelectorStrategy(selector);
 		selector.getNextCandidate(f.author(), f.bookClass());
@@ -227,28 +318,6 @@ class EMFReferenceAwareEObjectCandidateSelectorTest {
 				.isSameAs(f.books().get(0));
 	}
 
-	@Test
-	void diagnosticCountersAreExplicitAndSeparateFromOrdinarySelection() {
-		final var ePackage = loadEPackage("inputs/references-opposite.ecore");
-		final var f = libraryFixture(ePackage, "diagnostics.xmi");
-		final var diagnostics = new EMFReferenceAwareEObjectCandidateSelector.Diagnostics();
-		final var selector = new EMFReferenceAwareEObjectCandidateSelector(diagnostics);
-		final var setter = new EMFCrossReferenceSetter();
-		setter.setCandidateSelectorStrategy(selector);
-		EMFUtils.getAsEObjectsList(f.libraries().get(0), f.libraryBooks())
-				.add(f.books().get(0));
-		assertThat(setter.selectValue(f.libraries().get(1), f.libraryBooks()))
-				.isSameAs(f.books().get(1));
-		assertThat(diagnostics.attempts()).isEqualTo(2);
-		assertThat(diagnostics.oppositeRejections()).isEqualTo(1);
-		assertThat(diagnostics.retirements()).isEqualTo(1);
-		assertThat(diagnostics.poolEntriesBuilt()).isEqualTo(3);
-		assertThat(selector.activeIndexCount()).isEqualTo(2);
-		assertThat(diagnostics.poolBuildNanos()).isBetween(1L, 999_999_999L);
-		assertThat(diagnostics.selectionNanos()).isBetween(1L, 999_999_999L);
-		selector.reset();
-		assertThat(selector.activeIndexCount()).isZero();
-	}
 
 	@Test
 	void featureMapSelectionValidatesCustomFunctionAndSharesClassCursor() {
@@ -266,7 +335,7 @@ class EMFReferenceAwareEObjectCandidateSelectorTest {
 		occupied.eSet(document, other);
 		final var populator = new EMFInstancePopulator();
 		populator.setCrossReferenceCandidateSelectorStrategy(
-				new EMFReferenceAwareEObjectCandidateSelector());
+				new EMFReferenceAwareRoundRobinEObjectCandidateSelector());
 		populator.setMaxDepth(0);
 		populator.setFeatureMapMaxCountFor((org.eclipse.emf.ecore.EAttribute)
 				owner.eClass().getEStructuralFeature("group"), 3);

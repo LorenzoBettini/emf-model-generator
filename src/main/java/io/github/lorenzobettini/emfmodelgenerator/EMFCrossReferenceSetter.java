@@ -1,5 +1,7 @@
 package io.github.lorenzobettini.emfmodelgenerator;
 
+import java.util.function.BiPredicate;
+
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
@@ -18,7 +20,8 @@ import org.eclipse.emf.ecore.EReference;
 public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<EReference, EReference, EObject> {
 
 	private static final int DEFAULT_MULTI_VALUED_COUNT = 2;
-	private EMFCandidateSelectorStrategy<EClass, EObject> candidateSelectorStrategy = new EMFRoundRobinEObjectCandidateSelector();
+	private EMFCrossReferenceCandidateSelector candidateSelectorStrategy =
+			new LegacySelectorAdapter(new EMFRoundRobinEObjectCandidateSelector());
 	private SelfReferencePolicy selfReferencePolicy = (owner, reference) -> false;
 
 	/**
@@ -89,7 +92,8 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	 * @param strategy the candidate selector strategy to use
 	 */
 	public void setCandidateSelectorStrategy(EMFCandidateSelectorStrategy<EClass, EObject> strategy) {
-		this.candidateSelectorStrategy = strategy;
+		this.candidateSelectorStrategy = strategy instanceof EMFCrossReferenceCandidateSelector selector
+				? selector : new LegacySelectorAdapter(strategy);
 	}
 
 	/**
@@ -226,37 +230,51 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 				return candidate;
 			}
 		}
-		if (candidateSelectorStrategy
-				instanceof EMFReferenceAwareEObjectCandidateSelector referenceAware) {
-			return referenceAware.selectCandidate(owner, crossReference, this::allowSelfReferenceFor);
-		}
-
-		// Try to get candidates using the configured selector strategy until we find one
-		// that passes the opposite reference check and is not the owner itself (unless a direct
-		// self-reference is allowed).
-		// Since the selector wraps around, we track the first candidate to detect when
-		// we've checked all
-		final EClass eReferenceType = crossReference.getEReferenceType();
-		final EObject firstCandidate = candidateSelectorStrategy.getNextCandidate(owner, eReferenceType);
-		if (firstCandidate == null) {
-			return null;
-		}
-
-		// Note: at this point, getNextCandidate never returns null (it wraps around)
-		EObject candidate = firstCandidate;
-		do {
-			if (isCandidateValid(owner, crossReference, candidate)) {
-				return candidate;
-			}
-			candidate = candidateSelectorStrategy.getNextCandidate(owner, eReferenceType);
-		} while (candidate != firstCandidate);
-
-		// We've checked all candidates and none passed the filter
-		return null;
+		return candidateSelectorStrategy.selectCandidate(owner, crossReference,
+				this::allowSelfReferenceFor);
 	}
 
 	private boolean isCandidateValid(EObject owner, EReference reference, EObject candidate) {
 		return (owner != candidate || allowSelfReferenceFor(owner, reference)) &&
 				EMFUtils.canSetInThePresenceOfOppositeReference(reference, candidate);
+	}
+
+	/**
+	 * Adapts an unchanged generic user selector to cross-reference selection.
+	 *
+	 * @author Lorenzo Bettini
+	 */
+	private static final class LegacySelectorAdapter implements EMFCrossReferenceCandidateSelector {
+		private final EMFCandidateSelectorStrategy<EClass, EObject> delegate;
+
+		private LegacySelectorAdapter(final EMFCandidateSelectorStrategy<EClass, EObject> delegate) {
+			this.delegate = delegate;
+		}
+
+		@Override
+		public EObject selectCandidate(final EObject owner, final EReference crossReference,
+				final BiPredicate<EObject, EReference> allowSelf) {
+			// The legacy selector wraps around. Its extra retrieval on a failed cycle
+			// also advances its cursor; preserve that observable behavior.
+			final EClass type = crossReference.getEReferenceType();
+			final EObject firstCandidate = delegate.getNextCandidate(owner, type);
+			if (firstCandidate == null) {
+				return null;
+			}
+			EObject candidate = firstCandidate;
+			do {
+				if ((owner != candidate || allowSelf.test(owner, crossReference)) &&
+						EMFUtils.canSetInThePresenceOfOppositeReference(crossReference, candidate)) {
+					return candidate;
+				}
+				candidate = delegate.getNextCandidate(owner, type);
+			} while (candidate != firstCandidate);
+			return null;
+		}
+
+		@Override
+		public void reset() {
+			delegate.reset();
+		}
 	}
 }

@@ -7,7 +7,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
-import io.github.lorenzobettini.emfmodelgenerator.EMFReferenceAwareEObjectCandidateSelector;
+import io.github.lorenzobettini.emfmodelgenerator.EMFReferenceAwareRoundRobinEObjectCandidateSelector;
 
 /**
  * @author Lorenzo Bettini
@@ -39,7 +39,7 @@ class ReferenceAwareEquivalenceTest {
 			populator.setFeatureMapDefaultMaxCount(1);
 			if (aware) {
 				populator.setCrossReferenceCandidateSelectorStrategy(
-						new EMFReferenceAwareEObjectCandidateSelector());
+						new EMFReferenceAwareRoundRobinEObjectCandidateSelector());
 			}
 			generator.generateFromSeveral(root);
 			final var fingerprint = GraphFingerprint.compute(generator.getResourceSet());
