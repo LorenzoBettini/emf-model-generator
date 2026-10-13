@@ -3,9 +3,9 @@ package io.github.lorenzobettini.emfmodelgenerator.performance;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
+import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceCandidateSelectorStrategy.CandidateDecision;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter;
 import io.github.lorenzobettini.emfmodelgenerator.EMFUtils;
@@ -23,7 +23,6 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 	private long retrievalNanosInSelection;
 	private boolean firstWasNull;
 	private boolean selecting;
-	private EObject previousCandidate;
 	private EObject currentOwner;
 	private EReference currentReference;
 	private Counters currentCounters;
@@ -46,7 +45,6 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 		retrievalNanosInSelection = 0;
 		firstWasNull = false;
 		selecting = true;
-		previousCandidate = null;
 		currentOwner = owner;
 		currentReference = reference;
 		currentCounters = counters;
@@ -57,17 +55,15 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 			return result;
 		} finally {
 			selecting = false;
-			final boolean exhausted = result == null && callsInSelection > 1;
-			final int attempts = callsInSelection - (exhausted ? 1 : 0)
-					- (firstWasNull ? 1 : 0);
-			final int accepted = result != null && callsInSelection > 0 ? 1 : 0;
+			final boolean exhausted = result == null && callsInSelection > 0;
+			final int attempts = callsInSelection;
 			counters.add(
-					attempts, attempts - accepted - classifiedInSelection,
+					attempts, attempts - classifiedInSelection -
+							(result != null && attempts > 0 ? 1 : 0),
 					result == null, exhausted,
 					firstWasNull, result != null && callsInSelection == 0,
 					System.nanoTime() - start, retrievalNanosInSelection);
-			previousCandidate = null;
-			currentOwner = null;
+				currentOwner = null;
 			currentReference = null;
 			currentCounters = null;
 		}
@@ -100,28 +96,7 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 		final var c = counters(reference);
 		for (int i = 0; i < missingCount; i++) {
 			c.multiSelectionCalls++;
-			EObject value = selectValue(owner, reference);
-			if (reference.isUnique()) {
-				final EObject firstCandidate = value;
-				while (value != null) {
-					final int length = list.size();
-					final long start = System.nanoTime();
-					final boolean present = list.contains(value);
-					c.containsNanos += System.nanoTime() - start;
-					c.containsChecks++;
-					c.containsListElements += length;
-					if (!present) {
-						break;
-					}
-					c.uniqueRetries++;
-					c.multiSelectionCalls++;
-					value = selectValue(owner, reference);
-					if (value == firstCandidate) {
-						c.uniqueExhaustions++;
-						return;
-					}
-				}
-			}
+			final EObject value = selectValue(owner, reference);
 			if (value == null) {
 				return;
 			}
@@ -145,34 +120,30 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 	 */
 	final class Selector extends InstrumentedEObjectCandidateSelector {
 		@Override
-		public EObject getNextCandidate(final EObject context, final EClass type) {
-			if (selecting && previousCandidate != null) {
-				classifyRejected(previousCandidate);
-			}
+		public EObject selectCandidate(final EObject owner, final EReference reference,
+				final java.util.function.Function<EObject, CandidateDecision> evaluator) {
 			final long start = System.nanoTime();
 			try {
-				final EObject candidate = experimentalSelector == null
-						? super.getNextCandidate(context, type)
-						: experimentalSelector.getNextCandidate(context, type);
-				if (selecting) {
+				final var observed = (java.util.function.Function<EObject, CandidateDecision>) candidate -> {
 					callsInSelection++;
-					previousCandidate = candidate;
-					if (callsInSelection == 1 && candidate == null) {
-						firstWasNull = true;
+					final CandidateDecision decision = evaluator.apply(candidate);
+					if (decision != CandidateDecision.ACCEPT) {
+						classifyRejected(candidate);
 					}
+					return decision;
+				};
+				final EObject result = experimentalSelector == null
+						? super.selectCandidate(owner, reference, observed)
+						: experimentalSelector.selectCandidate(owner, reference, observed);
+				if (callsInSelection == 0) {
+					firstWasNull = true;
 				}
-				return candidate;
+				return result;
 			} finally {
 				if (selecting) {
 					retrievalNanosInSelection += System.nanoTime() - start;
 				}
 			}
-		}
-
-		@Override
-		public boolean hasCandidates(final EObject context, final EClass type) {
-			return experimentalSelector == null ? super.hasCandidates(context, type)
-					: experimentalSelector.hasCandidates(context, type);
 		}
 
 		@Override

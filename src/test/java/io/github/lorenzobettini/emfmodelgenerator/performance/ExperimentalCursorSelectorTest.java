@@ -29,23 +29,21 @@ class ExperimentalCursorSelectorTest {
 	 * @author Lorenzo Bettini
 	 */
 	private static final class CountingSelector
-			implements EMFCandidateSelectorStrategy<EClass, EObject> {
-		private final EMFCandidateSelectorStrategy<EClass, EObject> delegate;
+			implements io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceCandidateSelectorStrategy {
+		private final io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceCandidateSelectorStrategy delegate;
 		private int calls;
 
-		private CountingSelector(final EMFCandidateSelectorStrategy<EClass, EObject> delegate) {
+		private CountingSelector(final io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceCandidateSelectorStrategy delegate) {
 			this.delegate = delegate;
 		}
 
 		@Override
-		public EObject getNextCandidate(final EObject context, final EClass type) {
-			calls++;
-			return delegate.getNextCandidate(context, type);
-		}
-
-		@Override
-		public boolean hasCandidates(final EObject context, final EClass type) {
-			return delegate.hasCandidates(context, type);
+		public EObject selectCandidate(final EObject owner, final EReference reference,
+				final java.util.function.Function<EObject, CandidateDecision> evaluator) {
+			return delegate.selectCandidate(owner, reference, candidate -> {
+				calls++;
+				return evaluator.apply(candidate);
+			});
 		}
 
 		@Override
@@ -125,16 +123,14 @@ class ExperimentalCursorSelectorTest {
 					.isSameAs(baseline.selectValue(owner, manager));
 		}
 		assertThat(variantCalls[0]).isEqualTo(baselineCalls[0]);
-		EMFCandidateSelectorStrategy<EClass, EObject> custom = new EMFCandidateSelectorStrategy<>() {
+		var custom = new io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceCandidateSelectorStrategy() {
 			@Override
-			public EObject getNextCandidate(final EObject context, final EClass type) {
-				return other;
+			public EObject selectCandidate(final EObject owner, final EReference reference,
+					final java.util.function.Function<EObject, CandidateDecision> evaluator) {
+				return evaluator.apply(other) == CandidateDecision.ACCEPT ? other : null;
 			}
-
 			@Override
-			public boolean hasCandidates(final EObject context, final EClass type) {
-				return true;
-			}
+			public void reset() { }
 		};
 		baseline.setCandidateSelectorStrategy(custom);
 		variant.setCandidateSelectorStrategy(custom);
@@ -210,14 +206,14 @@ class ExperimentalCursorSelectorTest {
 		assertThat(variantCounting.calls).isEqualTo(baselineCounting.calls);
 		baseline.reset();
 		variant.reset();
-		assertThat(variantSelector.getNextCandidate(owner, packageClass))
-				.isSameAs(baselineSelector.getNextCandidate(owner, packageClass));
+		assertThat(variantSelector.getNextCandidate(owner, reference))
+				.isSameAs(baselineSelector.getNextCandidate(owner, reference));
 		resource.getContents().add(EcoreUtil.create(packageClass));
 		baseline.reset();
 		variant.reset();
 		for (int i = 0; i < 8; i++) {
-			assertThat(variantSelector.getNextCandidate(owner, packageClass))
-					.isSameAs(baselineSelector.getNextCandidate(owner, packageClass));
+			assertThat(variantSelector.getNextCandidate(owner, reference))
+					.isSameAs(baselineSelector.getNextCandidate(owner, reference));
 		}
 	}
 }

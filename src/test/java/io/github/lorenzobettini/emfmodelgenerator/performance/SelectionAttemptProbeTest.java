@@ -86,7 +86,7 @@ class SelectionAttemptProbeTest {
 	}
 
 	@Test
-	void uniqueListRetriesRemainSeparateSelectionCalls() throws Exception {
+	void uniqueListSelectionUsesOneBoundedRequestPerSlot() throws Exception {
 		final var model = EMFTestUtils.loadEPackage("inputs/standalone-references.ecore");
 		final var baseline = graph(model, "Document", "relatedDocs", 2);
 		final var observed = graph(model, "Document", "relatedDocs", 2);
@@ -100,13 +100,12 @@ class SelectionAttemptProbeTest {
 				.isEqualTo(List.of(observed.candidates().get(0), observed.candidates().get(1)));
 		assertThat(xmi(observed.resource())).isEqualTo(xmi(baseline.resource()));
 		final var counters = probe.features().values().iterator().next();
-		assertThat(counters.calls).isGreaterThan(3);
-		assertThat(counters.rejectedUnknown).isZero();
-		assertThat(counters.uniqueRetries).isPositive();
-		assertThat(counters.uniqueExhaustions).isEqualTo(1);
+		assertThat(counters.calls).isEqualTo(3);
+		assertThat(counters.uniqueRetries).isZero();
+		assertThat(counters.uniqueExhaustions).isZero();
 		assertThat(counters.multiSelectionCalls).isEqualTo(counters.calls);
-		assertThat(counters.containsChecks).isGreaterThanOrEqualTo(counters.uniqueRetries);
-		assertThat(counters.containsListElements).isPositive();
+		assertThat(counters.containsChecks).isZero();
+		assertThat(counters.containsListElements).isZero();
 		assertThat(counters.multiAssignments).isEqualTo(2);
 		assertThat(counters.singleAssignments).isZero();
 		assertThat(Diagnostician.INSTANCE.validate(observed.owner()).getSeverity()).isZero();

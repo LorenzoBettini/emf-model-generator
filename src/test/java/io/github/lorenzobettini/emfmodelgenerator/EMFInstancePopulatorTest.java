@@ -1420,6 +1420,7 @@ class EMFInstancePopulatorTest {
 		};
 		
 		populator.setInstantiableSubclassSelectorStrategy(customStrategy);
+		customStrategy.reset();
 		
 		final var instance = EcoreUtil.create(container);
 		createInstanceInResource(instance, "test_strategy.xmi");
@@ -1442,18 +1443,15 @@ class EMFInstancePopulatorTest {
 		entry2.eSet(entryClass.getEStructuralFeature("key"), "entry2");
 		
 		// Create a custom strategy that always returns entry2
-		final var customStrategy = new EMFCandidateSelectorStrategy<EClass, EObject>() {
+		final var customStrategy = new EMFCrossReferenceCandidateSelectorStrategy() {
 			@Override
-			public EObject getNextCandidate(EObject context, EClass type) {
-				return entry2;
+			public EObject selectCandidate(final EObject owner, final EReference reference,
+					final java.util.function.Function<EObject, CandidateDecision> evaluator) {
+				return evaluator.apply(entry2) == CandidateDecision.ACCEPT ? entry2 : null;
 			}
-
 			@Override
-			public boolean hasCandidates(EObject context, EClass type) {
-				return true;
-			}
+			public void reset() { }
 		};
-		
 		populator.setCrossReferenceCandidateSelectorStrategy(customStrategy);
 		
 		final var registry = createInstance(ePackage, "Registry");

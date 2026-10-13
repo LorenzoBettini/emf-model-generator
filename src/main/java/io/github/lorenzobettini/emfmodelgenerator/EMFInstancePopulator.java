@@ -244,12 +244,12 @@ public class EMFInstancePopulator {
 	/**
 	 * Set the strategy for selecting candidate EObjects for cross-references.
 	 * The ordinary round-robin selector remains the default. An explicitly
-	 * opt-in {@link EMFReferenceAwareRoundRobinEObjectCandidateSelector} is available when
+	 * opt-in {@link EMFRoundRobinReferenceAwareEObjectCandidateSelector} is available when
 	 * the caller guarantees its documented monotonic opposite-capacity epoch.
 	 * 
 	 * @param strategy the candidate selector strategy
 	 */
-	public void setCrossReferenceCandidateSelectorStrategy(EMFCandidateSelectorStrategy<EClass, EObject> strategy) {
+	public void setCrossReferenceCandidateSelectorStrategy(EMFCrossReferenceCandidateSelectorStrategy strategy) {
 		crossReferenceSetter.setCandidateSelectorStrategy(strategy);
 	}
 

@@ -428,8 +428,20 @@ public class EMFTestUtils {
 	}
 
 	/**
+	 * A detached reference request for existing raw selector tests.
+	 *
+	 * @param type the target type
+	 * @return a reference with that target type
+	 */
+	public static EReference referenceFor(final EClass type) {
+		final EReference reference = EcoreFactory.eINSTANCE.createEReference();
+		reference.setEType(type);
+		return reference;
+	}
+
+	/**
 	 * Create a new cross EReference (non-containment) with the given name and type, and add it to the EClass.
-	 * 
+	 *
 	 * @param eClass the class to add the reference to
 	 * @param name the name of the reference
 	 * @param eType the type of the reference

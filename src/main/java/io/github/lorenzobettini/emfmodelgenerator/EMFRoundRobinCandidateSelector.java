@@ -47,6 +47,16 @@ public abstract class EMFRoundRobinCandidateSelector<K extends ENamedElement,
 	 */
 	protected abstract List<V> getOrCompute(final EObject context, final K type);
 
+	/** Return the next stable index for a key without advancing it. */
+	protected final int cursorIndexFor(final K key) {
+		return nextIndexMap.computeIfAbsent(key, ignored -> new Cursor()).index;
+	}
+
+	/** Set the next stable index for a key with an existing cursor. */
+	protected final void setCursorIndexFor(final K key, final int index) {
+		nextIndexMap.get(key).index = index;
+	}
+
 	/**
 	 * Get the next assignable candidate for the specified type using round-robin
 	 * selection.
@@ -76,12 +86,9 @@ public abstract class EMFRoundRobinCandidateSelector<K extends ENamedElement,
 			return null;
 		}
 
-		final Cursor cursor = nextIndexMap.computeIfAbsent(key, ignored -> new Cursor());
-		final V candidate = allCandidates.get(cursor.index);
-		cursor.index++;
-		if (cursor.index == allCandidates.size()) {
-			cursor.index = 0;
-		}
+		final int index = cursorIndexFor(key);
+		final V candidate = allCandidates.get(index);
+		setCursorIndexFor(key, (index + 1) % allCandidates.size());
 
 		return candidate;
 	}

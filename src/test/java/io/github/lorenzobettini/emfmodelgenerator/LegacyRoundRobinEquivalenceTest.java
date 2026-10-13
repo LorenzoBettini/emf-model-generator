@@ -167,12 +167,12 @@ class LegacyRoundRobinEquivalenceTest {
 			resource.getContents().add(EcoreUtil.create(book));
 			final var objects = new EMFRoundRobinEObjectCandidateSelector();
 			final var oldObjects = new LegacyRoundRobinSelectors.EObjects();
-			compare(objects, oldObjects, context, book, 7);
-			compare(objects, oldObjects, context, person, 2); // empty key
+			compare(objects, oldObjects, context, EMFTestUtils.referenceFor(book), 7);
+			compare(objects, oldObjects, context, EMFTestUtils.referenceFor(person), 2); // empty key
 			resource.getContents().add(EcoreUtil.create(book));
 			objects.reset();
 			oldObjects.reset();
-			compare(objects, oldObjects, context, book, 9); // recomputed cache
+			compare(objects, oldObjects, context, EMFTestUtils.referenceFor(book), 9); // recomputed cache
 
 			final var classes = new EMFRoundRobinEClassCandidateSelector();
 			final var oldClasses = new LegacyRoundRobinSelectors.EClasses();

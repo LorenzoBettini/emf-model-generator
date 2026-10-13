@@ -2670,23 +2670,25 @@ class EMFModelGeneratorTest {
 		final var bookClass = assertEClassExists(ePackage, "Book");
 		final var authorsClass = assertEClassExists(ePackage, "Author");
 		final var counter = new AtomicInteger(0);
-		generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(new EMFRoundRobinEObjectCandidateSelector() {
-			@Override
-			public EObject getNextCandidate(EObject context, EClass type) {
-				if (context.eClass() == bookClass && authorsClass == type) {
-					final var authors = getOrCompute(context, type);
-					if (authors.isEmpty()) {
-						return null;
+		generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(
+				new EMFRoundRobinEObjectCandidateSelector() {
+					@Override
+					public EObject selectCandidate(final EObject owner, final EReference reference,
+								final java.util.function.Function<EObject, CandidateDecision> evaluator) {
+						if (owner.eClass() == bookClass &&
+								reference.getEReferenceType() == authorsClass) {
+							final var authors = getOrCompute(owner, authorsClass);
+							if (authors.isEmpty()) {
+								return null;
+							}
+							final int index = authors.size() - 1 -
+									(counter.getAndIncrement() % authors.size());
+							final EObject candidate = authors.get(index);
+							return evaluator.apply(candidate) == CandidateDecision.ACCEPT ? candidate : null;
+						}
+						return super.selectCandidate(owner, reference, evaluator);
 					}
-					// Return authors in reverse order based on a counter
-					final int index = authors.size() - 1 - (counter.getAndIncrement() % authors.size());
-					return authors.get(index);
-				}
-				// use the default round-robin for other cases
-				return super.getNextCandidate(context, type);
-			}
-		});
-
+				});
 		generator.setFilePrefix("function_cross_");
 		generator.generateFrom(libraryClass);
 		generator.save();
@@ -2843,16 +2845,14 @@ class EMFModelGeneratorTest {
 		entry1.eSet(entryClass.getEStructuralFeature("key"), "entry1");
 		var entry2 = EcoreUtil.create(entryClass);
 		entry2.eSet(entryClass.getEStructuralFeature("key"), "entry2");
-		var customStrategy = new EMFCandidateSelectorStrategy<EClass, EObject>() {
+		var customStrategy = new EMFCrossReferenceCandidateSelectorStrategy() {
 			@Override
-			public EObject getNextCandidate(EObject context, EClass type) {
-				return entry2;
+			public EObject selectCandidate(final EObject owner, final EReference reference,
+					final java.util.function.Function<EObject, CandidateDecision> evaluator) {
+				return evaluator.apply(entry2) == CandidateDecision.ACCEPT ? entry2 : null;
 			}
-
 			@Override
-			public boolean hasCandidates(EObject context, EClass type) {
-				return true;
-			}
+			public void reset() { }
 		};
 		generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(customStrategy);
 		var registry = generator.generateFrom(registryClass);

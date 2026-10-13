@@ -10,6 +10,7 @@ import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.ENamedElement;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
 
 /**
@@ -50,7 +51,8 @@ public final class LegacyRoundRobinSelectors {
 		private final Index<EClass> index = new Index<>();
 
 		@Override
-		public EObject getNextCandidate(final EObject context, final EClass type) {
+		public EObject getNextCandidate(final EObject context, final EReference reference) {
+			final EClass type = reference.getEReferenceType();
 			return index.next(type, getOrCompute(context, type));
 		}
 
