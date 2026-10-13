@@ -14,7 +14,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter;
-import io.github.lorenzobettini.emfmodelgenerator.EMFCandidateSelectorStrategy;
 import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
 import io.github.lorenzobettini.emfmodelgenerator.EMFRoundRobinEObjectCandidateSelector;
 import io.github.lorenzobettini.emfmodelgenerator.LegacyRoundRobinSelectors;

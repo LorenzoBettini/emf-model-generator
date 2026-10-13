@@ -1,9 +1,9 @@
 package io.github.lorenzobettini.emfmodelgenerator;
 
-import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceCandidateSelectorStrategy.CandidateDecision;
-
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
+
+import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceCandidateSelectorStrategy.CandidateDecision;
 
 /**
  * Responsible for setting cross reference (non-containment) values on EMF EObjects.

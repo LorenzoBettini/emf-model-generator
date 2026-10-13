@@ -5,7 +5,6 @@ import java.util.TreeMap;
 
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
-import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceCandidateSelectorStrategy.CandidateDecision;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter;
 import io.github.lorenzobettini.emfmodelgenerator.EMFUtils;

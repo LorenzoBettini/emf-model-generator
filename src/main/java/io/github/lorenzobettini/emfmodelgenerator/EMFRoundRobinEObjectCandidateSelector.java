@@ -7,8 +7,6 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 
-import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceCandidateSelectorStrategy.CandidateDecision;
-
 /**
  * Default conservative round-robin selector for cross-references. Requests use the actual
  * {@link EReference}; references with the same target {@link EClass} share a cache and cursor.

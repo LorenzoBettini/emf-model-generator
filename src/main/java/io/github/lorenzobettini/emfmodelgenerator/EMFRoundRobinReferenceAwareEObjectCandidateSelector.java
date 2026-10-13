@@ -12,8 +12,6 @@ import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 
-import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceCandidateSelectorStrategy.CandidateDecision;
-
 /**
  * Opt-in reference-aware selection for a caller-guaranteed monotonic capacity epoch.
  * A target retired after opposite-capacity exhaustion must remain unavailable for that
