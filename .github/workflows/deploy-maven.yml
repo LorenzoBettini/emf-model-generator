@@ -38,11 +38,14 @@ jobs:
         versions:set
         -DgenerateBackupPoms=false -DremoveSnapshot=true
     - name: Publish to Central Portal
-      run: >
-        ./mvnw
-        -Psonatype-oss-release
-        deploy
+      run: |
+        args=()
+        if [[ "$PUBLISH_TYPE" == "snapshot" ]]; then
+          args+=(-Dmaven.repository.credentialScope=id)
+        fi
+        ./mvnw -Psonatype-oss-release "${args[@]}" deploy
       env:
+        PUBLISH_TYPE: ${{ inputs.publish-type }}
         MAVEN_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
         MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
         MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
