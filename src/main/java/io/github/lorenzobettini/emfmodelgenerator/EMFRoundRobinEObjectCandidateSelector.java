@@ -37,12 +37,30 @@ public class EMFRoundRobinEObjectCandidateSelector
 		return EMFUtils.findAllAssignableInstances(context, key);
 	}
 
-	/** Find the next active stable index at or after {@code from}, wrapping if needed. */
+	/**
+	 * Find the next active index in the original candidate list, starting at {@code from}
+	 * and wrapping if necessary. The default keeps every index active; subclasses may
+	 * return {@code -1} when no active index remains for this reference.
+	 *
+	 * @param reference the actual cross-reference being populated
+	 * @param from the first index to consider, between zero and {@code size - 1}
+	 * @param size the positive size of the original candidate list
+	 * @return the next active index, or {@code -1} if none remains
+	 */
 	protected int nextActiveIndex(final EReference reference, final int from, final int size) {
 		return from % size;
 	}
 
-	/** React to one rejected candidate. The default never retires candidates. */
+	/**
+	 * React to one candidate rejected by the caller's evaluator. The default leaves the
+	 * index active so a later request can check the model again. A subclass may retire
+	 * an index for this reference after {@link CandidateDecision#OPPOSITE_CAPACITY_EXHAUSTED}.
+	 *
+	 * @param reference the actual cross-reference being populated
+	 * @param index the rejected candidate's index in the original list
+	 * @param size the positive size of the original candidate list
+	 * @param decision the evaluator's reason for rejecting the candidate
+	 */
 	protected void candidateRejected(final EReference reference, final int index,
 			final int size, final CandidateDecision decision) {
 		// Conservative selection checks live model state on the next request.
@@ -60,11 +78,10 @@ public class EMFRoundRobinEObjectCandidateSelector
 		final int start = cursorIndexFor(key);
 		int from = start;
 		int lastDistance = -1;
-		while (true) {
-			final int index = nextActiveIndex(reference, from, size);
-			if (index < 0) {
-				break;
-			}
+		int index = nextActiveIndex(reference, from, size);
+		while (index >= 0) {
+			// Distance from the starting cursor increases through one logical cycle,
+			// even when the reference-specific active pool shrinks during this scan.
 			final int distance = (index - start + size) % size;
 			if (distance <= lastDistance) {
 				break;
@@ -78,8 +95,9 @@ public class EMFRoundRobinEObjectCandidateSelector
 			}
 			candidateRejected(reference, index, size, decision);
 			from = (index + 1) % size;
+			index = nextActiveIndex(reference, from, size);
 		}
-		// The historical failed cycle retrieved its first candidate once more.
+		// A failed scan advances the shared type cursor by one position for the next request.
 		setCursorIndexFor(key, (start + 1) % size);
 		return null;
 	}
