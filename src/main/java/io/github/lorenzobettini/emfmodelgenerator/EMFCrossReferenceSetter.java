@@ -23,6 +23,8 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 	/**
 	 * Function interface for cross reference operations.
+	 *
+	 * @author Lorenzo Bettini
 	 */
 	@FunctionalInterface
 	public static interface EMFCrossReferenceValueFunction extends FeatureFunction<EObject> {
@@ -62,6 +64,8 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	 * });
 	 * // Result: Node 0 and Node 2 may reference themselves, Node 1 may not
 	 * }
+	 *
+	 * @author Lorenzo Bettini
 	 */
 	@FunctionalInterface
 	public static interface SelfReferencePolicy {

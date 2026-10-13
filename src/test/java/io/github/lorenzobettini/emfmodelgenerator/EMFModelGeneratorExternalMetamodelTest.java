@@ -43,6 +43,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFModelGeneratorExternalMetamodelTest {
 
 	private static final String TEST_OUTPUT_DIR = "target/test-output";

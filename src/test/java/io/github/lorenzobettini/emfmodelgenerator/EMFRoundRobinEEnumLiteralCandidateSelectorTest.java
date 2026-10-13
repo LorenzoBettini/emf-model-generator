@@ -22,6 +22,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Test class for EMFRoundRobinEEnumLiteralCandidateSelector.
  * This class achieves 100% coverage of the round-robin enum literal selection functionality.
+ *
+ * @author Lorenzo Bettini
  */
 class EMFRoundRobinEEnumLiteralCandidateSelectorTest {
 

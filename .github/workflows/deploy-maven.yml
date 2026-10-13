@@ -1,9 +1,18 @@
-# This workflow will build deploy the Maven artifacts to Maven Central
+# Publish Maven artifacts to the Central Portal.
 
 name: Deploy Maven
 
 on:
   workflow_dispatch:
+    inputs:
+      publish-type:
+        description: Publish a snapshot or a release
+        type: choice
+        options:
+          - snapshot
+          - release
+        default: snapshot
+        required: true
 
 jobs:
    build:
@@ -23,11 +32,12 @@ jobs:
         gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }} # Value of the GPG private key to import
         gpg-passphrase-env-var: MAVEN_GPG_PASSPHRASE # env variable for GPG private key passphrase
     - name: Remove SNAPSHOT
+      if: inputs.publish-type == 'release'
       run: >
         ./mvnw
         versions:set
         -DgenerateBackupPoms=false -DremoveSnapshot=true
-    - name: Publish to Apache Maven Central
+    - name: Publish to Central Portal
       run: >
         ./mvnw
         -Psonatype-oss-release

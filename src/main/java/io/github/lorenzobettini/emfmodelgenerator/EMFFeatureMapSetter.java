@@ -43,6 +43,8 @@ public class EMFFeatureMapSetter extends EMFCountConfigurableFeatureSetter<EAttr
 	 * An ordered plan for one physical FeatureMap. The plan records which selected
 	 * members have been materialized so entries produced in different phases can
 	 * retain their original relative order.
+	 *
+	 * @author Lorenzo Bettini
 	 */
 	public static final class FeatureMapPlan {
 		private final EObject owner;

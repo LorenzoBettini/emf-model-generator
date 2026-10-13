@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Test class for EMFUtils.
  * This class achieves 100% coverage of all the utility methods.
+ *
+ * @author Lorenzo Bettini
  */
 class EMFUtilsTest {
 

@@ -126,6 +126,9 @@ public class EMFModelGenerator {
 	private final List<PackageRegistration> loadedEcoreRegistrations = new ArrayList<>();
 	private EMFModelValidator.Factory validationBeforeSaveFactory;
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private record PackageRegistration(
 			EPackage.Registry registry, String nsURI, EPackage ePackage) {
 		void removeIfOwned() {

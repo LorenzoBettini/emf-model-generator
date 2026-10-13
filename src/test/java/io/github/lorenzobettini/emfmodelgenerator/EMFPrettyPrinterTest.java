@@ -12,6 +12,9 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFPrettyPrinterTest {
 
 	private EMFPrettyPrinter printer;

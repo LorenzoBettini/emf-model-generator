@@ -9,10 +9,16 @@ import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EcorePackage;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFCountConfigurableFeatureSetterTest {
 
 	private static final int DEFAULT_MAX_COUNT = 2;
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private static final class TestableCountSetter
 			extends EMFCountConfigurableFeatureSetter<EAttribute> {
 

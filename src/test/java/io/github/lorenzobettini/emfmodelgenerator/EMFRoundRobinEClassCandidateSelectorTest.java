@@ -22,6 +22,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Test class for EMFRoundRobinEClassCandidateSelector.
  * This class achieves 100% coverage of the round-robin EClass candidate selection functionality.
+ *
+ * @author Lorenzo Bettini
  */
 class EMFRoundRobinEClassCandidateSelectorTest {
 

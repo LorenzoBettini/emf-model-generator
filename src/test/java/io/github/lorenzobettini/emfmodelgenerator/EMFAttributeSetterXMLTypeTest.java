@@ -30,8 +30,14 @@ import org.eclipse.emf.ecore.util.Diagnostician;
 import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFAttributeSetterXMLTypeTest {
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private record GeneratedXMLTypeValue(
 			EDataType dataType, EAttribute attribute, EObject owner, Object value) {}
 

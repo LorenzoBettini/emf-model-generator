@@ -22,6 +22,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Test class for EMFRoundRobinFeatureMapGroupMemberSelector.
  * This class achieves 100% coverage of the round-robin feature map group member selection functionality.
+ *
+ * @author Lorenzo Bettini
  */
 class EMFRoundRobinFeatureMapGroupMemberSelectorTest {
 

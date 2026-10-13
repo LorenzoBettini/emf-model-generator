@@ -9,6 +9,9 @@ import org.eclipse.emf.common.util.BasicDiagnostic;
 import org.eclipse.emf.common.util.Diagnostic;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFValidationResultTest {
 
 	@Test

@@ -26,6 +26,8 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 
 	/**
 	 * Function interface for feature operations.
+	 *
+	 * @author Lorenzo Bettini
 	 */
 	@FunctionalInterface
 	public static interface FeatureFunction<R> extends Function<EObject, R> {

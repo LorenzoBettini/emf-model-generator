@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Test class for EMFFeatureMapSetter.
  * This class achieves 100% coverage of the feature map setter functionality.
+ *
+ * @author Lorenzo Bettini
  */
 class EMFFeatureMapSetterTest {
 
@@ -686,6 +688,9 @@ class EMFFeatureMapSetterTest {
 				assertEReferenceExists(assertEClassExists(mixedPackage, "Target"), "document"));
 	}
 
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private record MixedFixture(EObject document, EAttribute group, EAttribute text,
 			EReference child, EReference related, EClass targetClass,
 			EReference targetDocument) {

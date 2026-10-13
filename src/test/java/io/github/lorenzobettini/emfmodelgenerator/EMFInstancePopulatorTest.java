@@ -34,11 +34,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * @author Lorenzo Bettini
+ */
 class EMFInstancePopulatorTest {
-	@AfterEach
-	void cleanupRegisteredPackages() {
-		EMFTestUtils.cleanupRegisteredPackages();
-	}
+	/**
+	 * @author Lorenzo Bettini
+	 */
 	private static final class RecordingFeatureMapSetter extends EMFFeatureMapSetter {
 		private EMFAttributeSetter attributeSetter;
 		private EMFContainmentReferenceSetter containmentReferenceSetter;
@@ -105,6 +107,11 @@ class EMFInstancePopulatorTest {
 				}
 			}
 		}
+	}
+
+	@AfterEach
+	void cleanupRegisteredPackages() {
+		EMFTestUtils.cleanupRegisteredPackages();
 	}
 
 	private EObject createInstanceInResource(final EObject instance, final String fileName) {
