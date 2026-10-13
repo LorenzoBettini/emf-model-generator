@@ -501,109 +501,6 @@ generator.generateFrom(libraryClass);
 generator.save();
 ```
 
-### Cross-reference candidate selection
-
-The default `EMFRoundRobinEObjectCandidateSelector` receives the actual `EReference`
-for each request. It caches assignable EObjects by target `EClass` and uses one ordered,
-wrapping cursor per target class. References with the same target class share that cursor.
-The setter checks each candidate against the owner's self-reference policy, existing
-values for a unique many-valued reference, and live opposite capacity. A skipped target
-remains eligible on a later request. This is ordered round-robin traversal, not a promise
-of uniform target distribution. The default is already installed; to install it explicitly:
-
-```java
-EMFModelGenerator generator = new EMFModelGenerator();
-EClass rootClass = (EClass) generator.loadEcoreModel("model.ecore")
-    .getEClassifier("Person");
-generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(
-    new EMFRoundRobinEObjectCandidateSelector());
-generator.generateFrom(rootClass);
-generator.unloadEcoreModels();
-```
-
-`EMFRoundRobinReferenceAwareEObjectCandidateSelector` is an **opt-in** alternative for
-models where a candidate whose opposite has reached its upper bound cannot become
-available again for that same `EReference` before the next `reset()`. It shares one
-`EClass` source list and wrapping cursor across references, but retires saturated
-candidates separately for each actual `EReference`. For example, `Library.books` and
-`Author.books` may both target `Book`: a book saturated for one reference can still be
-selected for the other. Interleaved references and different active sets mean neither
-strategy promises evenly distributed targets.
-
-```java
-EMFModelGenerator generator = new EMFModelGenerator();
-EClass rootClass = (EClass) generator.loadEcoreModel("model.ecore")
-    .getEClassifier("Person");
-generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(
-    new EMFRoundRobinReferenceAwareEObjectCandidateSelector());
-generator.generateFrom(rootClass);
-generator.unloadEcoreModels();
-```
-
-The monotonic guarantee applies from the first selection until `reset()`. `eUnset`,
-reassignment, inverse updates, FeatureMap changes, callbacks, custom functions and
-external edits can restore opposite capacity. The caller must guarantee that a target
-retired for an `EReference` stays unavailable until `reset()`. Reset the configured
-selector (via `populator.getCrossReferenceSetter().reset()`) after nonmonotonic changes,
-adding resources, or changing metamodels; use the default when this guarantee cannot
-be made. Direct self-reference follows the setter's configurable owner policy;
-self and many-valued uniqueness rejections never retire a candidate. Keep custom
-self policies free of side effects because the opt-in selector skips retired targets.
-Custom function returns bypass the pool but still receive live self, unique-membership,
-and opposite checks.
-
-The ordinary selector has no per-reference active pool. The opt-in selector builds a
-`TreeSet` of stable indices only on the first observed opposite-capacity exhaustion for
-an `EReference`: construction costs `O(N log N)`,
-successor lookup and retirement cost `O(log N)`, and each such reference adds `O(N)`
-boxed entries for each such reference. This can reduce repeated saturated-candidate scans, at a
-memory cost when many references share a large target type.
-
-The v2 configuration API is source-incompatible with the earlier selector API. The
-cross-reference setter accepts only `EMFCrossReferenceCandidateSelectorStrategy`, whose
-`selectCandidate(owner, reference, evaluator)` method receives the actual `EReference`
-and a `Function<EObject, CandidateDecision>`. Implementations classify candidates with
-`ACCEPT`, `SKIP`, or `OPPOSITE_CAPACITY_EXHAUSTED`; only the last decision is eligible for
-opt-in retirement. The former `EMFCrossReferenceCandidateSelector` and
-`EMFReferenceAwareRoundRobinEObjectCandidateSelector` names have no compatibility aliases.
-Other configuration points use nominal interfaces:
-`EMFEClassCandidateSelectorStrategy` for an `EClass` request and result,
-`EMFEEnumLiteralCandidateSelectorStrategy` for an `EEnum` request and `EEnumLiteral` result,
-and `EMFFeatureMapGroupMemberSelectorStrategy` for an `EAttribute` request and
-`EStructuralFeature` result. For example, a custom enum strategy can delegate to the
-provided selector:
-
-```java
-EMFModelGenerator generator = new EMFModelGenerator();
-EMFEEnumLiteralCandidateSelectorStrategy selector =
-    new EMFEEnumLiteralCandidateSelectorStrategy() {
-        private final EMFRoundRobinEEnumLiteralCandidateSelector delegate =
-            new EMFRoundRobinEEnumLiteralCandidateSelector();
-
-        @Override
-        public EEnumLiteral getNextCandidate(EObject context, EEnum request) {
-            return delegate.getNextCandidate(context, request);
-        }
-
-        @Override
-        public boolean hasCandidates(EObject context, EEnum request) {
-            return delegate.hasCandidates(context, request);
-        }
-
-        @Override
-        public void reset() {
-            delegate.reset();
-        }
-    };
-generator.getInstancePopulator().setEnumLiteralSelectorStrategy(selector);
-```
-
-For a many-valued cross-reference with `unique=true`, each missing slot gets one finite
-selection traversal: an already-present target is skipped, and exhaustion stops cleanly.
-With `unique=false`, repeated targets are allowed. A custom cross-reference function is
-called once per request; a null or invalid result (self, already present for a unique
-reference, or opposite at capacity) falls back to the configured selector.
-
 ### Example 12: Custom Cross-Reference Function
 
 Customize one cross-reference while keeping the default validity checks for the rest:
@@ -749,6 +646,28 @@ The policy concerns only the case where the owner and the referenced object are 
 `EObject`; it does not detect or prevent longer cycles among non-containment references.
 It filters both the default round-robin candidates and the values returned by custom
 cross-reference functions, including non-containment feature map group members.
+
+## Cross-reference candidate selection
+
+`EMFRoundRobinEObjectCandidateSelector` is the default. It selects existing, type-compatible
+objects in a wrapping order. References with the same target `EClass` share a cursor, while
+each candidate is checked against the current reference constraints before assignment.
+
+`EMFRoundRobinReferenceAwareEObjectCandidateSelector` is an opt-in choice when a target
+whose opposite reference becomes full will stay full until the selector is reset. It
+retires that target only for the affected `EReference`; other references can still select it.
+
+```java
+EMFModelGenerator generator = new EMFModelGenerator();
+EMFInstancePopulator populator = generator.getInstancePopulator();
+populator.setCrossReferenceCandidateSelectorStrategy(
+    new EMFRoundRobinReferenceAwareEObjectCandidateSelector());
+```
+
+Use this selector only when you can guarantee that retired targets stay unavailable until
+`reset()`. If `eUnset`, reassignment, callbacks, or other model edits can restore opposite
+capacity, call `populator.getCrossReferenceSetter().reset()` after those changes, or keep
+the default selector.
 
 ## Using EMFInstancePopulator Directly
 
