@@ -24,7 +24,7 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	private SelfReferencePolicy selfReferencePolicy = (owner, reference) -> false;
 
 	/**
-	 * Function interface for cross reference operations.
+	 * Supplies a cross-reference candidate for the EObject that owns the reference.
 	 *
 	 * @author Lorenzo Bettini
 	 */
@@ -86,9 +86,11 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	}
 
 	/**
-	 * Set the candidate selector strategy for selecting existing EObject instances.
+	 * Set the strategy used to select an existing EObject for a cross-reference.
+	 * The selector receives the owner, the actual reference, and a function that
+	 * classifies each candidate for self-reference, uniqueness, and opposite capacity.
 	 * 
-	 * @param strategy the candidate selector strategy to use
+	 * @param strategy the cross-reference candidate selector to use
 	 */
 	public void setCandidateSelectorStrategy(EMFCrossReferenceCandidateSelectorStrategy strategy) {
 		this.candidateSelectorStrategy = strategy;
@@ -151,8 +153,9 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	/**
 	 * Set the cross reference on the given owner EObject.
 	 * 
-	 * If the reference is already set, then it will be skipped: if it is an opposite reference,
-	 * the existing referenced EObject will not be modified.
+	 * An already-set single-valued reference is skipped. A multi-valued reference with
+	 * an opposite may receive additional values up to its effective count even when
+	 * it already contains values.
 	 * 
 	 * For setting the cross reference, the resource set of the owner EObject is scanned for all existing EObjects that can be assigned to the reference.
 	 *
@@ -199,7 +202,8 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	 * Selects one valid existing value for a cross-reference without assigning it
 	 * to the owner. A configured function is tried first. A {@code null} or invalid
 	 * custom candidate falls back to the configured candidate selector. Default
-	 * candidates are filtered by the cycle policy and opposite multiplicity.
+	 * candidates are filtered by the self-reference policy, uniqueness, and opposite
+	 * multiplicity.
 	 * The FeatureMap coordinator reuses this operation for non-containment
 	 * group members.
 	 *

@@ -25,7 +25,7 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 		T2 extends EStructuralFeature, V> extends EMFCountConfigurableFeatureSetter<T1> {
 
 	/**
-	 * Function interface for feature operations.
+	 * Computes one feature value from the EObject that owns the feature.
 	 *
 	 * @author Lorenzo Bettini
 	 */
@@ -52,7 +52,8 @@ public abstract class EMFConfigurableFeatureSetter<T1 extends EStructuralFeature
 	}
 
 	/**
-	 * Sets the function associated with the given feature.
+	 * Sets the value function associated with the given feature. It receives
+	 * the EObject being populated when the feature needs a value.
 	 * 
 	 * @param feature  the feature to configure
 	 * @param function the function to use for generating values for the feature

@@ -45,7 +45,7 @@ public final class EMFResourceHelper {
 	 * Create a new EMFResourceHelper with a specific ResourceSet and output directory.
 	 * 
 	 * @param resourceSet the ResourceSet to use for creating resources
-	 * @param outputDirectory the directory where XMI files will be created
+	 * @param outputDirectory the directory used in generated resource file URIs
 	 */
 	public EMFResourceHelper(final ResourceSet resourceSet, final String outputDirectory) {
 		this.resourceSet = resourceSet;
@@ -54,7 +54,8 @@ public final class EMFResourceHelper {
 
 	/**
 	 * Set a prefix to be added to all generated file names.
-	 * @param string
+	 *
+	 * @param string the prefix placed before the package name
 	 */
 	public void setFilePrefix(String string) {
 		this.filePrefix = string;
@@ -93,8 +94,9 @@ public final class EMFResourceHelper {
 	}
 
 	/**
-	 * Get the file extension for a given EClass, using the hierarchical lookup:
-	 * EClass-specific -> EPackage-specific -> global -> default.
+	 * Get the file extension for a given EClass. An EClass-specific setting takes
+	 * precedence over its EPackage setting, which takes precedence over the global
+	 * setting. The global setting defaults to {@code xmi}.
 	 * 
 	 * @param eClass the EClass
 	 * @return the file extension (without the dot)
@@ -137,7 +139,8 @@ public final class EMFResourceHelper {
 
 	/**
 	 * Create a new Resource in the ResourceSet with a file URI based on the EClass.
-	 * The file name follows the pattern: {packageName}_{className}_{counter}.xmi
+	 * The file name follows the pattern described by
+	 * {@link #generateFileName(EPackage, EClass)}.
 	 * 
 	 * @param eClass the EClass for which to create a resource
 	 * @return the created Resource
@@ -152,8 +155,9 @@ public final class EMFResourceHelper {
 
 	/**
 	 * Generate a file name for the given EClass following the naming convention.
-	 * Pattern: {filePrefix}{packageName}_{className}_{counter}.{extension}
-	 * The extension is determined using hierarchical lookup: EClass -> EPackage -> global -> default.
+	 * The pattern is {@code prefix + packageName + "_" + className + "_" + counter
+	 * + "." + extension}. Counters are shared by EClasses with the same name, even
+	 * across packages. The extension follows the precedence in {@link #getFileExtension(EClass)}.
 	 * 
 	 * @param ePackage the EPackage
 	 * @param eClass the EClass
@@ -183,7 +187,8 @@ public final class EMFResourceHelper {
 	}
 
 	/**
-	 * Reset the file counters. Useful when starting a new generation cycle.
+	 * Reset the file counters. Subsequent names start at 1 again, which can reuse
+	 * URIs already present in the resource set.
 	 */
 	public void resetCounters() {
 		fileCounters.clear();

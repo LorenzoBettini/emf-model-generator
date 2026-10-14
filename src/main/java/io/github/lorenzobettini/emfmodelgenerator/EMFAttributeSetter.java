@@ -59,7 +59,7 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	private EMFEEnumLiteralCandidateSelectorStrategy enumLiteralSelectorStrategy = new EMFRoundRobinEEnumLiteralCandidateSelector();
 
 	/**
-	 * Function interface for attribute value operations.
+	 * Supplies an attribute value from the EObject that owns the attribute.
 	 *
 	 * @author Lorenzo Bettini
 	 */
@@ -72,9 +72,11 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 	}
 
 	/**
-	 * Set the candidate selector strategy for selecting enum literals.
+	 * Set the strategy used to select a literal from an enum attribute's EEnum type.
+	 * The literal's instance is assigned as the attribute value. By default,
+	 * literals are selected in round-robin order.
 	 * 
-	 * @param strategy the candidate selector strategy to use
+	 * @param strategy the enum literal selector to use
 	 */
 	public void setEnumLiteralSelectorStrategy(EMFEEnumLiteralCandidateSelectorStrategy strategy) {
 		this.enumLiteralSelectorStrategy = strategy;
@@ -153,8 +155,7 @@ public class EMFAttributeSetter extends EMFConfigurableFeatureSetter<EAttribute,
 
 	/**
 	 * Generates one sample value for an attribute without assigning it to the owner.
-	 * Uses a
-	 * per-attribute counter to generate unique incremental values. ID attributes
+	 * Uses a per-EClass, per-attribute counter to vary generated values. ID attributes
 	 * instead use a counter shared across all EClasses to avoid duplicate IDs. For
 	 * enum types, uses the configured enum literal selector strategy to select
 	 * enum literals (by default, round-robin). If a custom function is configured

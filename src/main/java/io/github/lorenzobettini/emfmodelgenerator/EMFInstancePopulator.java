@@ -222,6 +222,9 @@ public class EMFInstancePopulator {
 
 	/**
 	 * Set a custom function for generating values for the given containment EReference.
+	 * The function receives the owner. If it returns {@code null} or an EObject
+	 * already contained by another object, the configured EClass selector creates
+	 * a value instead.
 	 * 
 	 * @param reference the containment EReference for which to set the function
 	 * @param function  the function to generate values for the containment reference
@@ -232,10 +235,12 @@ public class EMFInstancePopulator {
 	}
 
 	/**
-	 * Set the strategy for selecting instantiable subclasses when creating instances
-	 * for types in containment references.
+	 * Set the strategy that chooses an instantiable EClass for a containment reference.
+	 * The selector receives the owning EObject and the reference's declared EClass type;
+	 * the selected class is instantiated when a custom containment function does not
+	 * provide a usable value. The default selector cycles through instantiable subclasses.
 	 * 
-	 * @param strategy the heterogeneous structural-feature selector strategy
+	 * @param strategy the EClass selector used for containment values
 	 */
 	public void setInstantiableSubclassSelectorStrategy(EMFEClassCandidateSelectorStrategy strategy) {
 		containmentReferenceSetter.setInstantiableSubclassSelectorStrategy(strategy);
@@ -260,25 +265,30 @@ public class EMFInstancePopulator {
 	 * populator.getCrossReferenceSetter().reset();
 	 * }
 	 * 
-	 * @param strategy the candidate selector strategy
+	 * @param strategy the selector for existing EObjects assignable to cross-references
 	 */
 	public void setCrossReferenceCandidateSelectorStrategy(EMFCrossReferenceCandidateSelectorStrategy strategy) {
 		crossReferenceSetter.setCandidateSelectorStrategy(strategy);
 	}
 
 	/**
-	 * Set the strategy for selecting enum literals when generating enum attribute values.
+	 * Set the strategy that chooses an {@link org.eclipse.emf.ecore.EEnumLiteral}
+	 * for an enum attribute. The selector receives the attribute's EEnum type; the
+	 * selected literal's instance becomes the attribute value. The default cycles
+	 * through that enum's literals.
 	 * 
-	 * @param strategy the candidate selector strategy
+	 * @param strategy the enum literal selector used for enum attribute values
 	 */
 	public void setEnumLiteralSelectorStrategy(EMFEEnumLiteralCandidateSelectorStrategy strategy) {
 		attributeSetter.setEnumLiteralSelectorStrategy(strategy);
 	}
 
 	/**
-	 * Set the strategy for selecting feature map group members when populating feature maps.
+	 * Set the strategy that chooses structural features belonging to a FeatureMap group.
+	 * The selector receives the FeatureMap attribute and chooses a member for each
+	 * planned entry. The default cycles through the group's members in Ecore order.
 	 * 
-	 * @param strategy the candidate selector strategy
+	 * @param strategy the structural-feature selector for FeatureMap entries
 	 */
 	public void setGroupMemberSelectorStrategy(
 			EMFFeatureMapGroupMemberSelectorStrategy strategy) {
@@ -309,7 +319,7 @@ public class EMFInstancePopulator {
 	 * contained objects are created and have their attributes populated, but their
 	 * containment references are not expanded.
 	 *
-	 * @param maxDepth the maximum depth
+	 * @param maxDepth the maximum containment depth; the default is {@code 5}
 	 */
 	public void setMaxDepth(final int maxDepth) {
 		this.maxDepth = maxDepth;
