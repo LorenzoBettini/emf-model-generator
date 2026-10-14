@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
 import io.github.lorenzobettini.emfmodelgenerator.EMFRoundRobinEObjectCandidateSelector;
+import io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils;
 
 /**
  * @author Lorenzo Bettini
@@ -31,20 +32,20 @@ class InstrumentedEObjectCandidateSelectorTest {
 			final var models = generator.generateFromSeveral(root);
 			final var baseline = new EMFRoundRobinEObjectCandidateSelector();
 			final var instrumented = new InstrumentedEObjectCandidateSelector();
-			final var expected = List.of(baseline.getNextCandidate(models.getFirst(), root),
-					baseline.getNextCandidate(models.getFirst(), root),
-					baseline.getNextCandidate(models.getFirst(), root));
-			final var actual = List.of(instrumented.getNextCandidate(models.getFirst(), root),
-					instrumented.getNextCandidate(models.getFirst(), root),
-					instrumented.getNextCandidate(models.getFirst(), root));
+			final var expected = List.of(baseline.getNextCandidate(models.getFirst(), EMFTestUtils.referenceFor(root)),
+					baseline.getNextCandidate(models.getFirst(), EMFTestUtils.referenceFor(root)),
+					baseline.getNextCandidate(models.getFirst(), EMFTestUtils.referenceFor(root)));
+			final var actual = List.of(instrumented.getNextCandidate(models.getFirst(), EMFTestUtils.referenceFor(root)),
+					instrumented.getNextCandidate(models.getFirst(), EMFTestUtils.referenceFor(root)),
+					instrumented.getNextCandidate(models.getFirst(), EMFTestUtils.referenceFor(root)));
 			assertThat(actual).containsExactlyElementsOf(expected);
 			assertThat(actual.get(1)).isNotSameAs(actual.getFirst());
 			assertThat(instrumented.snapshot().computeCalls()).isEqualTo(1);
 			assertThat(instrumented.snapshot().candidateEntries()).isEqualTo(3);
 			instrumented.reset();
 			baseline.reset();
-			assertThat(instrumented.getNextCandidate(models.getFirst(), root))
-					.isSameAs(baseline.getNextCandidate(models.getFirst(), root));
+			assertThat(instrumented.getNextCandidate(models.getFirst(), EMFTestUtils.referenceFor(root)))
+					.isSameAs(baseline.getNextCandidate(models.getFirst(), EMFTestUtils.referenceFor(root)));
 			assertThat(instrumented.snapshot().computeCalls()).isEqualTo(2);
 		} finally {
 			loader.unloadEcoreModels();
@@ -131,6 +132,6 @@ class InstrumentedEObjectCandidateSelectorTest {
 			return entry.getEStructuralFeature().getName() + '='
 					+ value(entry.getValue(), false, ids);
 		}
-		return attribute ? String.valueOf(item) : String.valueOf(ids.get(item));
+		return attribute ? String.valueOf(item) : String.valueOf(ids.get(item)); // NOSONAR
 	}
 }

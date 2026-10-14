@@ -2,7 +2,7 @@
 
 ## Opt-in reference-aware monotonic selector
 
-Install `new EMFReferenceAwareRoundRobinEObjectCandidateSelector()` through
+Install `new EMFRoundRobinReferenceAwareEObjectCandidateSelector()` through
 `generator.getInstancePopulator().setCrossReferenceCandidateSelectorStrategy(...)`
 only when a saturated opposite cannot become available again before the next
 selector reset. `eUnset`, reassignment, inverse updates, FeatureMap changes,
@@ -11,14 +11,16 @@ after changing resources or metamodels; the selector rejects a different
 resource scope without reset. Self-reference policies should be pure. The
 ordinary round-robin selector remains the default. The opt-in selector uses
 one `EClass` candidate list and cursor plus a `TreeSet` of stable active indices
-per bounded `EReference` (O(N log N) construction, O(log N) navigation and
-retirement, O(N) extra entries per bounded reference). Large numbers of
+created only after the first observed opposite-capacity exhaustion for an `EReference`
+(O(N log N) construction, O(log N) navigation and retirement, O(N) extra entries
+per such reference). Large numbers of
 bounded references to the same type may justify using the default instead.
 
 The new `reference-aware-comparison` preset runs the current default and the
 opt-in selector in separate serial uninstrumented JVM forks. It preserves raw
 nanoseconds, actual EObjects/resources, round-trip preflight, graph fingerprints,
-source and host hashes, failures, medians, quartiles, CSV/SVG figures, and a
+both selector source hashes and host metadata, failures, medians, quartiles,
+CSV/SVG figures, and a
 report-only regeneration path. The small development smoke is:
 
 ```sh

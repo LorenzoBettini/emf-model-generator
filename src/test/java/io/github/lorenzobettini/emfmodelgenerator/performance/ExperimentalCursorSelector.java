@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EReference;
 
 import io.github.lorenzobettini.emfmodelgenerator.EMFRoundRobinEObjectCandidateSelector;
 
@@ -25,7 +26,8 @@ final class ExperimentalCursorSelector extends EMFRoundRobinEObjectCandidateSele
 	}
 
 	@Override
-	public EObject getNextCandidate(final EObject context, final EClass type) {
+	public EObject getNextCandidate(final EObject context, final EReference reference) {
+		final EClass type = reference.getEReferenceType();
 		final var candidates = getOrCompute(context, type);
 		if (candidates.isEmpty()) {
 			return null;

@@ -816,7 +816,7 @@ class EMFContainmentReferenceSetterTest {
 		testPackage.getEClassifiers().add(subClass2);
 
 		// Create a custom strategy that always returns the first subclass
-		EMFCandidateSelectorStrategy<EClass, EClass> customStrategy = new EMFCandidateSelectorStrategy<EClass, EClass>() {
+		EMFEClassCandidateSelectorStrategy customStrategy = new EMFEClassCandidateSelectorStrategy() {
 			@Override
 			public EClass getNextCandidate(EObject context, EClass type) {
 				return subClass1;

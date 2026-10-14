@@ -885,7 +885,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 					assertThat(target.eIsProxy()).isFalse();
 					assertThat(bpmnReferenceValues(target, opposite).contains(owner))
 							.as(owner.eClass().getName() + "." + reference.getName())
-							.isTrue();
+							.isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
 				}
 			}
 		}
@@ -952,8 +952,8 @@ class EMFModelGeneratorExternalMetamodelTest {
 		EcoreUtil.resolveAll(reloaded);
 		var after = bpmnProxies(reloaded);
 		assertThat(after)
-				.anyMatch(proxy -> !proxy.reference().isResolveProxies());
-		assertThat(after.size()).isLessThan(before.size());
+				.anyMatch(proxy -> !proxy.reference().isResolveProxies())
+				.hasSizeLessThan(before.size());
 		assertThat(EMFModelValidator.standard().validateAll(bpmnRoots(reloaded)).isValid())
 				.isFalse();
 	}
@@ -1066,7 +1066,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 	}
 
 	@Test
-	void testBpmnResourceAwareCrossReferencesRoundTrip() throws Exception {
+	void testBpmnResourceAwareCrossReferencesRoundTrip() throws Exception { // NOSONAR: we need many assertions
 		var diagramClass = bpmnDiagramClass();
 		var messagingEdgeClass = assertEClassExists(diagramClass.getEPackage(), "MessagingEdge");
 		var sourceReference = assertEReferenceExists(messagingEdgeClass, "source");
@@ -1115,9 +1115,9 @@ class EMFModelGeneratorExternalMetamodelTest {
 		assertThat(source.eResource()).isSameAs(populatedEdge.eResource());
 		assertThat(target.eResource()).isSameAs(populatedEdge.eResource());
 		assertThat(bpmnReferenceValues(source, sourceReference.getEOpposite())
-				.contains(populatedEdge)).isTrue();
+				.contains(populatedEdge)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
 		assertThat(bpmnReferenceValues(target, targetReference.getEOpposite())
-				.contains(populatedEdge)).isTrue();
+				.contains(populatedEdge)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
 		var groupedActivity = allBpmnObjects(generator.getResourceSet()).stream()
 				.filter(activityClass::isInstance)
 				.filter(activity -> !bpmnReferenceValues(activity, groupsReference).isEmpty())
@@ -1126,7 +1126,7 @@ class EMFModelGeneratorExternalMetamodelTest {
 				.iterator().next();
 		assertThat(group.eResource()).isSameAs(groupedActivity.eResource());
 		assertThat(bpmnReferenceValues(group, groupsReference.getEOpposite())
-				.contains(groupedActivity)).isTrue();
+				.contains(groupedActivity)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
 		for (var owner : allBpmnObjects(generator.getResourceSet())) {
 			for (var reference : owner.eClass().getEAllReferences()) {
 				if (!requiresBpmnLocalTarget(reference)) {
@@ -1154,18 +1154,18 @@ class EMFModelGeneratorExternalMetamodelTest {
 		assertThat(reloadedSource.eResource()).isSameAs(reloadedEdge.eResource());
 		assertThat(reloadedTarget.eResource()).isSameAs(reloadedEdge.eResource());
 		assertThat(bpmnReferenceValues(reloadedSource, sourceReference.getEOpposite())
-				.contains(reloadedEdge)).isTrue();
+				.contains(reloadedEdge)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
 		assertThat(bpmnReferenceValues(reloadedTarget, targetReference.getEOpposite())
-				.contains(reloadedEdge)).isTrue();
+				.contains(reloadedEdge)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
 		var reloadedActivity = reloaded.getEObject(EcoreUtil.getURI(groupedActivity), true);
 		var reloadedGroup = reloaded.getEObject(EcoreUtil.getURI(group), true);
 		assertThat(reloadedActivity).isNotNull();
 		assertThat(reloadedGroup).isNotNull();
 		assertThat(reloadedGroup.eResource()).isSameAs(reloadedActivity.eResource());
 		assertThat(bpmnReferenceValues(reloadedActivity, groupsReference)
-				.contains(reloadedGroup)).isTrue();
+				.contains(reloadedGroup)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
 		assertThat(bpmnReferenceValues(reloadedGroup, groupsReference.getEOpposite())
-				.contains(reloadedActivity)).isTrue();
+				.contains(reloadedActivity)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
 	}
 
 	@Test

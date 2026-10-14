@@ -151,7 +151,7 @@ class EMFFeatureMapSetterTest {
 		final var writersRef = assertEReferenceExists(libraryClass, "writers");
 		
 		final var customSelector =
-				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+				new EMFFeatureMapGroupMemberSelectorStrategy() {
 			@Override
 			public EStructuralFeature getNextCandidate(EObject context, EAttribute type) {
 				return writersRef;
@@ -258,7 +258,7 @@ class EMFFeatureMapSetterTest {
 			}
 		});
 		setter.setGroupMemberSelectorStrategy(
-				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+				new EMFFeatureMapGroupMemberSelectorStrategy() {
 					@Override
 					public EStructuralFeature getNextCandidate(final EObject context,
 							final EAttribute type) {
@@ -552,7 +552,7 @@ class EMFFeatureMapSetterTest {
 		final var fixture = mixedFixture();
 		final var selections = new AtomicInteger();
 		setter.setGroupMemberSelectorStrategy(
-				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+				new EMFFeatureMapGroupMemberSelectorStrategy() {
 					@Override
 					public EStructuralFeature getNextCandidate(final EObject context,
 							final EAttribute type) {
@@ -576,7 +576,7 @@ class EMFFeatureMapSetterTest {
 		final var fixture = mixedFixture();
 		final var selections = new AtomicInteger();
 		setter.setGroupMemberSelectorStrategy(
-				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+				new EMFFeatureMapGroupMemberSelectorStrategy() {
 					@Override
 					public EStructuralFeature getNextCandidate(final EObject context,
 							final EAttribute type) {
@@ -615,7 +615,7 @@ class EMFFeatureMapSetterTest {
 	void alreadySetAndEmptyFeatureMapsProduceEmptyPlansWithoutSelection() {
 		final var fixture = mixedFixture();
 		final var selections = new AtomicInteger();
-		setter.setGroupMemberSelectorStrategy(new EMFCandidateSelectorStrategy<>() {
+		setter.setGroupMemberSelectorStrategy(new EMFFeatureMapGroupMemberSelectorStrategy() {
 			@Override
 			public EStructuralFeature getNextCandidate(final EObject context,
 					final EAttribute type) {
@@ -658,9 +658,9 @@ class EMFFeatureMapSetterTest {
 		assertThat(plan.groupMembers()).containsExactly(fixture.text());
 	}
 
-	private EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> selectorReturning(
+	private EMFFeatureMapGroupMemberSelectorStrategy selectorReturning(
 			final EStructuralFeature feature) {
-		return new EMFCandidateSelectorStrategy<>() {
+		return new EMFFeatureMapGroupMemberSelectorStrategy() {
 			@Override
 			public EStructuralFeature getNextCandidate(final EObject context,
 					final EAttribute type) {

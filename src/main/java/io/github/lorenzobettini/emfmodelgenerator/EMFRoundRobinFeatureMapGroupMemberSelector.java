@@ -37,7 +37,14 @@ import org.eclipse.emf.ecore.EStructuralFeature;
  * @author Lorenzo Bettini
  */
 public class EMFRoundRobinFeatureMapGroupMemberSelector
-		extends EMFAbstractCachedRoundRobinCandidateSelector<EAttribute, EStructuralFeature> {
+		extends EMFAbstractCachedRoundRobinCandidateSelector<
+			EAttribute, EAttribute, EStructuralFeature>
+		implements EMFFeatureMapGroupMemberSelectorStrategy {
+
+	@Override
+	protected EAttribute keyFor(final EAttribute request) {
+		return request;
+	}
 
 	@Override
 	protected List<EStructuralFeature> compute(final EObject context, final EAttribute key) {

@@ -3,7 +3,6 @@ package io.github.lorenzobettini.emfmodelgenerator;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.util.EcoreUtil;
@@ -20,12 +19,12 @@ public class EMFContainmentReferenceSetter
 		extends EMFConfigurableFeatureSetter<EReference, EReference, EObject> {
 
 	private static final int DEFAULT_MULTI_VALUED_COUNT = 2;
-	private EMFCandidateSelectorStrategy<EClass, EClass> instantiableSubclassSelectorStrategy =
+	private EMFEClassCandidateSelectorStrategy instantiableSubclassSelectorStrategy =
 			new EMFRoundRobinEClassCandidateSelector();
 	private Collection<EObject> assignedEObjects;
 
 	/**
-	 * Function interface for containment reference operations.
+	 * Supplies a containment value from the EObject that owns the reference.
 	 *
 	 * @author Lorenzo Bettini
 	 */
@@ -38,12 +37,14 @@ public class EMFContainmentReferenceSetter
 	}
 
 	/**
-	 * Set the candidate selector strategy for selecting instantiable subclasses.
+	 * Set the strategy used to choose an instantiable EClass for a containment value.
+	 * The selector receives the owner and the reference's declared EClass type.
+	 * By default, instantiable subclasses are selected in round-robin order.
 	 *
-	 * @param strategy the candidate selector strategy to use
+	 * @param strategy the EClass selector to use
 	 */
 	public void setInstantiableSubclassSelectorStrategy(
-			final EMFCandidateSelectorStrategy<EClass, EClass> strategy) {
+			final EMFEClassCandidateSelectorStrategy strategy) {
 		this.instantiableSubclassSelectorStrategy = strategy;
 	}
 

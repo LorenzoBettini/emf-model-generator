@@ -7,11 +7,26 @@ import unittest
 from pathlib import Path
 
 import publication_evaluation as publication
+import performance_evaluation as performance
 import reference_aware_comparison as comparison
 import reference_aware_diagnostics as diagnostics
 
 
 class ReferenceAwareComparisonTest(unittest.TestCase):
+    def test_selector_provenance_sources_exist_for_both_modes(self):
+        self.assertEqual(set(comparison.SELECTOR_SOURCES), set(comparison.MODES))
+        for mode, filename in comparison.SELECTOR_SOURCES.items():
+            with self.subTest(mode=mode):
+                path = comparison.SELECTOR_SOURCE_DIR / filename
+                self.assertTrue(path.is_file(), path)
+                self.assertTrue(path.is_relative_to(performance.ROOT))
+                self.assertEqual(len(publication.file_hash(path)), 64)
+        for filename in comparison.SHARED_SELECTION_SOURCES:
+            with self.subTest(shared=filename):
+                path = comparison.SELECTOR_SOURCE_DIR / filename
+                self.assertTrue(path.is_file(), path)
+                self.assertEqual(len(publication.file_hash(path)), 64)
+
     def args(self, **overrides):
         values = dict(preset="reference-aware-comparison", roots="100,1000,5000,10000,20000",
                       scenarios="plugin-eclipse,ant,extlibrary", heap="2g", timeout=1800,

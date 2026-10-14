@@ -127,13 +127,13 @@ public final class EMFUtils {
 
 	/**
 	 * Calculate the effective count of values to generate for a multi-valued feature.
-	 * This respects both the lower and upper bounds of the feature.
+	 * This applies the lower bound and any positive upper bound of the feature.
 	 * 
 	 * <p>The method returns a count that satisfies the following constraints:
 	 * <ul>
-	 * <li>If the feature has an upper bound (not -1), the count will not exceed it</li>
+	 * <li>If the feature has a positive upper bound, the count will not exceed it</li>
 	 * <li>If the feature has a lower bound, the count will be at least that value</li>
-	 * <li>If both bounds are set, the count will be within the range [lowerBound, upperBound]</li>
+	 * <li>The lower bound is applied after the upper bound</li>
 	 * </ul>
 	 * 
 	 * <p>Examples:
@@ -145,7 +145,7 @@ public final class EMFUtils {
 	 * 
 	 * @param feature the feature to calculate the count for
 	 * @param defaultCount the default count to use if bounds do not restrict it
-	 * @return the number of values to generate, respecting the feature's bounds
+	 * @return the number of values to generate after applying these bounds
 	 */
 	public static int getEffectiveCount(final EStructuralFeature feature, final int defaultCount) {
 		final int lowerBound = feature.getLowerBound();
@@ -399,8 +399,8 @@ public final class EMFUtils {
 	 * If the opposite reference is multi-valued, then it is possible to add the value only if the value's list has not already reached
 	 * the upper bound (if any).
 	 * 
-	 * @param reference
-	 * @param value
+	 * @param reference the reference whose opposite capacity is checked
+	 * @param value the candidate target EObject
 	 * @return true if it is possible to set the value to the reference, false otherwise
 	 */
 	public static boolean canSetInThePresenceOfOppositeReference(EReference reference, EObject value) {

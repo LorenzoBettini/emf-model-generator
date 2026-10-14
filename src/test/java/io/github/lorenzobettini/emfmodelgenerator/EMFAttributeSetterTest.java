@@ -1100,8 +1100,8 @@ class EMFAttributeSetterTest {
 		colorEnum.getELiterals().add(blue);
 
 		// Create a custom strategy that always returns RED
-		EMFCandidateSelectorStrategy<EEnum, EEnumLiteral> customStrategy = 
-			new EMFCandidateSelectorStrategy<EEnum, EEnumLiteral>() {
+		EMFEEnumLiteralCandidateSelectorStrategy customStrategy =
+			new EMFEEnumLiteralCandidateSelectorStrategy() {
 			@Override
 			public EEnumLiteral getNextCandidate(EObject context, EEnum type) {
 				return red;

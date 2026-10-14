@@ -4,12 +4,16 @@ import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createReso
 import static io.github.lorenzobettini.emfmodelgenerator.EMFTestUtils.createResourceSet;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
+import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EcoreFactory;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
@@ -41,9 +45,14 @@ class EMFAbstractCachedRoundRobinCandidateSelectorTest {
 	 * @author Lorenzo Bettini
 	 */
 	private static class TestableCachedRoundRobinSelector
-			extends EMFAbstractCachedRoundRobinCandidateSelector<EClass, EObject> {
+			extends EMFAbstractCachedRoundRobinCandidateSelector<EClass, EClass, EObject> {
 		private final List<EObject> candidatesList = new ArrayList<>();
 		private int computeCallCount = 0;
+
+		@Override
+		protected EClass keyFor(final EClass request) {
+			return request;
+		}
 
 		@Override
 		protected List<EObject> compute(final EObject context, final EClass key) {
@@ -58,6 +67,28 @@ class EMFAbstractCachedRoundRobinCandidateSelectorTest {
 
 		public int getComputeCallCount() {
 			return computeCallCount;
+		}
+	}
+
+	/**
+	 * Resolves reference requests to their target-class cache keys.
+	 *
+	 * @author Lorenzo Bettini
+	 */
+	private static final class ReferenceRequestSelector
+			extends EMFAbstractCachedRoundRobinCandidateSelector<EClass, EReference, EObject> {
+		private final Map<EClass, List<EObject>> candidates = new HashMap<>();
+		private int computeCount;
+
+		@Override
+		protected EClass keyFor(final EReference request) {
+			return request.getEReferenceType();
+		}
+
+		@Override
+		protected List<EObject> compute(final EObject context, final EClass key) {
+			computeCount++;
+			return candidates.get(key);
 		}
 	}
 
@@ -153,5 +184,43 @@ class EMFAbstractCachedRoundRobinCandidateSelectorTest {
 
 		assertThat(result).isNull();
 		assertThat(selector.getComputeCallCount()).isEqualTo(1);
+	}
+
+	@Test
+	void referenceRequestsShareCacheAndCursorOnlyForTheSameTargetClass() throws IOException {
+		final var generator = new EMFModelGenerator();
+		try {
+			final var ecore = generator.loadEcoreModel(
+					"src/test/resources/inputs/extlibrary.ecore");
+			final var book = (EClass) ecore.getEClassifier("Book");
+			final var library = (EClass) ecore.getEClassifier("Library");
+			final var writer = (EClass) ecore.getEClassifier("Writer");
+			final var author = (EReference) book.getEStructuralFeature("author");
+			final var writers = (EReference) library.getEStructuralFeature("writers");
+			final var books = (EReference) library.getEStructuralFeature("books");
+			final var firstWriter = EcoreUtil.create(writer);
+			final var secondWriter = EcoreUtil.create(writer);
+			final var firstBook = EcoreUtil.create(book);
+			final var secondBook = EcoreUtil.create(book);
+			final var keyed = new ReferenceRequestSelector();
+			keyed.candidates.put(writer, List.of(firstWriter, secondWriter));
+			keyed.candidates.put(book, List.of(firstBook, secondBook));
+			final var libraryContext = EcoreUtil.create(library);
+
+			assertThat(keyed.hasCandidates(libraryContext, author)).isTrue();
+			assertThat(keyed.getNextCandidate(libraryContext, author)).isSameAs(firstWriter);
+			assertThat(keyed.getNextCandidate(libraryContext, writers)).isSameAs(secondWriter);
+			assertThat(keyed.getNextCandidate(libraryContext, books)).isSameAs(firstBook);
+			assertThat(keyed.getNextCandidate(libraryContext, author)).isSameAs(firstWriter);
+			assertThat(keyed.getNextCandidate(libraryContext, books)).isSameAs(secondBook);
+			assertThat(keyed.computeCount).isEqualTo(2);
+
+			keyed.reset();
+			assertThat(keyed.getNextCandidate(libraryContext, writers)).isSameAs(firstWriter);
+			assertThat(keyed.getNextCandidate(libraryContext, books)).isSameAs(firstBook);
+			assertThat(keyed.computeCount).isEqualTo(4);
+		} finally {
+			generator.unloadEcoreModels();
+		}
 	}
 }
