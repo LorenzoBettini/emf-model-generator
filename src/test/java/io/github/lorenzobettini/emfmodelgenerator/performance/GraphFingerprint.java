@@ -23,6 +23,14 @@ final class GraphFingerprint {
 	}
 
 	static String compute(final ResourceSet resourceSet) {
+		return compute(resourceSet, true);
+	}
+
+	static String computeLogical(final ResourceSet resourceSet) {
+		return compute(resourceSet, false);
+	}
+
+	private static String compute(final ResourceSet resourceSet, final boolean physical) {
 		final MessageDigest digest;
 		try {
 			digest = MessageDigest.getInstance("SHA-256");
@@ -35,9 +43,11 @@ final class GraphFingerprint {
 			if ("ecore".equals(resource.getURI().fileExtension())) {
 				continue;
 			}
-			add(digest, "resource");
-			add(digest, resource.getURI().lastSegment());
-			add(digest, Integer.toString(resource.getContents().size()));
+			if (physical) {
+				add(digest, "resource");
+				add(digest, resource.getURI().lastSegment());
+				add(digest, Integer.toString(resource.getContents().size()));
+			}
 			final var iterator = resource.getAllContents();
 			while (iterator.hasNext()) {
 				final var object = iterator.next();

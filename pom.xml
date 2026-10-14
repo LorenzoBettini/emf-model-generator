@@ -373,6 +373,31 @@
 						<version>3.6.4</version>
 						<executions>
 							<execution>
+								<id>run-resource-layout</id>
+								<goals><goal>exec</goal></goals>
+								<configuration>
+									<executable>java</executable>
+									<classpathScope>test</classpathScope>
+									<arguments>
+										<argument>-Xms${benchmark.heap}</argument>
+										<argument>-Xmx${benchmark.heap}</argument>
+										<argument>-XX:+UseG1GC</argument>
+										<argument>-Dfile.encoding=UTF-8</argument>
+										<argument>-cp</argument>
+										<classpath/>
+										<argument>io.github.lorenzobettini.emfmodelgenerator.performance.ResourceLayoutBenchmark</argument>
+										<argument>${benchmark.roots}</argument>
+										<argument>${benchmark.resources}</argument>
+										<argument>${benchmark.warmups}</argument>
+										<argument>${benchmark.repetitions}</argument>
+										<argument>${benchmark.max-eobjects}</argument>
+										<argument>${benchmark.raw}</argument>
+										<argument>${benchmark.preflight}</argument>
+										<argument>${benchmark.diagnostic}</argument>
+									</arguments>
+								</configuration>
+							</execution>
+							<execution>
 								<id>run-profile-pilot</id>
 								<goals>
 									<goal>exec</goal>

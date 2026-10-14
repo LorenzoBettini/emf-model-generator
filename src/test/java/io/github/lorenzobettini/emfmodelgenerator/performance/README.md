@@ -492,3 +492,48 @@ timer and counter overhead, so it is not a substitute for baseline timing.
 The selectors cache by target EClass and reset once before cross-reference
 population. Counts of model resources and EObjects describe the generated
 model, but root scaling varies both together; it does not isolate their costs.
+
+## Fixed logical model / resource layout
+
+The `resource-layout` preset creates ordered EXTLibrary `Library` roots with
+depth 1 and all feature maxima 1, places consecutive root blocks into a chosen
+number of model resources in one fresh ResourceSet, then calls the public
+`EMFInstancePopulator.populateEObjects(allRoots)` once. The normal
+`generateFromSeveral` facade still creates one resource per root; this preset
+does not time that facade. Every layout runs in its own serial, uninstrumented
+forked JVM, with a fresh graph for preflight, warmups and each measured sample.
+
+Development smoke:
+
+```sh
+./mvnw -q -DskipTests test-compile
+python3 scripts/performance_evaluation.py run --preset resource-layout --scenario extlibrary --roots 1000 --resources 1,10,100,1000 --heap 512m --timeout 180 --max-eobjects 5000 --max-resources 1200 --warmups 1 --repetitions 2
+python3 scripts/performance_evaluation.py report --latest resource-layout
+```
+
+The Dell series is opt-in and uses 20,000 roots in 1, 20, 200, 2,000 and
+20,000 resources with `--heap 2g --timeout 900 --max-eobjects 100000
+--max-resources 25000 --warmups 3 --repetitions 7`. It was not run on the
+development host. The manifest records source and fixture hashes, host/JDK,
+JVM flags, caps, status, command and logs. The raw CSV records root creation,
+resource creation plus attachment, population, and their sum in nanoseconds.
+The report and figure CSV/SVG show median and p25/p75 for each stage; failures
+and caps remain in the manifest, summary and `failures.csv`.
+
+Each layout has a full-size in-memory validation and XMI byte-stream reload
+validation outside timing. The canonical graph fingerprint includes EClasses,
+all attributes and their set state, containment, FeatureMaps and exact target
+indices for cross-references. It ignores only physical resource boundaries and
+URIs. `candidate-discovery.csv` records separate direct
+`EMFUtils.findAllAssignableInstances` scans for Book and Writer, their counts,
+logical index order hashes and cold-scan time. These scans are excluded from
+population clocks and do not count selector cache misses. The default selector
+caches candidate lists by EClass, so cold scans are not necessarily repeated
+for each reference assignment.
+
+EXTLibrary declares `Writer.name` transient and volatile. The ordinary
+populator sets it in memory, but XMI omits it. Thus reloads validate and match
+each other across layouts, while their full fingerprints differ from the
+in-memory graph; preflight CSVs retain both hashes and `roundtrip_equal=false`.
+The report discloses this semantic difference rather than normalizing it.
+Fixed-size layout sweeps do not establish a universal complexity exponent.
