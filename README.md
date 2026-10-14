@@ -652,10 +652,15 @@ cross-reference functions, including non-containment feature map group members.
 `EMFRoundRobinEObjectCandidateSelector` is the default. It selects existing, type-compatible
 objects in a wrapping order. References with the same target `EClass` share a cursor, while
 each candidate is checked against the current reference constraints before assignment.
+The default keeps rejected candidates available for later checks as the model changes.
 
 `EMFRoundRobinReferenceAwareEObjectCandidateSelector` is an opt-in choice when a target
 whose opposite reference becomes full will stay full until the selector is reset. It
-retires that target only for the affected `EReference`; other references can still select it.
+shares the target `EClass` candidate list and wrapping cursor across references, but
+retires saturated candidates separately for each actual `EReference`. For example, if
+`Library.books` and `Author.books` both target `Book`, a book retired for one reference
+can still be selected for the other. Interleaved references and different available
+candidates mean neither selector promises evenly distributed targets.
 
 ```java
 EMFModelGenerator generator = new EMFModelGenerator();
@@ -664,10 +669,21 @@ populator.setCrossReferenceCandidateSelectorStrategy(
     new EMFRoundRobinReferenceAwareEObjectCandidateSelector());
 ```
 
-Use this selector only when you can guarantee that retired targets stay unavailable until
-`reset()`. If `eUnset`, reassignment, callbacks, or other model edits can restore opposite
-capacity, call `populator.getCrossReferenceSetter().reset()` after those changes, or keep
-the default selector.
+This guarantee applies from the first selection until `reset()`. Calls to `eUnset`,
+reassignment, inverse updates, FeatureMap edits, callbacks, custom functions, or external
+edits can restore opposite capacity. Reset the cross-reference setter after such changes,
+and after adding resources or changing metamodels. If capacity may change during selection,
+use the default selector. Direct self-references follow the configured owner policy;
+self-reference and many-valued uniqueness rejections do not retire candidates. Keep custom
+self-reference policies free of side effects, since retired targets are skipped. Values
+returned by custom cross-reference functions bypass the candidate pool but still receive
+the live self-reference and opposite-capacity checks.
+
+The opt-in selector builds a `TreeSet` of candidate indices when an opposite-capacity
+rejection first occurs for a reference. Building it costs `O(N log N)` for `N` candidates;
+subsequent successor lookups and retirements cost `O(log N)`. Each reference with a pool
+adds `O(N)` boxed entries. This can avoid repeated scans of saturated candidates at a
+memory cost when many references share a large target type.
 
 ## Using EMFInstancePopulator Directly
 
