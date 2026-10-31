@@ -216,14 +216,10 @@ class EMFModelGeneratorTest {
 		validateModel(employeeObject);
 		
 		// Compare with expected outputs
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR,
-				EXPECTED_OUTPUTS_DIR,
+		var fileNames = List.of(
 				"company_Company_1.xmi",
-				"company_Company_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR,
-				EXPECTED_OUTPUTS_DIR,
-				"company_Employee_1.xmi",
 				"company_Employee_1.xmi");
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, fileNames, fileNames);
 	}
 
 	@Test
@@ -634,8 +630,10 @@ class EMFModelGeneratorTest {
 		validateModel(personObject);
 		
 		// Compare with expected outputs
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "dept_Department_1.xmi", "dept_Department_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "dept_Person_1.xmi", "dept_Person_1.xmi");
+		var fileNames = List.of(
+				"dept_Department_1.xmi",
+				"dept_Person_1.xmi");
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, fileNames, fileNames);
 	}
 
 	@Test
@@ -674,8 +672,10 @@ class EMFModelGeneratorTest {
 		validateModel(edge);
 		
 		// Compare with expected outputs
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "graph_Node_1.xmi", "graph_Node_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "graph_Edge_1.xmi", "graph_Edge_1.xmi");
+		var fileNames = List.of(
+				"graph_Node_1.xmi",
+				"graph_Edge_1.xmi");
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, fileNames, fileNames);
 		
 		// Edge should have a target Node reference
 		Object target = edge.eGet(assertEReferenceExists(edgeClass, "target"));
@@ -817,8 +817,10 @@ class EMFModelGeneratorTest {
 		validateModel(loadedRelatedDoc);
 		
 		// Compare with expected output
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "standalone_Document_1.xmi", "standalone_Document_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "standalone_RelatedDocument_1.xmi", "standalone_RelatedDocument_1.xmi");
+		var fileNames = List.of(
+				"standalone_Document_1.xmi",
+				"standalone_RelatedDocument_1.xmi");
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, fileNames, fileNames);
 		
 		// Verify that Document has a relatedDoc reference
 		Object relatedDoc = loadedDocument.eGet(documentClass.getEStructuralFeature("relatedDoc"));
@@ -880,11 +882,14 @@ class EMFModelGeneratorTest {
 		
 		// Compare with expected output
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"standalones_Document_1.xmi", "standalonemulti_Document_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"standalones_RelatedDocument_1.xmi", "standalonemulti_RelatedDocument_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"standalones_RelatedDocument_2.xmi", "standalonemulti_RelatedDocument_2.xmi");
+				List.of(
+						"standalones_Document_1.xmi",
+						"standalones_RelatedDocument_1.xmi",
+						"standalones_RelatedDocument_2.xmi"),
+				List.of(
+						"standalonemulti_Document_1.xmi",
+						"standalonemulti_RelatedDocument_1.xmi",
+						"standalonemulti_RelatedDocument_2.xmi"));
 	}
 
 	/**
@@ -937,8 +942,10 @@ class EMFModelGeneratorTest {
 		validateModel(link);
 		
 		// Compare with expected outputs
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "container_Registry_1.xmi", "container_Registry_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "container_Link_1.xmi", "container_Link_1.xmi");
+		var fileNames = List.of(
+				"container_Registry_1.xmi",
+				"container_Link_1.xmi");
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, fileNames, fileNames);
 		
 		// Verify Registry has entries
 		var entries = EMFUtils.getAsEObjectsList(registry, assertEReferenceExists(registryClass, "entries"));
@@ -1056,10 +1063,8 @@ class EMFModelGeneratorTest {
 		validateModel(loadedStandalone);
 
 		// Compare with expected output
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"deephier_Root_1.xmi", "deephier_Root_1.xmi");		// Verify the deep structure was created
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"deephier_Standalone_1.xmi", "deephier_Standalone_1.xmi");
+		var fileNames = List.of("deephier_Root_1.xmi", "deephier_Standalone_1.xmi");
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, fileNames, fileNames);
 	}
 
 	/**
@@ -2059,12 +2064,11 @@ class EMFModelGeneratorTest {
 			validateModel(obj);
 		}
 		// Verify XMI files were created with schemaLocation
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"schemaloc_simplelibrary_Library_1.xmi", "schemaloc_simplelibrary_Library_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"schemaloc_simplelibrary_Book_1.xmi", "schemaloc_simplelibrary_Book_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"schemaloc_simplelibrary_Author_1.xmi", "schemaloc_simplelibrary_Author_1.xmi");
+		var fileNames = List.of(
+				"schemaloc_simplelibrary_Library_1.xmi",
+				"schemaloc_simplelibrary_Book_1.xmi",
+				"schemaloc_simplelibrary_Author_1.xmi");
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, fileNames, fileNames);
 	}
 
 	/**
@@ -2134,12 +2138,11 @@ class EMFModelGeneratorTest {
 		assertThat(author.eGet(authorClass.getEStructuralFeature("library"))).isSameAs(library);
 
 		// Verify XMI files were created with schemaLocation
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"schemaloc_customcont_simplelibrary_Library_1.xmi", "schemaloc_customcont_simplelibrary_Library_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"schemaloc_customcont_simplelibrary_Book_1.xmi", "schemaloc_customcont_simplelibrary_Book_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"schemaloc_customcont_simplelibrary_Author_1.xmi", "schemaloc_customcont_simplelibrary_Author_1.xmi");
+		var fileNames = List.of(
+				"schemaloc_customcont_simplelibrary_Library_1.xmi",
+				"schemaloc_customcont_simplelibrary_Book_1.xmi",
+				"schemaloc_customcont_simplelibrary_Author_1.xmi");
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, fileNames, fileNames);
 	}
 
 	/**
@@ -2212,12 +2215,11 @@ class EMFModelGeneratorTest {
 		assertThat(author.eGet(authorClass.getEStructuralFeature("library"))).isSameAs(library);
 
 		// Verify XMI files were created with schemaLocation
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"schemaloc_customcont_simplelibrary_Library_1.xmi", "schemaloc_customcont_simplelibrary_Library_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"schemaloc_customcont_simplelibrary_Book_1.xmi", "schemaloc_customcont_simplelibrary_Book_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"schemaloc_customcont_simplelibrary_Author_1.xmi", "schemaloc_customcont_simplelibrary_Author_1.xmi");
+		var fileNames = List.of(
+				"schemaloc_customcont_simplelibrary_Library_1.xmi",
+				"schemaloc_customcont_simplelibrary_Book_1.xmi",
+				"schemaloc_customcont_simplelibrary_Author_1.xmi");
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, fileNames, fileNames);
 	}
 
 	@Test
@@ -2387,10 +2389,10 @@ class EMFModelGeneratorTest {
 		assertThat(deptFile).exists();
 
 		// Compare with expected outputs
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"mutual_company_Company_1.xmi", "mutual_company_Company_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"mutual_employees_Department_1.xmi", "mutual_employees_Department_1.xmi");
+		var fileNames = List.of(
+				"mutual_company_Company_1.xmi",
+				"mutual_employees_Department_1.xmi");
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, fileNames, fileNames);
 	}
 
 	@Test
@@ -2428,14 +2430,12 @@ class EMFModelGeneratorTest {
 		assertThat(deptFile2).exists();
 
 		// Compare with expected outputs
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"mutualmulti_company_Company_1.xmi", "mutualmulti_company_Company_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"mutualmulti_company_Company_2.xmi", "mutualmulti_company_Company_2.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"mutualmulti_employees_Department_1.xmi", "mutualmulti_employees_Department_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR,
-				"mutualmulti_employees_Department_2.xmi", "mutualmulti_employees_Department_2.xmi");
+		var fileNames = List.of(
+				"mutualmulti_company_Company_1.xmi",
+				"mutualmulti_company_Company_2.xmi",
+				"mutualmulti_employees_Department_1.xmi",
+				"mutualmulti_employees_Department_2.xmi");
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, fileNames, fileNames);
 	}
 
 	@Test
@@ -3538,8 +3538,10 @@ class EMFModelGeneratorTest {
 		validateModel(loadedDataHolder);
 		
 		// Compare with expected outputs
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "simple_Person_1.xmi", "simple_Person_1.xmi");
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, "datatypes_DataHolder_1.xmi", "datatypes_DataHolder_1.xmi");
+		var fileNames = List.of(
+				"simple_Person_1.xmi",
+				"datatypes_DataHolder_1.xmi");
+		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXPECTED_OUTPUTS_DIR, fileNames, fileNames);
 		
 		// Verify attributes of Person
 		Object nameValue = loadedPerson.eGet(personClass.getEStructuralFeature("name"));

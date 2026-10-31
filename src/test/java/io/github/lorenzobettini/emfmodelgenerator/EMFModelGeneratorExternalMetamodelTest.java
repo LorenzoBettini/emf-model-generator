@@ -343,13 +343,12 @@ class EMFModelGeneratorExternalMetamodelTest {
 
 		var generatedProcessFileName = "bpel_flow_model_Process_1.xmi";
 		assertThat(new File(TEST_OUTPUT_DIR, generatedProcessFileName)).exists();
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
-				generatedProcessFileName, generatedProcessFileName);
 
 		var generatedDefinitionFileName = "bpel_flow_wsdl_Definition_1.xmi";
 		assertThat(new File(TEST_OUTPUT_DIR, generatedDefinitionFileName)).exists();
+		var fileNames = List.of(generatedProcessFileName, generatedDefinitionFileName);
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
-				generatedDefinitionFileName, generatedDefinitionFileName);
+				fileNames, fileNames);
 	}
 
 	private boolean hasRequiredContainmentFeature(final EClass eClass) {
