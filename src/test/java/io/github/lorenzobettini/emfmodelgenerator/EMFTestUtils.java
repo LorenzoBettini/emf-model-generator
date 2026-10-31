@@ -7,7 +7,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.emf.common.util.Diagnostic;
@@ -163,41 +165,77 @@ public class EMFTestUtils {
 
 	/**
 	 * Compare a generated XMI file with an expected output file.
-	 * If the expected file doesn't exist, it will be created from the generated file.
+	 * If the expected file doesn't exist, create it from the generated file and fail
+	 * with a message asking for review before committing it.
 	 *
 	 * @param outputDir the directory containing the generated file
 	 * @param expectedDir the directory containing the expected file
 	 * @param generatedFileName the name of the generated file
 	 * @param expectedFileName the name of the expected file
-	 * @throws IOException if the files cannot be read
+	 * @throws IOException if the files cannot be read or copied
 	 */
 	public static void assertXMIMatchesExpected(String outputDir, String expectedDir,
 			String generatedFileName, String expectedFileName) throws IOException {
-		File generatedFile = new File(outputDir, generatedFileName);
-		File expectedFile = new File(expectedDir, expectedFileName);
+		assertXMIMatchesExpected(outputDir, expectedDir,
+				List.of(generatedFileName), List.of(expectedFileName));
+	}
 
-		assertThat(generatedFile).exists();
+	/**
+	 * Compare generated XMI files with the expected files at corresponding list positions.
+	 * Create all missing expected files from their generated counterparts, then fail
+	 * with a message listing every created file to review before committing.
+	 * Check all expected files before comparing any contents.
+	 *
+	 * @param outputDir the directory containing the generated files
+	 * @param expectedDir the directory containing the expected files
+	 * @param generatedFileNames the nonempty list of generated file names
+	 * @param expectedFileNames the expected file names, in the same order and number
+	 * @throws IOException if the files cannot be read or copied
+	 */
+	public static void assertXMIMatchesExpected(String outputDir, String expectedDir,
+			List<String> generatedFileNames, List<String> expectedFileNames) throws IOException {
+		assertThat(generatedFileNames).as("Generated XMI file names").isNotEmpty();
+		assertThat(expectedFileNames).as("Expected XMI file names")
+				.hasSameSizeAs(generatedFileNames);
 
-		if (!expectedFile.exists()) {
-			// If expected file doesn't exist, create it for the first run
-			Files.createDirectories(expectedFile.toPath().getParent());
-			Files.copy(generatedFile.toPath(), expectedFile.toPath());
-			System.out.println("Created expected output file: " + expectedFile.getAbsolutePath());
-			System.out.println("Please review and commit this file if it's correct.");
-			return; // Skip comparison on first run
+		for (var generatedFileName : generatedFileNames) {
+			assertThat(new File(outputDir, generatedFileName)).exists();
 		}
 
+		var createdFiles = new ArrayList<String>();
+		for (int i = 0; i < expectedFileNames.size(); i++) {
+			var expectedFile = new File(expectedDir, expectedFileNames.get(i));
+			if (!expectedFile.exists()) {
+				Files.createDirectories(expectedFile.toPath().getParent());
+				Files.copy(new File(outputDir, generatedFileNames.get(i)).toPath(),
+						expectedFile.toPath());
+				createdFiles.add(expectedFile.getAbsolutePath());
+			}
+		}
+		if (!createdFiles.isEmpty()) {
+			fail("Expected output files did not exist and were created from generated XMI:\n - "
+					+ String.join("\n - ", createdFiles)
+					+ "\nPlease review all these files and commit them if they are correct.");
+		}
+
+		for (int i = 0; i < generatedFileNames.size(); i++) {
+			compareXMIContents(new File(outputDir, generatedFileNames.get(i)),
+					new File(expectedDir, expectedFileNames.get(i)));
+		}
+	}
+
+	private static void compareXMIContents(File generatedFile, File expectedFile) throws IOException {
 		// Read both files and compare
 		String generatedContent = Files.readString(generatedFile.toPath(), StandardCharsets.UTF_8);
 		String expectedContent = Files.readString(expectedFile.toPath(), StandardCharsets.UTF_8);
 
-		// Normalize timezone offsets for comparison
-		// Dates are timezone-agnostic in Java, but their string representation depends on the system's default timezone
-		// We normalize all timezone offsets to a common format so tests pass on any system regardless of timezone
+		// Normalize timezone offsets so comparisons are independent of the system timezone.
 		String normalizedGenerated = normalizeTimezones(generatedContent);
 		String normalizedExpected = normalizeTimezones(expectedContent);
 
-		assertThat(normalizedGenerated).isEqualTo(normalizedExpected);
+		assertThat(normalizedGenerated)
+				.as("Generated XMI %s should match expected output %s", generatedFile, expectedFile)
+				.isEqualTo(normalizedExpected);
 	}
 
 	/**
@@ -428,8 +466,20 @@ public class EMFTestUtils {
 	}
 
 	/**
+	 * A detached reference request for existing raw selector tests.
+	 *
+	 * @param type the target type
+	 * @return a reference with that target type
+	 */
+	public static EReference referenceFor(final EClass type) {
+		final EReference reference = EcoreFactory.eINSTANCE.createEReference();
+		reference.setEType(type);
+		return reference;
+	}
+
+	/**
 	 * Create a new cross EReference (non-containment) with the given name and type, and add it to the EClass.
-	 * 
+	 *
 	 * @param eClass the class to add the reference to
 	 * @param name the name of the reference
 	 * @param eType the type of the reference

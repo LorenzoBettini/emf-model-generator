@@ -24,9 +24,10 @@ public abstract class EMFCountConfigurableFeatureSetter<T extends EStructuralFea
 	}
 
 	/**
-	 * Set the default maximum count of values to generate for multi-valued features.
+	 * Set the preferred count of values to generate for multi-valued features.
 	 * Used when no specific count has been configured for a feature via
-	 * {@link #setMaxCountFor(EStructuralFeature, int)}.
+	 * {@link #setMaxCountFor(EStructuralFeature, int)}. Feature bounds can adjust
+	 * the actual count; see {@link EMFUtils#getEffectiveCount(EStructuralFeature, int)}.
 	 *
 	 * @param defaultMaxCount the default maximum count
 	 */
@@ -49,7 +50,8 @@ public abstract class EMFCountConfigurableFeatureSetter<T extends EStructuralFea
 	}
 
 	/**
-	 * Sets the maximum count of values to set for the given feature.
+	 * Sets the preferred count of values to generate for the given feature.
+	 * Feature bounds can adjust the actual count.
 	 *
 	 * @param feature the feature to configure
 	 * @param maxCount the maximum count of values to generate

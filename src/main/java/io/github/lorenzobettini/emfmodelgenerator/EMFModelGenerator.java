@@ -50,11 +50,13 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFModelValidator.Factory;
  * 
  * <p><b>Generation Methods:</b>
  * <ul>
- * <li>{@link #generateFrom(EClass)} - Generate a single instance from an EClass</li>
- * <li>{@link #generateFrom(EPackage)} - Generate from the first instantiable EClass in a package</li>
+ * <li>{@link #generateFrom(EClass)} - Generate roots of an EClass and return the first</li>
+ * <li>{@link #generateFrom(EPackage)} - Generate roots of the first instantiable EClass
+ * directly in a package and return the first</li>
  * <li>{@link #generateFromSeveral(EClass...)} - Generate instances from multiple EClasses</li>
- * <li>{@link #generateAllFrom(EPackage)} - Generate instances of all EClasses in a package</li>
- * <li>{@link #generateAllFrom(EClass)} - Generate instances of all subclasses of an EClass</li>
+ * <li>{@link #generateAllFrom(EPackage)} - Generate from each instantiable EClass directly in a package</li>
+ * <li>{@link #generateAllFrom(EClass)} - Generate from each instantiable subclass, including the
+ * requested class when instantiable</li>
  * </ul>
  * 
  * <p><b>Customization:</b> For population-related customization (custom setters, per-feature
@@ -120,7 +122,7 @@ public class EMFModelGenerator {
 	private String outputDirectory = "target/test-output";
 	private final ResourceSet sharedResourceSet;
 	private EMFResourceHelper resourceHelper;
-	private EMFInstancePopulator instancePopulator = new EMFInstancePopulator();
+	private final EMFInstancePopulator instancePopulator = new EMFInstancePopulator();
 	private int numberOfInstances = 1;
 	private final List<Resource> loadedEcoreResources = new ArrayList<>();
 	private final List<PackageRegistration> loadedEcoreRegistrations = new ArrayList<>();
@@ -186,6 +188,13 @@ public class EMFModelGenerator {
 		this.resourceHelper = new EMFResourceHelper(sharedResourceSet, outputDirectory);
 	}
 
+	/**
+	 * Set the directory used for resources created by subsequent generation calls.
+	 * Existing resources keep their current file URIs. This replaces the resource helper,
+	 * resetting its file counters, prefix, and extension settings.
+	 *
+	 * @param outputDirectory the output directory path
+	 */
 	public void setOutputDirectory(String outputDirectory) {
 		this.outputDirectory = outputDirectory;
 		// Recreate resource helper with new output directory
@@ -194,7 +203,8 @@ public class EMFModelGenerator {
 
 	/**
 	 * Set a prefix to be added to all generated file names.
-	 * @param filePrefix
+	 *
+	 * @param filePrefix the prefix placed before the package name
 	 */
 	public void setFilePrefix(String filePrefix) {
 		resourceHelper.setFilePrefix(filePrefix);
@@ -234,7 +244,11 @@ public class EMFModelGenerator {
 
 	/**
 	 * Set the number of instances to generate per EClass.
-	 * @param numberOfInstances
+	 * Each generation method still returns the first instance where its return type is
+	 * {@link EObject}; all generated instances remain in the resource set.
+	 *
+	 * @param numberOfInstances the number of root instances created for each selected EClass;
+	 *                         use a positive value with methods returning one EObject
 	 */
 	public void setNumberOfInstances(int numberOfInstances) {
 		this.numberOfInstances = numberOfInstances;
@@ -289,15 +303,20 @@ public class EMFModelGenerator {
 		});
 	}
 
+	/**
+	 * Return the directory configured for resources created by subsequent calls.
+	 *
+	 * @return the configured output directory path
+	 */
 	public String getOutputDirectory() {
 		return outputDirectory;
 	}
 
 	/**
-	 * Get the ResourceSet currently in use.
-	 * This may be null if no generation has been performed yet with the default constructor.
+	 * Return the ResourceSet used for loading metamodels and generating resources.
+	 * Both constructors establish this resource set before any generation call.
 	 * 
-	 * @return the ResourceSet currently in use, or null if not yet initialized
+	 * @return the ResourceSet supplied to the constructor or created by the default constructor
 	 */
 	public ResourceSet getResourceSet() {
 		return sharedResourceSet;
@@ -427,6 +446,14 @@ public class EMFModelGenerator {
 		loadedEcoreRegistrations.clear();
 	}
 
+	/**
+	 * Generate from the first instantiable EClass directly in the package, in classifier order.
+	 * The configured number of root instances is created; this method returns the first.
+	 *
+	 * @param ePackage the package whose direct classifiers are searched
+	 * @return the first generated root
+	 * @throws IllegalArgumentException if the package has no instantiable EClass
+	 */
 	public EObject generateFrom(EPackage ePackage) {
 		// Search for the first instantiable EClass in the package
 		for (var classifier : ePackage.getEClassifiers()) {
@@ -439,6 +466,14 @@ public class EMFModelGenerator {
 				"No instantiable EClass found in EPackage: " + ePackage.getName());
 	}
 
+	/**
+	 * Generate root instances of an instantiable EClass and return the first one.
+	 * The number of roots created is configured by {@link #setNumberOfInstances(int)}.
+	 *
+	 * @param eClass the class to instantiate
+	 * @return the first generated root
+	 * @throws IllegalArgumentException if the class is abstract or an interface
+	 */
 	public EObject generateFrom(EClass eClass) {
 		if (!EMFUtils.canBeInstantiated(eClass)) {
 			throw new IllegalArgumentException(
@@ -449,6 +484,14 @@ public class EMFModelGenerator {
 		return models.get(0);
 	}
 
+	/**
+	 * Generate the configured number of root instances for each supplied EClass, in argument order.
+	 * All roots are populated together so cross-references can select among them.
+	 *
+	 * @param eClasses the classes to instantiate
+	 * @return all generated roots in class and creation order
+	 * @throws IllegalArgumentException if any class is abstract or an interface
+	 */
 	public List<EObject> generateFromSeveral(EClass... eClasses) {
 		// Check which EClasses cannot be instantiated
 		List<String> invalidClasses = new ArrayList<>();
@@ -468,6 +511,15 @@ public class EMFModelGenerator {
 		return generate(eClasses);
 	}
 
+	/**
+	 * Generate roots for every instantiable EClass directly in the package.
+	 * Subpackages are not searched. Each selected class produces the number of roots configured
+	 * by {@link #setNumberOfInstances(int)}.
+	 *
+	 * @param ePackage the package whose direct classifiers are searched
+	 * @return the generated roots in classifier and creation order
+	 * @throws IllegalArgumentException if the package has no instantiable EClass
+	 */
 	public List<EObject> generateAllFrom(EPackage ePackage) {
 		// Collect all instantiable EClasses from the package
 		var instantiableClasses = ePackage.getEClassifiers().stream()
@@ -486,6 +538,15 @@ public class EMFModelGenerator {
 		return generate(instantiableClasses.toArray(new EClass[0]));
 	}
 
+	/**
+	 * Generate roots for every instantiable subclass of the given EClass, including the class
+	 * itself when it is instantiable. Each selected class produces the number of roots configured
+	 * by {@link #setNumberOfInstances(int)}.
+	 *
+	 * @param eClass the class whose instantiable subclasses are searched
+	 * @return the generated roots in subclass and creation order
+	 * @throws IllegalArgumentException if no instantiable class is found
+	 */
 	public List<EObject> generateAllFrom(EClass eClass) {
 		// Find all instantiable subclasses (including the EClass itself if instantiable)
 		var instantiableSubclasses = EMFUtils.findAllInstantiableSubclasses(eClass);
@@ -660,22 +721,22 @@ public class EMFModelGenerator {
 	}
 
 	/**
-	 * Save all generated models to XMI files.
-	 * The file names are determined by the resources created during generation.
-	 * Ecore files are automatically skipped.
+	 * Save every non-Ecore resource in this generator's resource set.
+	 * This includes pre-existing model resources when an external resource set was supplied.
+	 * Each resource is saved to its current URI; Ecore resources are skipped.
 	 *
 	 * @throws IOException if the files cannot be written
-	 * @throws EMFValidationException if validation before saving is enabled
-		and the generated model fails validation
+	 * @throws EMFValidationException if validation before saving is enabled and a model
+	 * resource fails validation
 	 */
 	public void save() throws IOException {
 		save(null);
 	}
 
 	/**
-	 * Save all generated models to XMI files with custom options.
-	 * The file names are determined by the resources created during generation.
-	 * Ecore files are automatically skipped.
+	 * Save every non-Ecore resource in this generator's resource set with custom options.
+	 * This includes pre-existing model resources when an external resource set was supplied.
+	 * Each resource is saved to its current URI; Ecore resources are skipped.
 	 * 
 	 * <p>Example usage with schemaLocation:
 	 * {@snippet :
@@ -686,8 +747,8 @@ public class EMFModelGenerator {
 	 *
 	 * @param options the save options to pass to EMF resources, or null for default options
 	 * @throws IOException if the files cannot be written
-	 * @throws EMFValidationException if validation before saving is enabled
-		and the generated model fails validation
+	 * @throws EMFValidationException if validation before saving is enabled and a model
+	 * resource fails validation
 	 */
 	public void save(final Map<Object, Object> options) throws IOException {
 		saveModelResources(options);

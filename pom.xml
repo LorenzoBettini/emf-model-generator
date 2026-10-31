@@ -373,38 +373,114 @@
 						<version>3.6.4</version>
 						<executions>
 							<execution>
-								<id>run-performance-tests</id>
-								<goals>
-									<goal>java</goal>
-								</goals>
+								<id>run-resource-layout</id>
+								<goals><goal>exec</goal></goals>
 								<configuration>
-									<mainClass>
-										io.github.lorenzobettini.emfmodelgenerator.performance.EMFModelGeneratorPerformanceStatistics</mainClass>
+									<executable>java</executable>
 									<classpathScope>test</classpathScope>
 									<arguments>
-										<!-- Configure via command line properties, e.g.: 
-										mvn test -Pperformance-tests -Ddepth.max=10 -->
-										<argument>--depth-min</argument>
-										<argument>${depth.min}</argument>
-										<argument>--depth-max</argument>
-										<argument>${depth.max}</argument>
-										<argument>--depth-step</argument>
-										<argument>${depth.step}</argument>
-										<argument>--models-min</argument>
-										<argument>${models.min}</argument>
-										<argument>--models-max</argument>
-										<argument>${models.max}</argument>
-										<argument>--models-step</argument>
-										<argument>${models.step}</argument>
-										<argument>--repetitions</argument>
-										<argument>${repetitions}</argument>
-										<argument>--warmup</argument>
-										<argument>${warmup}</argument>
-										<argument>--metamodel</argument>
-										<argument>${metamodel}</argument>
+										<argument>-Xms${benchmark.heap}</argument>
+										<argument>-Xmx${benchmark.heap}</argument>
+										<argument>-XX:+UseG1GC</argument>
+										<argument>-Dfile.encoding=UTF-8</argument>
+										<argument>-cp</argument>
+										<classpath/>
+										<argument>io.github.lorenzobettini.emfmodelgenerator.performance.ResourceLayoutBenchmark</argument>
+										<argument>${benchmark.roots}</argument>
+										<argument>${benchmark.resources}</argument>
+										<argument>${benchmark.warmups}</argument>
+										<argument>${benchmark.repetitions}</argument>
+										<argument>${benchmark.max-eobjects}</argument>
+										<argument>${benchmark.raw}</argument>
+										<argument>${benchmark.preflight}</argument>
+										<argument>${benchmark.diagnostic}</argument>
 									</arguments>
-									<cleanupDaemonThreads>false</cleanupDaemonThreads> <!-- see
-									https://bugs.eclipse.org/bugs/show_bug.cgi?id=475098#c3 -->
+								</configuration>
+							</execution>
+							<execution>
+								<id>run-profile-pilot</id>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<configuration>
+									<executable>java</executable>
+									<classpathScope>test</classpathScope>
+									<arguments>
+										<argument>-Xms${benchmark.heap}</argument>
+										<argument>-Xmx${benchmark.heap}</argument>
+										<argument>-XX:+UseG1GC</argument>
+										<argument>-Dfile.encoding=UTF-8</argument>
+										<argument>-cp</argument>
+										<classpath/>
+										<argument>io.github.lorenzobettini.emfmodelgenerator.performance.EMFModelGeneratorPerformanceStatistics</argument>
+										<argument>--profile</argument>
+										<argument>${benchmark.profile}</argument>
+										<argument>--roots</argument>
+										<argument>${benchmark.roots}</argument>
+										<argument>--depth</argument>
+										<argument>${benchmark.depth}</argument>
+										<argument>--repetitions</argument>
+										<argument>${benchmark.repetitions}</argument>
+										<argument>--warmups</argument>
+										<argument>${benchmark.warmups}</argument>
+										<argument>--raw</argument>
+										<argument>${benchmark.raw}</argument>
+										<argument>--summary</argument>
+										<argument>${benchmark.summary}</argument>
+										<argument>--diagnostics</argument>
+										<argument>${benchmark.diagnostics}</argument>
+									</arguments>
+								</configuration>
+							</execution>
+							<execution>
+								<id>run-performance-tests</id>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<configuration>
+									<executable>java</executable>
+									<classpathScope>test</classpathScope>
+									<arguments>
+										<argument>-Xms${benchmark.heap}</argument>
+										<argument>-Xmx${benchmark.heap}</argument>
+										<argument>-XX:+UseG1GC</argument>
+										<argument>-Dfile.encoding=UTF-8</argument>
+										<argument>-cp</argument>
+										<classpath/>
+										<argument>io.github.lorenzobettini.emfmodelgenerator.performance.EMFModelGeneratorPerformanceStatistics</argument>
+										<argument>--scenario</argument>
+										<argument>${benchmark.scenario}</argument>
+										<argument>--package</argument>
+										<argument>${benchmark.package}</argument>
+										<argument>--root</argument>
+										<argument>${benchmark.root}</argument>
+										<argument>--roots</argument>
+										<argument>${benchmark.roots}</argument>
+										<argument>--depth</argument>
+										<argument>${benchmark.depth}</argument>
+										<argument>--attribute-max</argument>
+										<argument>${benchmark.attribute.max}</argument>
+										<argument>--containment-max</argument>
+										<argument>${benchmark.containment.max}</argument>
+										<argument>--cross-reference-max</argument>
+										<argument>${benchmark.cross.reference.max}</argument>
+										<argument>--feature-map-max</argument>
+										<argument>${benchmark.feature.map.max}</argument>
+										<argument>--repetitions</argument>
+										<argument>${benchmark.repetitions}</argument>
+										<argument>--warmups</argument>
+										<argument>${benchmark.warmups}</argument>
+										<argument>--metamodel</argument>
+										<argument>${benchmark.metamodel}</argument>
+										<argument>--preflight</argument>
+										<argument>${benchmark.preflight}</argument>
+										<argument>--raw</argument>
+										<argument>${benchmark.raw}</argument>
+										<argument>--summary</argument>
+										<argument>${benchmark.summary}</argument>
+										<argument>--diagnostics</argument>
+										<argument>${benchmark.diagnostics}</argument>
+									</arguments>
 								</configuration>
 							</execution>
 						</executions>
@@ -412,16 +488,24 @@
 				</plugins>
 			</build>
 			<properties>
-				<!-- Default values for performance test parameters -->
-				<depth.min>1</depth.min>
-				<depth.max>10</depth.max>
-				<depth.step>1</depth.step>
-				<models.min>1</models.min>
-				<models.max>1000</models.max>
-				<models.step>100</models.step>
-				<repetitions>3</repetitions>
-				<warmup>10</warmup>
-				<metamodel>src/test/resources/inputs/extlibrary.ecore</metamodel>
+				<benchmark.heap>512m</benchmark.heap>
+				<benchmark.profile>extlibrary</benchmark.profile>
+				<benchmark.scenario>extlibrary-smoke</benchmark.scenario>
+				<benchmark.metamodel>src/test/resources/inputs/extlibrary.ecore</benchmark.metamodel>
+				<benchmark.package>extlibrary</benchmark.package>
+				<benchmark.root>Library</benchmark.root>
+				<benchmark.roots>1</benchmark.roots>
+				<benchmark.depth>1</benchmark.depth>
+				<benchmark.attribute.max>1</benchmark.attribute.max>
+				<benchmark.containment.max>1</benchmark.containment.max>
+				<benchmark.cross.reference.max>1</benchmark.cross.reference.max>
+				<benchmark.feature.map.max>1</benchmark.feature.map.max>
+				<benchmark.repetitions>2</benchmark.repetitions>
+				<benchmark.warmups>1</benchmark.warmups>
+				<benchmark.preflight>none</benchmark.preflight>
+				<benchmark.raw>target/benchmark/raw.csv</benchmark.raw>
+				<benchmark.summary>target/benchmark/summary.csv</benchmark.summary>
+				<benchmark.diagnostics>off</benchmark.diagnostics>
 			</properties>
 		</profile>
 		<profile>

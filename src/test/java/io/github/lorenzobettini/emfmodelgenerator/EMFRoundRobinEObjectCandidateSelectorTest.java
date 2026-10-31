@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
+import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +31,8 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 	private EPackage testPackage;
 	private EClass personClass;
 	private EClass companyClass;
+	private EReference personReference;
+	private EReference companyReference;
 	private Resource contextResource;
 	private EObject context;
 
@@ -40,6 +43,8 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		testPackage = createEPackage("test", "http://test", "test");
 		personClass = createEClass(testPackage, "Person");
 		companyClass = createEClass(testPackage, "Company");
+		personReference = EMFTestUtils.createCrossEReference(personClass, "person", personClass, 1);
+		companyReference = EMFTestUtils.createCrossEReference(personClass, "company", companyClass, 1);
 
 		// Create a separate Resource for the EPackage (Ecore resource)
 		var ecoreResource = createResource(resourceSet, "test.ecore");
@@ -61,7 +66,7 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 	@Test
 	void shouldReturnNullWhenNoCandidatesExist() {
 		// Only context exists, should return context
-		var result = selector.getNextCandidate(context, personClass);
+		var result = selector.getNextCandidate(context, personReference);
 
 		assertThat(result).isEqualTo(context);
 	}
@@ -72,7 +77,7 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		createInstanceInResource(personClass, resourceSet, "person1.xmi");
 		createInstanceInResource(personClass, resourceSet, "person2.xmi");
 
-		var result = selector.getNextCandidate(context, companyClass);
+		var result = selector.getNextCandidate(context, companyReference);
 
 		assertThat(result).isNull();
 	}
@@ -83,7 +88,7 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 	void shouldReturnSingleCandidateWhenOnlyOneExists() {
 		createInstanceInResource(personClass, resourceSet, "person1.xmi");
 
-		var result = selector.getNextCandidate(context, personClass);
+		var result = selector.getNextCandidate(context, personReference);
 
 		assertThat(result).isEqualTo(context);
 	}
@@ -92,9 +97,9 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 	void shouldReturnSameSingleCandidateOnMultipleCalls() {
 		var person1 = createInstanceInResource(personClass, resourceSet, "person1.xmi");
 
-		var result1 = selector.getNextCandidate(context, personClass);
-		var result2 = selector.getNextCandidate(context, personClass);
-		var result3 = selector.getNextCandidate(context, personClass);
+		var result1 = selector.getNextCandidate(context, personReference);
+		var result2 = selector.getNextCandidate(context, personReference);
+		var result3 = selector.getNextCandidate(context, personReference);
 
 		assertThat(result1).isEqualTo(context);
 		assertThat(result2).isEqualTo(person1);
@@ -111,23 +116,23 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		var person4 = createInstanceInResource(personClass, resourceSet, "person4.xmi");
 
 		// First call: should return context
-		var result1 = selector.getNextCandidate(context, personClass);
+		var result1 = selector.getNextCandidate(context, personReference);
 		assertThat(result1).isEqualTo(context);
 
 		// Second call: should return person1
-		var result2 = selector.getNextCandidate(context, personClass);
+		var result2 = selector.getNextCandidate(context, personReference);
 		assertThat(result2).isEqualTo(person1);
 
 		// Third call: should return person2
-		var result3 = selector.getNextCandidate(context, personClass);
+		var result3 = selector.getNextCandidate(context, personReference);
 		assertThat(result3).isEqualTo(person2);
 
 		// Fourth call: should return person3
-		var result4 = selector.getNextCandidate(context, personClass);
+		var result4 = selector.getNextCandidate(context, personReference);
 		assertThat(result4).isEqualTo(person3);
 
 		// Fifth call: should return person4
-		var result5 = selector.getNextCandidate(context, personClass);
+		var result5 = selector.getNextCandidate(context, personReference);
 		assertThat(result5).isEqualTo(person4);
 	}
 
@@ -137,11 +142,11 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		var person2 = createInstanceInResource(personClass, resourceSet, "person2.xmi");
 		var person3 = createInstanceInResource(personClass, resourceSet, "person3.xmi");
 
-		var r1 = selector.getNextCandidate(context, personClass);
-		var r2 = selector.getNextCandidate(context, personClass);
-		var r3 = selector.getNextCandidate(context, personClass);
-		var r4 = selector.getNextCandidate(context, personClass);
-		var r5 = selector.getNextCandidate(context, personClass); // Should wrap to context
+		var r1 = selector.getNextCandidate(context, personReference);
+		var r2 = selector.getNextCandidate(context, personReference);
+		var r3 = selector.getNextCandidate(context, personReference);
+		var r4 = selector.getNextCandidate(context, personReference);
+		var r5 = selector.getNextCandidate(context, personReference); // Should wrap to context
 
 		assertThat(r1).isEqualTo(context);
 		assertThat(r2).isEqualTo(person1);
@@ -157,19 +162,19 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		var person3 = createInstanceInResource(personClass, resourceSet, "person3.xmi");
 
 		// First cycle
-		assertThat(selector.getNextCandidate(context, personClass)).isEqualTo(context);
-		assertThat(selector.getNextCandidate(context, personClass)).isEqualTo(person1);
-		assertThat(selector.getNextCandidate(context, personClass)).isEqualTo(person2);
-		assertThat(selector.getNextCandidate(context, personClass)).isEqualTo(person3);
+		assertThat(selector.getNextCandidate(context, personReference)).isEqualTo(context);
+		assertThat(selector.getNextCandidate(context, personReference)).isEqualTo(person1);
+		assertThat(selector.getNextCandidate(context, personReference)).isEqualTo(person2);
+		assertThat(selector.getNextCandidate(context, personReference)).isEqualTo(person3);
 
 		// Second cycle
-		assertThat(selector.getNextCandidate(context, personClass)).isEqualTo(context);
-		assertThat(selector.getNextCandidate(context, personClass)).isEqualTo(person1);
-		assertThat(selector.getNextCandidate(context, personClass)).isEqualTo(person2);
-		assertThat(selector.getNextCandidate(context, personClass)).isEqualTo(person3);
+		assertThat(selector.getNextCandidate(context, personReference)).isEqualTo(context);
+		assertThat(selector.getNextCandidate(context, personReference)).isEqualTo(person1);
+		assertThat(selector.getNextCandidate(context, personReference)).isEqualTo(person2);
+		assertThat(selector.getNextCandidate(context, personReference)).isEqualTo(person3);
 
 		// Third cycle
-		assertThat(selector.getNextCandidate(context, personClass)).isEqualTo(context);
+		assertThat(selector.getNextCandidate(context, personReference)).isEqualTo(context);
 	}
 
 	// ========== Tests with multiple types (state isolation) ==========
@@ -184,22 +189,22 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		var company2 = createInstanceInResource(companyClass, resourceSet, "company2.xmi");
 
 		// Request for Person (should start with context)
-		var resultPersoncontext = selector.getNextCandidate(context, personClass);
+		var resultPersoncontext = selector.getNextCandidate(context, personReference);
 		assertThat(resultPersoncontext).isEqualTo(context);
 
-		var resultPerson1 = selector.getNextCandidate(context, personClass);
+		var resultPerson1 = selector.getNextCandidate(context, personReference);
 		assertThat(resultPerson1).isEqualTo(person1);
 
 		// Request for Company (should start from index 0 for Company)
-		var resultCompany1 = selector.getNextCandidate(context, companyClass);
+		var resultCompany1 = selector.getNextCandidate(context, companyReference);
 		assertThat(resultCompany1).isEqualTo(company1);
 
 		// Request for Person again (should continue from person2)
-		var resultPerson2 = selector.getNextCandidate(context, personClass);
+		var resultPerson2 = selector.getNextCandidate(context, personReference);
 		assertThat(resultPerson2).isEqualTo(person2);
 
 		// Request for Company again (should continue from company2)
-		var resultCompany2 = selector.getNextCandidate(context, companyClass);
+		var resultCompany2 = selector.getNextCandidate(context, companyReference);
 		assertThat(resultCompany2).isEqualTo(company2);
 	}
 
@@ -211,10 +216,10 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		var company1 = createInstanceInResource(companyClass, resourceSet, "company1.xmi");
 		var company2 = createInstanceInResource(companyClass, resourceSet, "company2.xmi");
 
-		var r1 = selector.getNextCandidate(context, personClass);
-		var r2 = selector.getNextCandidate(context, companyClass);
-		var r3 = selector.getNextCandidate(context, personClass);
-		var r4 = selector.getNextCandidate(context, companyClass);
+		var r1 = selector.getNextCandidate(context, personReference);
+		var r2 = selector.getNextCandidate(context, companyReference);
+		var r3 = selector.getNextCandidate(context, personReference);
+		var r4 = selector.getNextCandidate(context, companyReference);
 
 		assertThat(r1).isEqualTo(context);
 		assertThat(r2).isEqualTo(company1);
@@ -230,22 +235,22 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		var person2 = createInstanceInResource(personClass, resourceSet, "person2.xmi");
 
 		// First call
-		var result1 = selector.getNextCandidate(context, personClass);
+		var result1 = selector.getNextCandidate(context, personReference);
 		assertThat(result1).isEqualTo(context);
 
 		// Create a new person after first call
 		createInstanceInResource(personClass, resourceSet, "person3.xmi");
 
 		// Second call - should not see person3 because candidates are cached
-		var result2 = selector.getNextCandidate(context, personClass);
+		var result2 = selector.getNextCandidate(context, personReference);
 		assertThat(result2).isEqualTo(person1);
 
 		// Third call - should continue to person2, still not seeing person3
-		var result3 = selector.getNextCandidate(context, personClass);
+		var result3 = selector.getNextCandidate(context, personReference);
 		assertThat(result3).isEqualTo(person2);
 
 		// Fourth call - should wrap back to context, still not seeing person3
-		var result4 = selector.getNextCandidate(context, personClass);
+		var result4 = selector.getNextCandidate(context, personReference);
 		assertThat(result4).isEqualTo(context);
 	}
 
@@ -261,10 +266,10 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		var person2 = createInstanceInResource(personClass, resourceSet, "person2.xmi");
 
 		// Request Person candidates - should include Employee instances and context
-		var r1 = selector.getNextCandidate(context, personClass);
-		var r2 = selector.getNextCandidate(context, personClass);
-		var r3 = selector.getNextCandidate(context, personClass);
-		var r4 = selector.getNextCandidate(context, personClass);
+		var r1 = selector.getNextCandidate(context, personReference);
+		var r2 = selector.getNextCandidate(context, personReference);
+		var r3 = selector.getNextCandidate(context, personReference);
+		var r4 = selector.getNextCandidate(context, personReference);
 
 		assertThat(r1).isEqualTo(context);
 		assertThat(r2).isEqualTo(person1);
@@ -281,10 +286,10 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		var person2 = createInstanceInResource(personClass, resourceSet, "person2.xmi");
 		var person3 = createInstanceInResource(personClass, resourceSet, "person3.xmi");
 
-		var r1 = selector.getNextCandidate(context, personClass);
-		var r2 = selector.getNextCandidate(context, personClass);
-		var r3 = selector.getNextCandidate(context, personClass);
-		var r4 = selector.getNextCandidate(context, personClass);
+		var r1 = selector.getNextCandidate(context, personReference);
+		var r2 = selector.getNextCandidate(context, personReference);
+		var r3 = selector.getNextCandidate(context, personReference);
+		var r4 = selector.getNextCandidate(context, personReference);
 
 		// The order should match the order they were added to the resource set, with context first
 		assertThat(r1).isEqualTo(context);
@@ -302,8 +307,8 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		createInstanceInResource(personClass, resourceSet, "person3.xmi");
 
 		// Get first two candidates (context and person1)
-		var result1 = selector.getNextCandidate(context, personClass);
-		var result2 = selector.getNextCandidate(context, personClass);
+		var result1 = selector.getNextCandidate(context, personReference);
+		var result2 = selector.getNextCandidate(context, personReference);
 		assertThat(result1).isEqualTo(context);
 		assertThat(result2).isEqualTo(person1);
 
@@ -311,7 +316,7 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		selector.reset();
 
 		// After reset, should start from context again
-		var result3 = selector.getNextCandidate(context, personClass);
+		var result3 = selector.getNextCandidate(context, personReference);
 		assertThat(result3).isEqualTo(context);
 	}
 
@@ -321,8 +326,8 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		var person2 = createInstanceInResource(personClass, resourceSet, "person2.xmi");
 
 		// Get first two candidates (context and person1)
-		var result1 = selector.getNextCandidate(context, personClass);
-		var result2 = selector.getNextCandidate(context, personClass);
+		var result1 = selector.getNextCandidate(context, personReference);
+		var result2 = selector.getNextCandidate(context, personReference);
 		assertThat(result1).isEqualTo(context);
 		assertThat(result2).isEqualTo(person1);
 
@@ -330,17 +335,17 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		var person3 = createInstanceInResource(personClass, resourceSet, "person3.xmi");
 
 		// Without reset, new person is not seen (cached) - continues to person2
-		var result3 = selector.getNextCandidate(context, personClass);
+		var result3 = selector.getNextCandidate(context, personReference);
 		assertThat(result3).isEqualTo(person2);
 
 		// Reset to clear cache
 		selector.reset();
 
 		// After reset, should see all four candidates (context, person1, person2, person3)
-		var result4 = selector.getNextCandidate(context, personClass);
-		var result5 = selector.getNextCandidate(context, personClass);
-		var result6 = selector.getNextCandidate(context, personClass);
-		var result7 = selector.getNextCandidate(context, personClass);
+		var result4 = selector.getNextCandidate(context, personReference);
+		var result5 = selector.getNextCandidate(context, personReference);
+		var result6 = selector.getNextCandidate(context, personReference);
+		var result7 = selector.getNextCandidate(context, personReference);
 		assertThat(result4).isEqualTo(context);
 		assertThat(result5).isEqualTo(person1);
 		assertThat(result6).isEqualTo(person2);
@@ -355,8 +360,8 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		createInstanceInResource(companyClass, resourceSet, "company2.xmi");
 
 		// Get some candidates for both types
-		var resultPersoncontext = selector.getNextCandidate(context, personClass);
-		var resultCompany1 = selector.getNextCandidate(context, companyClass);
+		var resultPersoncontext = selector.getNextCandidate(context, personReference);
+		var resultCompany1 = selector.getNextCandidate(context, companyReference);
 
 		assertThat(resultPersoncontext).isEqualTo(context);
 		assertThat(resultCompany1).isEqualTo(company1);
@@ -365,8 +370,8 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		selector.reset();
 
 		// After reset, both types should start from beginning
-		var resultPerson2 = selector.getNextCandidate(context, personClass);
-		var resultCompany2 = selector.getNextCandidate(context, companyClass);
+		var resultPerson2 = selector.getNextCandidate(context, personReference);
+		var resultCompany2 = selector.getNextCandidate(context, companyReference);
 
 		assertThat(resultPerson2).isEqualTo(context);
 		assertThat(resultCompany2).isEqualTo(company1);
@@ -378,7 +383,7 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		selector.reset();
 
 		createInstanceInResource(personClass, resourceSet, "person1.xmi");
-		var result = selector.getNextCandidate(context, personClass);
+		var result = selector.getNextCandidate(context, personReference);
 
 		assertThat(result).isEqualTo(context);
 	}
@@ -389,7 +394,7 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		createInstanceInResource(personClass, resourceSet, "person2.xmi");
 
 		// Get some candidates
-		var result1 = selector.getNextCandidate(context, personClass);
+		var result1 = selector.getNextCandidate(context, personReference);
 		assertThat(result1).isEqualTo(context);
 
 		// Multiple resets
@@ -398,8 +403,8 @@ class EMFRoundRobinEObjectCandidateSelectorTest {
 		selector.reset();
 
 		// Should still work correctly
-		var result2 = selector.getNextCandidate(context, personClass);
-		var result3 = selector.getNextCandidate(context, personClass);
+		var result2 = selector.getNextCandidate(context, personReference);
+		var result3 = selector.getNextCandidate(context, personReference);
 		assertThat(result2).isEqualTo(context);
 		assertThat(result3).isEqualTo(person1);
 	}

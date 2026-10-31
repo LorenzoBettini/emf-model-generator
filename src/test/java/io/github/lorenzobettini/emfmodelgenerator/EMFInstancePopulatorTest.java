@@ -30,6 +30,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.util.FeatureMap;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 import org.eclipse.emf.ecore.xml.type.XMLTypePackage;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -106,6 +107,11 @@ class EMFInstancePopulatorTest {
 				}
 			}
 		}
+	}
+
+	@AfterEach
+	void cleanupRegisteredPackages() {
+		EMFTestUtils.cleanupRegisteredPackages();
 	}
 
 	private EObject createInstanceInResource(final EObject instance, final String fileName) {
@@ -1401,7 +1407,7 @@ class EMFInstancePopulatorTest {
 		container.getEStructuralFeatures().add(children);
 		
 		// Create a custom strategy that always returns SubClass2
-		final var customStrategy = new EMFCandidateSelectorStrategy<EClass, EClass>() {
+		final var customStrategy = new EMFEClassCandidateSelectorStrategy() {
 			@Override
 			public EClass getNextCandidate(EObject context, EClass type) {
 				return subClass2;
@@ -1414,6 +1420,7 @@ class EMFInstancePopulatorTest {
 		};
 		
 		populator.setInstantiableSubclassSelectorStrategy(customStrategy);
+		customStrategy.reset();
 		
 		final var instance = EcoreUtil.create(container);
 		createInstanceInResource(instance, "test_strategy.xmi");
@@ -1436,18 +1443,17 @@ class EMFInstancePopulatorTest {
 		entry2.eSet(entryClass.getEStructuralFeature("key"), "entry2");
 		
 		// Create a custom strategy that always returns entry2
-		final var customStrategy = new EMFCandidateSelectorStrategy<EClass, EObject>() {
+		final var customStrategy = new EMFCrossReferenceCandidateSelectorStrategy() {
 			@Override
-			public EObject getNextCandidate(EObject context, EClass type) {
-				return entry2;
+			public EObject selectCandidate(final EObject owner, final EReference reference,
+					final java.util.function.Function<EObject, CandidateDecision> evaluator) {
+				return evaluator.apply(entry2) == CandidateDecision.ACCEPT ? entry2 : null;
 			}
-
 			@Override
-			public boolean hasCandidates(EObject context, EClass type) {
-				return true;
+			public void reset() {
+				// No state to reset in this simple strategy
 			}
 		};
-		
 		populator.setCrossReferenceCandidateSelectorStrategy(customStrategy);
 		
 		final var registry = createInstance(ePackage, "Registry");
@@ -1477,7 +1483,7 @@ class EMFInstancePopulatorTest {
 		final var completedLiteral = statusEnum.getEEnumLiteral("COMPLETED");
 		
 		// Create a custom strategy that returns specific enum literals
-		final var customStrategy = new EMFCandidateSelectorStrategy<EEnum, EEnumLiteral>() {
+		final var customStrategy = new EMFEEnumLiteralCandidateSelectorStrategy() {
 			@Override
 			public EEnumLiteral getNextCandidate(EObject context, EEnum type) {
 				if (type == priorityEnum) {
@@ -1624,7 +1630,7 @@ class EMFInstancePopulatorTest {
 			}
 		});
 		populator.setGroupMemberSelectorStrategy(
-				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+				new EMFFeatureMapGroupMemberSelectorStrategy() {
 					@Override
 					public EStructuralFeature getNextCandidate(final EObject context,
 							final EAttribute type) {
@@ -1656,7 +1662,7 @@ class EMFInstancePopulatorTest {
 		
 		// Create a custom strategy that always returns the writers reference
 		final var customStrategy =
-				new EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature>() {
+				new EMFFeatureMapGroupMemberSelectorStrategy() {
 			@Override
 			public EStructuralFeature getNextCandidate(EObject context, EAttribute type) {
 				return writersRef;

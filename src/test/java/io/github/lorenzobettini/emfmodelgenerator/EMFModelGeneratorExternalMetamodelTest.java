@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,6 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.namespace.QName;
 
 import org.eclipse.emf.common.util.Diagnostic;
+import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EEnum;
@@ -29,6 +32,9 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
+import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.util.FeatureMap;
 import org.eclipse.emf.ecore.util.FeatureMapUtil;
@@ -337,13 +343,12 @@ class EMFModelGeneratorExternalMetamodelTest {
 
 		var generatedProcessFileName = "bpel_flow_model_Process_1.xmi";
 		assertThat(new File(TEST_OUTPUT_DIR, generatedProcessFileName)).exists();
-		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
-				generatedProcessFileName, generatedProcessFileName);
 
 		var generatedDefinitionFileName = "bpel_flow_wsdl_Definition_1.xmi";
 		assertThat(new File(TEST_OUTPUT_DIR, generatedDefinitionFileName)).exists();
+		var fileNames = List.of(generatedProcessFileName, generatedDefinitionFileName);
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
-				generatedDefinitionFileName, generatedDefinitionFileName);
+				fileNames, fileNames);
 	}
 
 	private boolean hasRequiredContainmentFeature(final EClass eClass) {
@@ -758,6 +763,408 @@ class EMFModelGeneratorExternalMetamodelTest {
 		assertThat(new File(TEST_OUTPUT_DIR, generatedFileName)).exists();
 		assertXMIMatchesExpected(TEST_OUTPUT_DIR, EXTERNAL_EXPECTED_OUTPUTS_DIR,
 				generatedFileName, generatedFileName);
+	}
+
+	private EClass bpmnDiagramClass() throws IOException {
+		return assertEClassExists(generator.loadEcoreModelPackages(
+				EXTERNAL_METAMODELS_DIR + "/BPMN.ecore").stream()
+				.filter(ePackage -> "bpmn".equals(ePackage.getName()))
+				.findFirst().orElseThrow(), "BpmnDiagram");
+	}
+
+	private void configureBpmnGeneration(final int count, final String prefix) {
+		var populator = generator.getInstancePopulator();
+		populator.setMaxDepth(2);
+		populator.setAttributeDefaultMaxCount(1);
+		populator.setContainmentReferenceDefaultMaxCount(1);
+		populator.setCrossReferenceDefaultMaxCount(1);
+		populator.setFeatureMapDefaultMaxCount(1);
+		generator.setNumberOfInstances(count);
+		generator.setFilePrefix(prefix);
+	}
+
+	private List<EObject> generateBpmnDiagrams(final int count, final String prefix)
+			throws IOException {
+		var diagramClass = bpmnDiagramClass();
+		configureBpmnGeneration(count, prefix);
+		return generator.generateFromSeveral(diagramClass);
+	}
+
+	private List<Resource> bpmnModelResources() {
+		return generator.getResourceSet().getResources().stream()
+				.filter(resource -> !EMFUtils.isEcoreResource(resource))
+				.toList();
+	}
+
+	private ResourceSet reloadBpmnResources() throws IOException {
+		var source = generator.getResourceSet();
+		var loaded = new ResourceSetImpl();
+		loaded.getPackageRegistry().putAll(source.getPackageRegistry());
+		var sourceFactories = source.getResourceFactoryRegistry();
+		var targetFactories = loaded.getResourceFactoryRegistry();
+		targetFactories.getExtensionToFactoryMap()
+				.putAll(sourceFactories.getExtensionToFactoryMap());
+		targetFactories.getProtocolToFactoryMap()
+				.putAll(sourceFactories.getProtocolToFactoryMap());
+		targetFactories.getContentTypeToFactoryMap()
+				.putAll(sourceFactories.getContentTypeToFactoryMap());
+		var resources = bpmnModelResources().stream()
+				.map(Resource::getURI).map(loaded::createResource).toList();
+		for (var resource : resources) {
+			resource.load(null);
+		}
+		return loaded;
+	}
+
+	private List<EObject> allBpmnObjects(final ResourceSet resourceSet) {
+		var objects = new ArrayList<EObject>();
+		for (var resource : resourceSet.getResources()) {
+			if (EMFUtils.isEcoreResource(resource)) {
+				continue;
+			}
+			var contents = EcoreUtil.getAllContents(resource, true);
+			while (contents.hasNext()) {
+				objects.add((EObject) contents.next());
+			}
+		}
+		return objects;
+	}
+
+	/**
+	 * @author Lorenzo Bettini
+	 */
+	private record BpmnProxy(EObject owner, EReference reference, EObject value) {
+		URI uri() {
+			return ((org.eclipse.emf.ecore.InternalEObject) value).eProxyURI();
+		}
+	}
+
+	private List<BpmnProxy> bpmnProxies(final ResourceSet resourceSet) {
+		var proxies = new ArrayList<BpmnProxy>();
+		for (var owner : allBpmnObjects(resourceSet)) {
+			for (var reference : owner.eClass().getEAllReferences()) {
+				var raw = owner.eGet(reference, false);
+				if (raw instanceof EObject value && value.eIsProxy()) {
+					proxies.add(new BpmnProxy(owner, reference, value));
+				} else if (raw instanceof Collection<?> values) {
+					for (var element : values) {
+						if (element instanceof EObject value && value.eIsProxy()) {
+							proxies.add(new BpmnProxy(owner, reference, value));
+						}
+					}
+				}
+			}
+		}
+		return proxies;
+	}
+
+	private List<EObject> bpmnRoots(final ResourceSet resourceSet) {
+		return resourceSet.getResources().stream()
+				.flatMap(resource -> resource.getContents().stream()).toList();
+	}
+
+	private Collection<?> bpmnReferenceValues(final EObject owner, final EReference reference) {
+		var value = owner.eGet(reference, false);
+		if (value instanceof Collection<?> values) {
+			return values;
+		}
+		return value == null ? List.of() : List.of(value);
+	}
+
+	private void assertBpmnOppositesConsistent(final ResourceSet resourceSet) {
+		for (var owner : allBpmnObjects(resourceSet)) {
+			for (var reference : owner.eClass().getEAllReferences()) {
+				var opposite = reference.getEOpposite();
+				if (opposite == null) {
+					continue;
+				}
+				for (var value : bpmnReferenceValues(owner, reference)) {
+					assertThat(value).isInstanceOf(EObject.class);
+					var target = (EObject) value;
+					assertThat(target.eIsProxy()).isFalse();
+					assertThat(bpmnReferenceValues(target, opposite).contains(owner))
+							.as(owner.eClass().getName() + "." + reference.getName())
+							.isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
+				}
+			}
+		}
+	}
+
+	private boolean requiresBpmnLocalTarget(final EReference reference) {
+		var opposite = reference.getEOpposite();
+		return !reference.isResolveProxies() || reference.isTransient() || reference.isDerived()
+				|| (opposite != null && (!opposite.isResolveProxies()
+						|| opposite.isTransient() || opposite.isDerived()));
+	}
+
+	@Test
+	void testBpmnSingleRootRoundTripIsValid() throws Exception {
+		var roots = generateBpmnDiagrams(1, "bpmn_single_roundtrip_");
+		assertThat(roots).hasSize(1);
+		assertThat(roots.getFirst().eClass().getName()).isEqualTo("BpmnDiagram");
+		assertThat(generator.validate().isValid()).isTrue();
+		assertThat(generator.saveAndValidateRoundTrip().isValid()).isTrue();
+		assertThat(new File(TEST_OUTPUT_DIR,
+				"bpmn_single_roundtrip_bpmn_BpmnDiagram_1.xmi")).exists();
+	}
+
+	@Test
+	void testBpmnMultipleResourcesRoundTripExposesUnresolvedProxies() throws Exception {
+		var roots = generateBpmnDiagrams(5, "bpmn_multiple_roundtrip_");
+		assertThat(roots).hasSize(5);
+		assertThat(roots.stream().map(EObject::eResource).distinct()).hasSize(5);
+		assertThat(allBpmnObjects(generator.getResourceSet())).hasSize(80);
+		assertThat(generator.validate().isValid()).isTrue();
+		// Nonresolving BPMN opposites retain cross-resource proxies after ordinary XMI loading.
+		var roundTrip = generator.saveAndValidateRoundTrip();
+		assertThat(roundTrip.isValid()).isFalse();
+		assertThat(bpmnModelResources()).hasSize(5)
+				.allSatisfy(resource -> assertThat(new File(resource.getURI().toFileString()))
+						.exists());
+		var reloaded = reloadBpmnResources();
+		assertThat(bpmnRoots(reloaded)).hasSize(5);
+		assertThat(bpmnProxies(reloaded)).isNotEmpty();
+		assertThat(roundTrip.rejectedDiagnostics().stream().map(Diagnostic::getMessage))
+				.anyMatch(message -> message.contains("unresolved proxy"));
+		assertThat(bpmnProxies(reloaded))
+				.anyMatch(proxy -> !proxy.reference().isResolveProxies());
+		var example = bpmnProxies(reloaded).stream()
+				.filter(proxy -> !proxy.reference().isResolveProxies())
+				.filter(proxy -> !proxy.uri().trimFragment().equals(
+						proxy.owner().eResource().getURI()))
+				.findFirst().orElseThrow();
+		assertThat(example.uri().trimFragment())
+				.isNotEqualTo(example.owner().eResource().getURI());
+		assertThat(reloaded.getResource(example.uri().trimFragment(), false)).isNotNull();
+		var target = reloaded.getEObject(example.uri(), true);
+		assertThat(target).isNotNull();
+		assertThat(target.eIsProxy()).isFalse();
+	}
+
+	@Test
+	void testBpmnResolveAllDoesNotResolveNonresolvingReferences() throws Exception {
+		generateBpmnDiagrams(5, "bpmn_resolve_all_");
+		generator.save();
+		var reloaded = reloadBpmnResources();
+		var before = bpmnProxies(reloaded);
+		assertThat(before).anyMatch(proxy -> !proxy.reference().isResolveProxies());
+		EcoreUtil.resolveAll(reloaded);
+		var after = bpmnProxies(reloaded);
+		assertThat(after)
+				.anyMatch(proxy -> !proxy.reference().isResolveProxies())
+				.hasSizeLessThan(before.size());
+		assertThat(EMFModelValidator.standard().validateAll(bpmnRoots(reloaded)).isValid())
+				.isFalse();
+	}
+
+	@Test
+	void testBpmnExplicitProxyResolutionFindsExistingTarget() throws Exception {
+		generateBpmnDiagrams(5, "bpmn_explicit_resolution_");
+		generator.save();
+		var reloaded = reloadBpmnResources();
+		var proxy = bpmnProxies(reloaded).stream()
+				.filter(candidate -> !candidate.reference().isResolveProxies())
+				.findFirst().orElseThrow();
+		var targetResource = reloaded.getResource(proxy.uri().trimFragment(), false);
+		assertThat(targetResource).isNotNull();
+		var target = reloaded.getEObject(proxy.uri(), true);
+		assertThat(target).isNotNull();
+		assertThat(target.eIsProxy()).isFalse();
+		assertThat(target.eResource()).isSameAs(targetResource);
+		assertThat(target.eClass()).isSameAs(proxy.value().eClass());
+		assertThat(EcoreUtil.resolve(proxy.value(), reloaded)).isSameAs(target);
+		assertThat(proxy.value().eIsProxy()).isTrue();
+		assertThat(bpmnProxies(reloaded)).contains(proxy);
+	}
+
+	@SuppressWarnings("unchecked")
+	private void replaceBpmnProxy(final BpmnProxy proxy, final EObject target) {
+		if (proxy.reference().isMany()) {
+			var values = (EList<EObject>) proxy.owner().eGet(proxy.reference(), false);
+			var index = values.indexOf(proxy.value());
+			if (index >= 0) {
+				if (values.contains(target)) {
+					values.remove(index);
+				} else {
+					values.set(index, target);
+				}
+			}
+		} else if (proxy.owner().eGet(proxy.reference(), false) == proxy.value()) {
+			proxy.owner().eSet(proxy.reference(), target);
+		}
+	}
+
+	@Test
+	void testBpmnReplacingResolvedProxiesRepairsReloadedModel() throws Exception {
+		generateBpmnDiagrams(5, "bpmn_replaced_proxies_");
+		generator.save();
+		var reloaded = reloadBpmnResources();
+		assertThat(EMFModelValidator.standard().validateAll(bpmnRoots(reloaded)).isValid())
+				.isFalse();
+		var originalProxies = bpmnProxies(reloaded);
+		for (var proxy : originalProxies) {
+			var reference = proxy.reference();
+			if (reference.isChangeable() && !reference.isDerived() && !reference.isContainment()) {
+				var target = EcoreUtil.resolve(proxy.value(), reloaded);
+				if (!target.eIsProxy()) {
+					replaceBpmnProxy(proxy, target);
+				}
+			}
+		}
+		var afterProxyReplacement = EMFModelValidator.standard().validateAll(bpmnRoots(reloaded));
+		assertThat(bpmnProxies(reloaded)).isEmpty();
+		assertThat(afterProxyReplacement.isValid()).isFalse();
+		assertThat(afterProxyReplacement.rejectedDiagnostics().stream()
+				.map(Diagnostic::getMessage))
+				.anyMatch(message -> message.contains("opposite features"));
+		// MessagingEdge.source/target are serialized; their opposite views are derived
+		// from MessageVertex.orderedMessages. Reassign through eSet to restore the
+		// FeatureMap entries using EMF's normal inverse notifications.
+		for (var object : allBpmnObjects(reloaded)) {
+			if (!"MessagingEdge".equals(object.eClass().getName())) {
+				continue;
+			}
+			for (var name : List.of("source", "target")) {
+				var reference = (EReference) object.eClass().getEStructuralFeature(name);
+				var value = (EObject) object.eGet(reference);
+				if (value != null) {
+					object.eSet(reference, null);
+					object.eSet(reference, value);
+				}
+			}
+		}
+		var validation = EMFModelValidator.standard().validateAll(bpmnRoots(reloaded));
+		assertThat(validation.isValid()).isTrue();
+		assertThat(bpmnProxies(reloaded)).isEmpty();
+		assertBpmnOppositesConsistent(reloaded);
+	}
+
+	@Test
+	void testBpmnSharedResourceRoundTrip() throws Exception {
+		var roots = generateBpmnDiagrams(5, "bpmn_shared_roundtrip_");
+		var resources = bpmnModelResources();
+		assertThat(resources).hasSize(5);
+		var shared = resources.getFirst();
+		shared.getContents().addAll(roots.subList(1, roots.size()));
+		assertThat(resources.subList(1, resources.size()))
+				.allSatisfy(resource -> assertThat(resource.getContents()).isEmpty());
+		generator.getResourceSet().getResources().removeAll(resources.subList(1, resources.size()));
+		assertThat(shared.getContents()).containsExactlyElementsOf(roots);
+		assertThat(roots).allSatisfy(root -> assertThat(root.eResource()).isSameAs(shared));
+		assertThat(bpmnModelResources()).containsExactly(shared);
+		assertThat(generator.getResourceSet().getResources())
+				.anyMatch(EMFUtils::isEcoreResource);
+		assertThat(generator.validate().isValid()).isTrue();
+		var roundTrip = generator.saveAndValidateRoundTrip();
+		assertThat(new File(shared.getURI().toFileString())).exists();
+		var reloaded = reloadBpmnResources();
+		assertThat(bpmnRoots(reloaded)).hasSize(5);
+		assertThat(roundTrip.isValid()).isTrue();
+		assertThat(bpmnProxies(reloaded)).isEmpty();
+		assertBpmnOppositesConsistent(reloaded);
+	}
+
+	@Test
+	void testBpmnResourceAwareCrossReferencesRoundTrip() throws Exception { // NOSONAR: we need many assertions
+		var diagramClass = bpmnDiagramClass();
+		var messagingEdgeClass = assertEClassExists(diagramClass.getEPackage(), "MessagingEdge");
+		var sourceReference = assertEReferenceExists(messagingEdgeClass, "source");
+		var targetReference = assertEReferenceExists(messagingEdgeClass, "target");
+		var activityClass = assertEClassExists(diagramClass.getEPackage(), "Activity");
+		var groupsReference = assertEReferenceExists(activityClass, "groups");
+		var populator = generator.getInstancePopulator();
+		// Both nonresolving references and derived/transient opposite views require
+		// local targets. In particular, MessageVertex message views use a FeatureMap.
+		populator.setCrossReferenceSetter(new EMFCrossReferenceSetter() {
+			private final Map<EReference, Integer> next = new HashMap<>();
+
+			@Override
+			public EObject selectValue(final EObject owner, final EReference reference) {
+				if (!requiresBpmnLocalTarget(reference)) {
+					return super.selectValue(owner, reference);
+				}
+				var candidates = EMFUtils.findAllAssignableInstances(owner,
+						reference.getEReferenceType()).stream()
+						.filter(candidate -> candidate.eResource() == owner.eResource())
+						.filter(candidate -> candidate != owner)
+						.filter(candidate -> EMFUtils.canSetInThePresenceOfOppositeReference(
+								reference, candidate))
+						.toList();
+				if (candidates.isEmpty()) {
+					return null;
+				}
+				var index = next.merge(reference, 1, Integer::sum) - 1;
+				return candidates.get(index % candidates.size());
+			}
+		});
+		configureBpmnGeneration(5, "bpmn_resource_aware_");
+		var roots = generator.generateFromSeveral(diagramClass);
+		assertThat(roots).hasSize(5);
+		assertThat(roots.stream().map(EObject::eResource).distinct()).hasSize(5);
+		assertThat(allBpmnObjects(generator.getResourceSet())).hasSize(80);
+		assertThat(generator.validate().isValid()).isTrue();
+		assertBpmnOppositesConsistent(generator.getResourceSet());
+		var populatedEdge = allBpmnObjects(generator.getResourceSet()).stream()
+				.filter(messagingEdgeClass::isInstance)
+				.filter(edge -> edge.eGet(sourceReference) != null
+						&& edge.eGet(targetReference) != null)
+				.findFirst().orElseThrow();
+		var source = (EObject) populatedEdge.eGet(sourceReference);
+		var target = (EObject) populatedEdge.eGet(targetReference);
+		assertThat(source.eResource()).isSameAs(populatedEdge.eResource());
+		assertThat(target.eResource()).isSameAs(populatedEdge.eResource());
+		assertThat(bpmnReferenceValues(source, sourceReference.getEOpposite())
+				.contains(populatedEdge)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
+		assertThat(bpmnReferenceValues(target, targetReference.getEOpposite())
+				.contains(populatedEdge)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
+		var groupedActivity = allBpmnObjects(generator.getResourceSet()).stream()
+				.filter(activityClass::isInstance)
+				.filter(activity -> !bpmnReferenceValues(activity, groupsReference).isEmpty())
+				.findFirst().orElseThrow();
+		var group = (EObject) bpmnReferenceValues(groupedActivity, groupsReference)
+				.iterator().next();
+		assertThat(group.eResource()).isSameAs(groupedActivity.eResource());
+		assertThat(bpmnReferenceValues(group, groupsReference.getEOpposite())
+				.contains(groupedActivity)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
+		for (var owner : allBpmnObjects(generator.getResourceSet())) {
+			for (var reference : owner.eClass().getEAllReferences()) {
+				if (!requiresBpmnLocalTarget(reference)) {
+					continue;
+				}
+				for (var value : bpmnReferenceValues(owner, reference)) {
+					assertThat(((EObject) value).eResource()).isSameAs(owner.eResource());
+				}
+			}
+		}
+		var roundTrip = generator.saveAndValidateRoundTrip();
+		assertThat(roundTrip.isValid()).isTrue();
+		var reloaded = reloadBpmnResources();
+		assertThat(bpmnRoots(reloaded)).hasSize(5);
+		assertThat(bpmnProxies(reloaded)).isEmpty();
+		assertBpmnOppositesConsistent(reloaded);
+		var reloadedEdge = reloaded.getEObject(EcoreUtil.getURI(populatedEdge), true);
+		assertThat(reloadedEdge).isNotNull();
+		var reloadedSource = (EObject) reloadedEdge.eGet(sourceReference);
+		var reloadedTarget = (EObject) reloadedEdge.eGet(targetReference);
+		assertThat(reloadedSource).isNotNull();
+		assertThat(reloadedTarget).isNotNull();
+		assertThat(EcoreUtil.getURI(reloadedSource)).isEqualTo(EcoreUtil.getURI(source));
+		assertThat(EcoreUtil.getURI(reloadedTarget)).isEqualTo(EcoreUtil.getURI(target));
+		assertThat(reloadedSource.eResource()).isSameAs(reloadedEdge.eResource());
+		assertThat(reloadedTarget.eResource()).isSameAs(reloadedEdge.eResource());
+		assertThat(bpmnReferenceValues(reloadedSource, sourceReference.getEOpposite())
+				.contains(reloadedEdge)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
+		assertThat(bpmnReferenceValues(reloadedTarget, targetReference.getEOpposite())
+				.contains(reloadedEdge)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
+		var reloadedActivity = reloaded.getEObject(EcoreUtil.getURI(groupedActivity), true);
+		var reloadedGroup = reloaded.getEObject(EcoreUtil.getURI(group), true);
+		assertThat(reloadedActivity).isNotNull();
+		assertThat(reloadedGroup).isNotNull();
+		assertThat(reloadedGroup.eResource()).isSameAs(reloadedActivity.eResource());
+		assertThat(bpmnReferenceValues(reloadedActivity, groupsReference)
+				.contains(reloadedGroup)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
+		assertThat(bpmnReferenceValues(reloadedGroup, groupsReference.getEOpposite())
+				.contains(reloadedActivity)).isTrue(); // NOSONAR: Collection<?> is not covariant, so we cannot use contains here
 	}
 
 	@Test

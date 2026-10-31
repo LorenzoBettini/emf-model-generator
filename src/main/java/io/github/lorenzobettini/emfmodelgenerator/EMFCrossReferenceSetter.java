@@ -1,8 +1,9 @@
 package io.github.lorenzobettini.emfmodelgenerator;
 
-import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
+
+import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceCandidateSelectorStrategy.CandidateDecision;
 
 /**
  * Responsible for setting cross reference (non-containment) values on EMF EObjects.
@@ -18,11 +19,12 @@ import org.eclipse.emf.ecore.EReference;
 public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<EReference, EReference, EObject> {
 
 	private static final int DEFAULT_MULTI_VALUED_COUNT = 2;
-	private EMFCandidateSelectorStrategy<EClass, EObject> candidateSelectorStrategy = new EMFRoundRobinEObjectCandidateSelector();
+	private EMFCrossReferenceCandidateSelectorStrategy candidateSelectorStrategy =
+			new EMFRoundRobinEObjectCandidateSelector();
 	private SelfReferencePolicy selfReferencePolicy = (owner, reference) -> false;
 
 	/**
-	 * Function interface for cross reference operations.
+	 * Supplies a cross-reference candidate for the EObject that owns the reference.
 	 *
 	 * @author Lorenzo Bettini
 	 */
@@ -84,11 +86,13 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	}
 
 	/**
-	 * Set the candidate selector strategy for selecting existing EObject instances.
+	 * Set the strategy used to select an existing EObject for a cross-reference.
+	 * The selector receives the owner, the actual reference, and a function that
+	 * classifies each candidate for self-reference, uniqueness, and opposite capacity.
 	 * 
-	 * @param strategy the candidate selector strategy to use
+	 * @param strategy the cross-reference candidate selector to use
 	 */
-	public void setCandidateSelectorStrategy(EMFCandidateSelectorStrategy<EClass, EObject> strategy) {
+	public void setCandidateSelectorStrategy(EMFCrossReferenceCandidateSelectorStrategy strategy) {
 		this.candidateSelectorStrategy = strategy;
 	}
 
@@ -149,8 +153,9 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	/**
 	 * Set the cross reference on the given owner EObject.
 	 * 
-	 * If the reference is already set, then it will be skipped: if it is an opposite reference,
-	 * the existing referenced EObject will not be modified.
+	 * An already-set single-valued reference is skipped. A multi-valued reference with
+	 * an opposite may receive additional values up to its effective count even when
+	 * it already contains values.
 	 * 
 	 * For setting the cross reference, the resource set of the owner EObject is scanned for all existing EObjects that can be assigned to the reference.
 	 *
@@ -184,19 +189,7 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 
 		for (int i = 0; i < missingCount; i++) {
 			// Get next candidate using the configured selector strategy
-			EObject referencedEObject = selectValue(owner, reference);
-			// but skip already present ones (only if unique is true), avoiding infinite loops
-			if (reference.isUnique()) {
-				EObject firstCandidate = referencedEObject;
-				while (referencedEObject != null &&
-						list.contains(referencedEObject)) {
-					referencedEObject = selectValue(owner, reference);
-					if (referencedEObject == firstCandidate) {
-						// we've looped through all candidates and found no new one
-						return;
-					}
-				}
-			}
+			final EObject referencedEObject = selectValue(owner, reference);
 			if (referencedEObject == null) {
 				return;
 			}
@@ -209,7 +202,8 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 	 * Selects one valid existing value for a cross-reference without assigning it
 	 * to the owner. A configured function is tried first. A {@code null} or invalid
 	 * custom candidate falls back to the configured candidate selector. Default
-	 * candidates are filtered by the cycle policy and opposite multiplicity.
+	 * candidates are filtered by the self-reference policy, uniqueness, and opposite
+	 * multiplicity.
 	 * The FeatureMap coordinator reuses this operation for non-containment
 	 * group members.
 	 *
@@ -222,37 +216,26 @@ public class EMFCrossReferenceSetter extends EMFConfigurableFeatureSetter<ERefer
 		if (function != null) {
 			final EObject candidate = function.apply(owner);
 			if (candidate != null &&
-					isCandidateValid(owner, crossReference, candidate)) {
+					evaluateCandidate(owner, crossReference, candidate) == CandidateDecision.ACCEPT) {
 				return candidate;
 			}
 		}
-
-		// Try to get candidates using the configured selector strategy until we find one
-		// that passes the opposite reference check and is not the owner itself (unless a direct
-		// self-reference is allowed).
-		// Since the selector wraps around, we track the first candidate to detect when
-		// we've checked all
-		final EClass eReferenceType = crossReference.getEReferenceType();
-		final EObject firstCandidate = candidateSelectorStrategy.getNextCandidate(owner, eReferenceType);
-		if (firstCandidate == null) {
-			return null;
-		}
-
-		// Note: at this point, getNextCandidate never returns null (it wraps around)
-		EObject candidate = firstCandidate;
-		do {
-			if (isCandidateValid(owner, crossReference, candidate)) {
-				return candidate;
-			}
-			candidate = candidateSelectorStrategy.getNextCandidate(owner, eReferenceType);
-		} while (candidate != firstCandidate);
-
-		// We've checked all candidates and none passed the filter
-		return null;
+		return candidateSelectorStrategy.selectCandidate(owner, crossReference,
+				candidate -> evaluateCandidate(owner, crossReference, candidate));
 	}
 
-	private boolean isCandidateValid(EObject owner, EReference reference, EObject candidate) {
-		return (owner != candidate || allowSelfReferenceFor(owner, reference)) &&
-				EMFUtils.canSetInThePresenceOfOppositeReference(reference, candidate);
+	private CandidateDecision evaluateCandidate(final EObject owner, final EReference reference,
+			final EObject candidate) {
+		if (owner == candidate && !allowSelfReferenceFor(owner, reference)) {
+			return CandidateDecision.SKIP;
+		}
+		if (reference.isMany() && reference.isUnique() &&
+				EMFUtils.getAsEObjectsList(owner, reference).contains(candidate)) {
+			return CandidateDecision.SKIP;
+		}
+		if (!EMFUtils.canSetInThePresenceOfOppositeReference(reference, candidate)) {
+			return CandidateDecision.OPPOSITE_CAPACITY_EXHAUSTED;
+		}
+		return CandidateDecision.ACCEPT;
 	}
 }

@@ -41,8 +41,13 @@ class EMFRoundRobinCandidateSelectorTest {
 	 *
 	 * @author Lorenzo Bettini
 	 */
-	private static class TestableRoundRobinSelector extends EMFRoundRobinCandidateSelector<EClass, EObject> {
+	private static class TestableRoundRobinSelector extends EMFRoundRobinCandidateSelector<EClass, EClass, EObject> {
 		private final List<EObject> candidatesList = new ArrayList<>();
+
+		@Override
+		protected EClass keyFor(final EClass request) {
+			return request;
+		}
 
 		@Override
 		protected List<EObject> getOrCompute(EObject context, EClass type) {

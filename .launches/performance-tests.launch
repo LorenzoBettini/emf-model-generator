@@ -2,7 +2,7 @@
 <launchConfiguration type="org.eclipse.m2e.Maven2LaunchConfigurationType">
     <intAttribute key="M2_COLORS" value="0"/>
     <booleanAttribute key="M2_DEBUG_OUTPUT" value="false"/>
-    <stringAttribute key="M2_GOALS" value="test-compile exec:java@run-performance-tests"/>
+    <stringAttribute key="M2_GOALS" value="-DskipTests test-compile exec:exec@run-profile-pilot -Dbenchmark.profile=extlibrary -Dbenchmark.roots=1 -Dbenchmark.depth=1 -Dbenchmark.raw=target/benchmark/eclipse-smoke-raw.csv -Dbenchmark.summary=target/benchmark/eclipse-smoke-summary.csv"/>
     <booleanAttribute key="M2_NON_RECURSIVE" value="false"/>
     <booleanAttribute key="M2_OFFLINE" value="false"/>
     <stringAttribute key="M2_PROFILES" value="performance-tests"/>

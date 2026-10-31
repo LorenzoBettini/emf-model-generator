@@ -85,18 +85,18 @@ class EMFCrossReferenceSetterTest {
 		createExistingInstance(referencedClass);
 
 		// Create a custom strategy that always returns the first instance
-		EMFCandidateSelectorStrategy<EClass, EObject> customStrategy = new EMFCandidateSelectorStrategy<EClass, EObject>() {
-			@Override
-			public EObject getNextCandidate(EObject context, EClass type) {
-				return existing1;
-			}
-
-			@Override
-			public boolean hasCandidates(EObject context, EClass type) {
-				return true;
-			}
-		};
-
+		EMFCrossReferenceCandidateSelectorStrategy customStrategy =
+				new EMFCrossReferenceCandidateSelectorStrategy() {
+					@Override
+					public EObject selectCandidate(final EObject owner, final EReference reference,
+							final java.util.function.Function<EObject, CandidateDecision> evaluator) {
+						return evaluator.apply(existing1) == CandidateDecision.ACCEPT ? existing1 : null;
+					}
+					@Override
+					public void reset() {
+						// nothing to reset in this simple strategy
+					}
+				};
 		setter.setCandidateSelectorStrategy(customStrategy);
 
 		EReference reference = createNonContainmentReference("refs", true);

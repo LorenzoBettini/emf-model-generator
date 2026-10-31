@@ -11,7 +11,14 @@ import org.eclipse.emf.ecore.EObject;
  *
  * @author Lorenzo Bettini
  */
-public class EMFRoundRobinEEnumLiteralCandidateSelector extends EMFRoundRobinCandidateSelector<EEnum, EEnumLiteral> {
+public class EMFRoundRobinEEnumLiteralCandidateSelector
+		extends EMFRoundRobinCandidateSelector<EEnum, EEnum, EEnumLiteral>
+		implements EMFEEnumLiteralCandidateSelectorStrategy {
+
+	@Override
+	protected EEnum keyFor(final EEnum request) {
+		return request;
+	}
 
 	@Override
 	protected List<EEnumLiteral> getOrCompute(EObject context, EEnum type) {

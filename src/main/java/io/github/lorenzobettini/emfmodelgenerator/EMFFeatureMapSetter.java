@@ -106,7 +106,7 @@ public class EMFFeatureMapSetter extends EMFCountConfigurableFeatureSetter<EAttr
 	}
 
 	private static final int DEFAULT_MULTI_VALUED_COUNT = 2;
-	private EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> groupMemberSelector =
+	private EMFFeatureMapGroupMemberSelectorStrategy groupMemberSelector =
 		new EMFRoundRobinFeatureMapGroupMemberSelector();
 	private EMFAttributeSetter attributeSetter;
 	private EMFContainmentReferenceSetter containmentReferenceSetter;
@@ -147,12 +147,13 @@ public class EMFFeatureMapSetter extends EMFCountConfigurableFeatureSetter<EAttr
 	}
 
 	/**
-	 * Set the group member selector strategy for selecting feature map group members.
+	 * Set the strategy that selects a structural feature for each planned FeatureMap entry.
+	 * The selector receives the FeatureMap attribute and chooses among its group members.
 	 *
 	 * @param strategy the heterogeneous structural-feature selector strategy to use
 	 */
 	public void setGroupMemberSelectorStrategy(
-			final EMFCandidateSelectorStrategy<EAttribute, EStructuralFeature> strategy) {
+			final EMFFeatureMapGroupMemberSelectorStrategy strategy) {
 		this.groupMemberSelector = strategy;
 	}
 
