@@ -87,7 +87,7 @@ class PublicationEvaluationTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "settings"):
             publication.compatible(selection, current)
 
-    def test_checked_in_selection_schema_covers_handoff(self):
+    def test_checked_in_selection_schema_covers_profiles(self):
         schema = json.loads(Path(__file__).with_name("publication-selection.schema.json").read_text())
         self.assertEqual(schema["properties"]["schema_version"]["const"],
                          publication.SCHEMA)
@@ -121,7 +121,7 @@ class PublicationEvaluationTest(unittest.TestCase):
     def test_publication_fork_clears_inherited_experimental_selector(self):
         case = publication.case_for(publication.SERIES[0], 1)
         with tempfile.TemporaryDirectory() as temp, mock.patch.dict(
-                os.environ, {"BENCHMARK_SELECTION_VARIANT": "cursor"}), mock.patch.object(
+                os.environ, {"BENCHMARK_SELECTION_VARIANT": "reference-aware"}), mock.patch.object(
                 publication.subprocess, "run", side_effect=subprocess.TimeoutExpired(
                     "mvnw", 1, output=b"started\n")) as run:
             publication.invoke(case, Path(temp), "baseline", "512m", 1, 2, 1)

@@ -1,6 +1,5 @@
 """Bounded, selection-compatible cross-reference attempt diagnostics."""
 
-import hashlib
 import json
 import statistics
 import subprocess
@@ -18,43 +17,6 @@ COLUMNS = ("run_id scenario run_index reference calls selected custom_selected "
            "unique_retries unique_exhaustions contains_checks contains_list_elements "
            "contains_elapsed_ns single_assignments single_assignment_elapsed_ns "
            "multi_assignments multi_assignment_elapsed_ns").split()
-ALLOWED_DIAGNOSTIC_CHANGES = {
-    "scripts/performance_evaluation.py", "scripts/publication_evaluation.py",
-    "src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/"
-    "EMFModelGeneratorPerformanceStatistics.java",
-}
-# Exact audited transition from the publication runner to this diagnostic runner.
-# A later edit must either match calibration anew or explicitly review this policy.
-VETTED_DIAGNOSTIC_HASHES = {
-    "scripts/performance_evaluation.py":
-        "55dd63e8c5e48da4e69c21531199dd5ccd2fd3bba52b48e1190fc75cc0c92aad",
-    "scripts/publication_evaluation.py":
-        "a3d30c7530c7ef45499448437ef7d4e4d3219b778d5371e2ea2b3e11abbdb1ee",
-    "src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/"
-    "EMFModelGeneratorPerformanceStatistics.java":
-        "85e4263e75390c246e91aa13bdd8fb888e83357421c1ecdfee2969a3485d92eb",
-}
-# The comparison experiment changes only the opt-in benchmark driver and parser.
-# The original diagnostic defaults remain unchanged; this exact version can still
-# read older host-calibrated selections after the existing production/Ecore audit.
-VETTED_COMPARISON_HASHES = {
-    "scripts/performance_evaluation.py":
-        "d9b2a168fdb4967e0e55a32222239d31aab57c1229fe71e55c8d38fddee4b9fe",
-    "scripts/publication_evaluation.py":
-        "a3d30c7530c7ef45499448437ef7d4e4d3219b778d5371e2ea2b3e11abbdb1ee",
-    "src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/"
-    "EMFModelGeneratorPerformanceStatistics.java":
-        "362a35ed1ea08a761284e54ebdaf7090be94dd48ce849f4e578b9413703aa4a3",
-}
-PREVIOUS_DIAGNOSTIC_HASHES = {
-    "scripts/performance_evaluation.py":
-        "96bb0e81501b4ec115fcd94ffb9a9523b62455d7e7e743447c318363ce9ffd49",
-    "scripts/publication_evaluation.py":
-        "a3d30c7530c7ef45499448437ef7d4e4d3219b778d5371e2ea2b3e11abbdb1ee",
-    "src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/"
-    "EMFModelGeneratorPerformanceStatistics.java":
-        "55e065f3cdfa9b3735ab45eacccb081836f76aba3c56a686b8ae97f6adb34c17",
-}
 MAX_DIAGNOSTIC_OBJECTS = 200_000
 MAX_DIAGNOSTIC_RESOURCES = 5_000
 
@@ -75,37 +37,8 @@ def selection_compatible(selection, current):
     new = current["source_sha256"]
     if old.keys() != new.keys():
         raise ValueError("Source inventory changed; cannot prove selection compatibility")
-    changes = {key for key in old if old[key] != new[key]}
-    if not changes:
-        return []
-    if changes - ALLOWED_DIAGNOSTIC_CHANGES:
-        raise ValueError("Production/workload source changed: " +
-                         ", ".join(sorted(changes - ALLOWED_DIAGNOSTIC_CHANGES)))
-    # A differing benchmark file must be the exact historical input recorded by
-    # calibration, rather than an arbitrary edit to scenario setup or timing.
-    if {path: new[path] for path in ALLOWED_DIAGNOSTIC_CHANGES} not in (
-            VETTED_DIAGNOSTIC_HASHES, VETTED_COMPARISON_HASHES):
-        raise ValueError("Diagnostic source differs from audited version; "
-                         "recalibrate or review the compatibility policy")
-    for path in changes:
-        if selection.get("test_only") and old[path] == PREVIOUS_DIAGNOSTIC_HASHES[path]:
-            # The preserved Mac smoke selection was made with precisely this
-            # audited, but then uncommitted, diagnostic implementation.
-            continue
-        revision = selection["host"].get("git_revision")
-        try:
-            previous = subprocess.check_output(["git", "show", f"{revision}:{path}"],
-                                               cwd=base.ROOT, stderr=subprocess.DEVNULL)
-        except (OSError, subprocess.CalledProcessError) as exc:
-            raise ValueError(f"Cannot audit calibration source {path}; recalibrate") from exc
-        if hashlib.sha256(previous).hexdigest() != old[path]:
-            raise ValueError(f"Calibration source {path} had uncommitted changes; "
-                             "cannot audit compatibility")
-        vetted = subprocess.check_output(["git", "show", f"ac673ba:{path}"],
-                                         cwd=base.ROOT, stderr=subprocess.DEVNULL)
-        if hashlib.sha256(vetted).hexdigest() != old[path]:
-            raise ValueError(f"Calibration benchmark source {path} is not the vetted "
-                             "publication runner; recalibrate")
+    if old != new:
+        raise ValueError("Selection source_sha256 changed; recalibrate on this setup")
     for case in selection["selected"]:
         pub.validate_case(case)
         if not any(probe.get("status") == "completed" and
@@ -114,7 +47,7 @@ def selection_compatible(selection, current):
                         "observed_eobjects", "observed_resources"))
                    for probe in selection.get("probes", [])):
             raise ValueError("Selection has an uncalibrated workload")
-    return sorted(changes)
+    return []
 
 
 def choose_cases(selection):
@@ -154,14 +87,14 @@ def run_investigation(args):
     selection_path = Path(args.selection)
     selection = json.loads(selection_path.read_text())
     current = pub.machine(args.heap)
-    allowed_changes = selection_compatible(selection, current)
+    selection_compatible(selection, current)
     cases, skipped = choose_cases(selection)
     output = pub.new_output(args.preset, args.output)
     pub.write_json(output / "selection.json", selection)
     manifest = {"schema_version": 1, "preset": args.preset, "created_utc": pub.utc(),
                 **current, "selection_sha256": pub.file_hash(output / "selection.json"),
                 "original_selection_sha256": pub.file_hash(selection_path),
-                "calibration_host": selection["host"], "allowed_diagnostic_changes": allowed_changes,
+                "calibration_host": selection["host"],
                 "warmups": 1, "repetitions": 2,
                 "timeout_seconds_per_invocation": args.timeout,
                 "caps": {"eobjects": MAX_DIAGNOSTIC_OBJECTS,
@@ -394,7 +327,7 @@ def report_investigation(output):
              "**Diagnostic measurements only; no uninstrumented speed comparison.**", "",
              (f"Calibration revision: `{manifest['calibration_host']['git_revision']}`; "
               f"diagnostic revision: `{manifest['host']['git_revision']}`; "
-              f"allowed changed benchmark files: {manifest['allowed_diagnostic_changes']}."
+              "source inputs match calibration."
               if selected_mode else
               f"Explicit root sweep at revision `{manifest['host']['git_revision']}`; "
               f"caps: {manifest['caps']}; timeout: "
@@ -403,10 +336,8 @@ def report_investigation(output):
              f"JDK: {manifest['host']['java_version_output']}; "
              f"JVM flags: {manifest['fixed_jvm_flags']}.",
              ("Production Java, scenario configuration, Maven POM, metamodel hashes, "
-              "JVM and physical host match the calibrated selection. Only the listed "
-              "benchmark driver/runner files may differ under the exact audited hash "
-              "transitions. Git revision alone is not a "
-              "compatibility test; the original selection is archived intact."
+              "JVM and physical host match the calibrated selection. The selection "
+              "is retained with the result files."
               if selected_mode else
               "This explicit sweep has no calibration selection; each observed size, "
               "failure and source fingerprint is retained in the raw files."), "",
@@ -437,8 +368,7 @@ def report_investigation(output):
                      f"{row['attempts_median']} | {row['rejected_total_median']} | "
                      f"{row['selection_elapsed_ns_median']/1e6:.3f} |")
     lines += ["",
-              "A selector call returning the first candidate again closes an exhausted cycle "
-              "and is not a second attempted candidate. A null first retrieval means zero "
+              "Attempts count candidate evaluator calls. An empty candidate pool means zero "
               "attempts. A non-null custom-function result with no selector call is counted "
               "separately. Each `selectValue` invocation is counted once. Unique-list retries, "
               "membership checks and checked list lengths are measured separately. Rejection "
@@ -451,11 +381,9 @@ def report_investigation(output):
               "elapsed includes EMF inverse/opposite maintenance but does not isolate it from "
               "other EMF list work. All elapsed "
               "values are instrumented, include probe overhead, and are not comparable to "
-              "the old uninstrumented publication wall times. EMF eSet/opposite maintenance, "
+              "uninstrumented generation times. EMF eSet/opposite maintenance, "
               "list.contains, setup and GC can also contribute to generation time.", "",
-              "## Decision gate", "",
-              "This diagnostic report alone cannot establish that rejection loops caused "
-              "PluginEclipse slowdown. Phase B is skipped; no safe experimental fast path "
-              "or uninstrumented A/B comparison is offered.", ""]
+              "These counters describe candidate work; they do not isolate the cause of "
+              "overall generation time.", ""]
     (output / "report.md").write_text("\n".join(lines))
     print(f"Regenerated cross-reference report: {output}", flush=True)

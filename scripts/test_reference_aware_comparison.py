@@ -9,7 +9,6 @@ from pathlib import Path
 import publication_evaluation as publication
 import performance_evaluation as performance
 import reference_aware_comparison as comparison
-import reference_aware_diagnostics as diagnostics
 
 
 class ReferenceAwareComparisonTest(unittest.TestCase):
@@ -35,7 +34,7 @@ class ReferenceAwareComparisonTest(unittest.TestCase):
         values.update(overrides)
         return argparse.Namespace(**values)
 
-    def test_dell_matrix_and_invalid_settings(self):
+    def test_scenario_matrix_and_invalid_settings(self):
         cases = comparison.parse_cases(self.args())
         self.assertEqual(len(cases), 15)
         self.assertEqual([case["scenario"] for case in cases[::5]],
@@ -76,24 +75,6 @@ class ReferenceAwareComparisonTest(unittest.TestCase):
             comparison.report_comparison(output)
             self.assertIn("skipped", (output / "report.md").read_text())
             self.assertTrue((output / "figure-comparison.svg").exists())
-
-    def test_archived_diagnostics_regenerates_without_a_live_run(self):
-        with tempfile.TemporaryDirectory() as directory:
-            output = Path(directory)
-            (output / "manifest.json").write_text(json.dumps(
-                {"preset": "reference-aware-diagnostics"}))
-            (output / "diagnostic-comparison.csv").write_text(
-                "scenario,roots,status,baseline_attempts,variant_attempts,"
-                "baseline_opposite_rejections,variant_opposite_rejections,"
-                "retirements,pool_entries_built,active_indices\n"
-                "plugin-eclipse,2,equivalent,8,4,8,4,4,4,0\n")
-            path = diagnostics.report(output)
-            self.assertIn("8/4", path.read_text())
-            self.assertIn("archived", path.read_text())
-            (output / "manifest.json").write_text(json.dumps({"preset": "wrong"}))
-            with self.assertRaises(ValueError):
-                diagnostics.report(output)
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,12 +1,11 @@
 """Fast contract tests for the opt-in selection investigation."""
 
 import json
-import hashlib
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
-from unittest import mock
 
 import crossref_investigation as investigation
 import profile_crossref_jfr as jfr
@@ -32,22 +31,14 @@ class CrossReferenceInvestigationTest(unittest.TestCase):
         selection, current = self.selection()
         self.assertEqual(investigation.selection_compatible(selection, current), [])
 
-    def test_source_policy_rejects_pre_adoption_diagnostics_and_production_changes(self):
-        selection, current = self.selection()
-        selection = json.loads(json.dumps(selection))
-        selection["source_sha256"]["scripts/performance_evaluation.py"] = \
-            hashlib.sha256(b"baseline").hexdigest()
-        with mock.patch.object(investigation.subprocess, "check_output",
-                               return_value=b"baseline"):
-            with self.assertRaisesRegex(ValueError, "audited version"):
-                investigation.selection_compatible(selection, current)
-        current_changed = json.loads(json.dumps(current))
-        current_changed["source_sha256"]["scripts/performance_evaluation.py"] = "f" * 64
-        with self.assertRaisesRegex(ValueError, "audited version"):
-            investigation.selection_compatible(selection, current_changed)
-        selection["source_sha256"]["pom.xml"] = "0" * 64
-        with self.assertRaisesRegex(ValueError, "Production/workload"):
-            investigation.selection_compatible(selection, current)
+    def test_source_and_host_changes_require_recalibration(self):
+        for path in ("scripts/performance_evaluation.py", "pom.xml"):
+            selection, current = self.selection()
+            selection = json.loads(json.dumps(selection))
+            selection["source_sha256"][path] = "0" * 64
+            with self.subTest(path=path):
+                with self.assertRaisesRegex(ValueError, "source_sha256 changed"):
+                    investigation.selection_compatible(selection, current)
         selection, current = self.selection()
         selection = json.loads(json.dumps(selection))
         selection["host"]["cpu_model"] = "different"
@@ -67,36 +58,28 @@ class CrossReferenceInvestigationTest(unittest.TestCase):
             result = subprocess.run([sys.executable, script, *command, "--help"],
                                     text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stderr)
-        result = subprocess.run([sys.executable, script, "run", "--preset",
-                                 "crossref-comparison", "--heap", "2g", "--timeout", "900",
-                                 "--selection", "target/benchmark/publication-selection.json"],
-                                text=True, capture_output=True)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("disabled after production cursor adoption", result.stderr)
 
-    def test_vetted_pre_adoption_revision_requires_recalibration_for_diagnostics(self):
+    def test_report_preserves_failures_for_calibrated_and_explicit_runs(self):
         selection, current = self.selection()
-        selection = json.loads(json.dumps(selection))
-        selection["host"]["git_revision"] = "ac673ba"
-        for path in investigation.ALLOWED_DIAGNOSTIC_CHANGES:
-            previous = subprocess.check_output(["git", "show", f"ac673ba:{path}"],
-                                               cwd=publication.base.ROOT)
-            selection["source_sha256"][path] = hashlib.sha256(previous).hexdigest()
-        with self.assertRaisesRegex(ValueError, "audited version"):
-            investigation.selection_compatible(selection, current)
-
-    def test_prior_audited_diagnostic_requires_test_only_selection(self):
-        selection, current = self.selection()
-        selection = json.loads(json.dumps(selection))
-        selection["test_only"] = True
-        for path in investigation.ALLOWED_DIAGNOSTIC_CHANGES:
-            selection["source_sha256"][path] = \
-                investigation.PREVIOUS_DIAGNOSTIC_HASHES[path]
-        with self.assertRaisesRegex(ValueError, "audited version"):
-            investigation.selection_compatible(selection, current)
-        selection["test_only"] = False
-        with self.assertRaises(ValueError):
-            investigation.selection_compatible(selection, current)
+        for mode in ("calibrated", "explicit-roots"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory)
+                selection_path = output / "selection.json"
+                selection_path.write_text(json.dumps(selection))
+                manifest = {"preset": "crossref-investigation", "mode": mode, **current,
+                            "selection_sha256": publication.file_hash(selection_path),
+                            "calibration_host": selection["host"],
+                            "caps": {"eobjects": 1000, "resources": 10},
+                            "timeout_seconds_per_invocation": 60,
+                            "invocations": [{"series": "plugin-eclipse-roots", "roots": 1,
+                                             "status": "timeout", "reason": "fork timed out"}],
+                            "skipped_cases": []}
+                (output / "manifest.json").write_text(json.dumps(manifest))
+                investigation.report_investigation(output)
+                self.assertIn("failure-capped-cases.csv", (output / "report.md").read_text())
+                failures = (output / "failure-capped-cases.csv").read_text()
+                self.assertIn("timeout", failures)
+                self.assertIn("fork timed out", failures)
 
     def test_explicit_root_caps_reject_large_work_before_maven(self):
         script = Path(__file__).with_name("performance_evaluation.py")

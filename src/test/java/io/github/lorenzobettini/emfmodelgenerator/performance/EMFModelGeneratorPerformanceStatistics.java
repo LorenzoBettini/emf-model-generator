@@ -29,7 +29,7 @@ import jdk.jfr.Recording;
 
 /**
  * Explicit-root benchmark harness. Launch in a separate JVM; see
- * {@code src/test/java/io/github/lorenzobettini/emfmodelgenerator/performance/README.md}.
+ * {@code PERFORMANCE.md} in the repository root.
  *
  * @author Lorenzo Bettini
  */
@@ -267,8 +267,8 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		}
 		final var config = parse(args);
 		final var variant = System.getenv("BENCHMARK_SELECTION_VARIANT");
-		if (variant != null && !variant.equals("cursor") && !variant.equals("reference-aware")) {
-			throw new IllegalArgumentException("Unknown experimental selector: " + variant);
+		if (variant != null && !variant.equals("reference-aware")) {
+			throw new IllegalArgumentException("Unknown selector variant: " + variant);
 		}
 		run(config);
 	}
@@ -345,8 +345,7 @@ public final class EMFModelGeneratorPerformanceStatistics {
 			return "instrumented";
 		}
 		final var variant = System.getenv("BENCHMARK_SELECTION_VARIANT");
-		return "cursor".equals(variant) ? "experimental-cursor"
-				: "reference-aware".equals(variant) ? "reference-aware" : "baseline";
+		return "reference-aware".equals(variant) ? "reference-aware" : "baseline";
 	}
 
 	private static void printStart(final PrintStream output, final Configuration config,
@@ -406,9 +405,6 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		if (selector != null) {
 			populator.setCrossReferenceCandidateSelectorStrategy(selector);
 		} else if (selectionProbe == null &&
-				"cursor".equals(System.getenv("BENCHMARK_SELECTION_VARIANT"))) {
-			populator.setCrossReferenceCandidateSelectorStrategy(new ExperimentalCursorSelector());
-		} else if (selectionProbe == null &&
 				"reference-aware".equals(System.getenv("BENCHMARK_SELECTION_VARIANT"))) {
 			populator.setCrossReferenceCandidateSelectorStrategy(
 					new EMFRoundRobinReferenceAwareEObjectCandidateSelector());
@@ -421,8 +417,7 @@ public final class EMFModelGeneratorPerformanceStatistics {
 		final var selector = config.diagnosticPath() == null
 				? null : config.selectionAttempts() ? null : new InstrumentedEObjectCandidateSelector();
 		final var selectionProbe = config.selectionAttempts()
-				? new SelectionAttemptProbe("cursor".equals(
-						System.getenv("BENCHMARK_SELECTION_VARIANT"))) : null;
+				? new SelectionAttemptProbe() : null;
 		final var generator = configured(config, selector, selectionProbe);
 		final String jfrPath = System.getProperty("benchmark.jfr.path");
 		final boolean profile = measured && index == 1 && config.diagnosticPath() == null

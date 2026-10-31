@@ -341,26 +341,27 @@ def report(output):
                   "scenario; annotate `compute_calls_median` and "
                   "`candidate_entries_median`. These instrumented runs are separate "
                   "from baseline generation timing."]
-    scaling_mapping = (
-        "(a) The two BPMN depth series show observed time against actual output size. "
+    scaling_interpretation = (
+        "The two BPMN depth series show observed time against actual output size. "
         "Changing depth also changes the generated shape and EObject count, so the "
         "timing difference cannot be attributed to depth alone."
         if manifest["preset"].startswith("bpmn-") else
-        "(a) The scaling table and Figure 1 show observed generation time against "
+        "The scaling table and Figure 1 show observed generation time against "
         "actual output size. " +
         ("Figure 2 shows measured cache-miss computation and its cost. "
          if diagnostics else "A separate instrumented series is needed for Figure 2. ") +
         "These observations cannot assign a single cause to a "
         "superlinear-looking trend because resources and EObjects co-vary."
     )
-    lines += ["", "## Reviewer 2 mapping", "", scaling_mapping,
-              ("(b) BPMN is a separate recursive/FeatureMap stress supplement at "
+    lines += ["", "## Interpretation", "", scaling_interpretation,
+              ("BPMN is a separate recursive/FeatureMap stress supplement at "
                "depths 1–2 with in-memory validation; it is not part of the "
                "round-trip-validated primary comparison."
                if manifest["preset"].startswith("bpmn-") else
-               "(b) The independently sourced BibTeX, Ant, PluginEclipse and RSS profiles "
-               "cover distinct containment and reference structures; EXTLibrary is a "
-               "continuity case. Compare only matched configurations and preflight modes."),
+               "The independently sourced BibTeX, Ant, PluginEclipse and RSS profiles "
+               "cover distinct containment and reference structures; EXTLibrary provides a "
+               "library containment scenario. Compare only matched configurations and "
+               "preflight modes."),
               "", "## Limits", "",
               "These are implementation, platform, heap and scenario dependent observations. "
               "Preflight checks EMF validity, not full semantic correctness. Short smoke/pilot "
@@ -378,7 +379,7 @@ def main():
     launch.add_argument("--preset", choices=("smoke", "pilot", "paper",
                                              "bpmn-pilot", "bpmn-paper",
                                              "large-calibration", "large-paper",
-                                             "crossref-investigation", "crossref-comparison",
+                                             "crossref-investigation",
                                              "reference-aware-comparison", "resource-layout"), required=True)
     launch.add_argument("--output", help="new, nonexisting result directory")
     launch.add_argument("--heap", default="512m")
@@ -398,7 +399,7 @@ def main():
     analyze = sub.add_parser("report")
     analyze.add_argument("output", nargs="?", help="existing result directory")
     analyze.add_argument("--latest", choices=("large-paper", "crossref-investigation",
-                                             "crossref-comparison", "reference-aware-comparison",
+                                             "reference-aware-comparison",
                                              "resource-layout"),
                          help="regenerate the latest publication result")
     args = parser.parse_args()
@@ -415,12 +416,6 @@ def main():
             from resource_layout import run_layout
             try:
                 run_layout(args)
-            except ValueError as exc:
-                parser.error(str(exc))
-        elif args.preset == "crossref-comparison":
-            from crossref_comparison import run_comparison
-            try:
-                run_comparison(args)
             except ValueError as exc:
                 parser.error(str(exc))
         elif args.preset == "crossref-investigation":
@@ -444,9 +439,6 @@ def main():
             elif args.latest == "resource-layout":
                 from resource_layout import report_layout
                 report_layout(latest_output(args.latest))
-            elif args.latest == "crossref-comparison":
-                from crossref_comparison import report_comparison
-                report_comparison(latest_output(args.latest))
             elif args.latest == "crossref-investigation":
                 from crossref_investigation import report_investigation
                 report_investigation(latest_output(args.latest))
@@ -462,9 +454,6 @@ def main():
                 report_layout(args.output)
             elif manifest["preset"] == "reference-aware-comparison":
                 from reference_aware_comparison import report_comparison
-                report_comparison(args.output)
-            elif manifest["preset"] == "crossref-comparison":
-                from crossref_comparison import report_comparison
                 report_comparison(args.output)
             elif manifest["preset"] == "large-paper":
                 from publication_evaluation import report_publication

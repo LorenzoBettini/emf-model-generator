@@ -286,7 +286,7 @@ def report_comparison(output):
         "Variant uses EMFRoundRobinReferenceAwareEObjectCandidateSelector (explicit opt-in, "
         "requiring monotonic opposite capacity). "
         if "selector_sources" in manifest else
-        "Archived baseline and variant labels describe the selectors recorded by this run. "
+        "Baseline and variant labels describe the selectors recorded in the manifest. "
     )
     lines = ["# Reference-aware monotonic selector comparison", "",
              selector_label + "Both serial JVM forks use the same compiled classes, Ecores, "
@@ -310,7 +310,7 @@ def report_comparison(output):
                 f"{filename} `{digest}`" for filename, digest in
                 manifest["shared_selection_sources"].items()) + "."]
     elif "selector_source_sha256" in manifest:
-        lines[7:7] = [f"Archived selector SHA-256: "
+        lines[7:7] = [f"Selector SHA-256: "
                       f"`{manifest['selector_source_sha256']}`."]
     for row in records:
         if row["baseline_median_ns"]:
@@ -331,9 +331,9 @@ def report_comparison(output):
               "and failure. `failure-capped-cases.csv` lists all unmatched and capped cases. "
               "The manifest stores commands, source/Ecore hashes, statuses and checksums. "
               "Speedup is shown only when every measured graph signature matches.", "",
-              "## Interpretation", "", "This is an opt-in monotonic-capacity experiment. Timing alone cannot establish "
+              "## Interpretation", "", "This comparison requires monotonic opposite capacity. Timing alone cannot establish "
               "reduced candidate work; separate diagnostics are required. Results are workload "
-              "and host dependent and do not authorize default adoption.", ""]
+              "and host dependent.", ""]
     (output / "report.md").write_text("\n".join(lines))
     # SVG is a directly shareable vector overview; the full values are in the CSV.
     width, height = 900, 80 + 30 * len(records)

@@ -10,13 +10,12 @@ import io.github.lorenzobettini.emfmodelgenerator.EMFCrossReferenceSetter;
 import io.github.lorenzobettini.emfmodelgenerator.EMFUtils;
 
 /**
- * Test-only observer around the unchanged selection algorithm and round-robin selector.
+ * Test-only observer around the selection algorithm and round-robin selector.
  *
  * @author Lorenzo Bettini
  */
 final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 	private final Selector selector = new Selector();
-	private final ExperimentalCursorSelector experimentalSelector;
 	private final Map<String, Counters> features = new TreeMap<>();
 	private int callsInSelection;
 	private long retrievalNanosInSelection;
@@ -28,11 +27,6 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 	private int classifiedInSelection;
 
 	SelectionAttemptProbe() {
-		this(false);
-	}
-
-	SelectionAttemptProbe(final boolean experimental) {
-		experimentalSelector = experimental ? new ExperimentalCursorSelector() : null;
 		setCandidateSelectorStrategy(selector);
 	}
 
@@ -131,9 +125,7 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 					}
 					return decision;
 				};
-				final EObject result = experimentalSelector == null
-						? super.selectCandidate(owner, reference, observed)
-						: experimentalSelector.selectCandidate(owner, reference, observed);
+				final EObject result = super.selectCandidate(owner, reference, observed);
 				if (callsInSelection == 0) {
 					firstWasNull = true;
 				}
@@ -142,14 +134,6 @@ final class SelectionAttemptProbe extends EMFCrossReferenceSetter {
 				if (selecting) {
 					retrievalNanosInSelection += System.nanoTime() - start;
 				}
-			}
-		}
-
-		@Override
-		public void reset() {
-			super.reset();
-			if (experimentalSelector != null) {
-				experimentalSelector.reset();
 			}
 		}
 
