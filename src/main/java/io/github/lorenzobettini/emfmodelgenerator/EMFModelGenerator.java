@@ -122,7 +122,7 @@ public class EMFModelGenerator {
 	private String outputDirectory = "target/test-output";
 	private final ResourceSet sharedResourceSet;
 	private EMFResourceHelper resourceHelper;
-	private EMFInstancePopulator instancePopulator = new EMFInstancePopulator();
+	private final EMFInstancePopulator instancePopulator = new EMFInstancePopulator();
 	private int numberOfInstances = 1;
 	private final List<Resource> loadedEcoreResources = new ArrayList<>();
 	private final List<PackageRegistration> loadedEcoreRegistrations = new ArrayList<>();

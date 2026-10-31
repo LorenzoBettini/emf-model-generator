@@ -30,9 +30,11 @@ class EMFTestUtilsTest {
 	void missingExpectedFileIsCreatedButFailsForReview() throws IOException {
 		var expectedDirectory = temporaryDirectory.resolve("expected/nested");
 		var expectedFile = expectedDirectory.resolve("review.xmi");
+		var outputDir = EXPECTED_OUTPUTS.toString();
+		var expectedDir = expectedDirectory.toString();
 
-		assertThatThrownBy(() -> assertXMIMatchesExpected(EXPECTED_OUTPUTS.toString(),
-				expectedDirectory.toString(), PERSON, "review.xmi"))
+		assertThatThrownBy(() -> assertXMIMatchesExpected(outputDir,
+				expectedDir, PERSON, "review.xmi"))
 				.isInstanceOf(AssertionError.class)
 				.hasMessageContaining("Expected output files did not exist")
 				.hasMessageContaining(expectedFile.toAbsolutePath().toString())
@@ -69,10 +71,13 @@ class EMFTestUtilsTest {
 		Files.copy(EXPECTED_OUTPUTS.resolve(DATA_HOLDER), existingFile);
 		var firstMissing = temporaryDirectory.resolve("nested/person.xmi");
 		var secondMissing = temporaryDirectory.resolve("nested/data.xmi");
+		var outputDir = EXPECTED_OUTPUTS.toString();
+		var expectedDir = temporaryDirectory.toString();
+		var generatedFileNames = List.of(PERSON, PERSON, DATA_HOLDER);
+		var expectedFileNames = List.of("existing.xmi", "nested/person.xmi", "nested/data.xmi");
 
-		assertThatThrownBy(() -> assertXMIMatchesExpected(EXPECTED_OUTPUTS.toString(),
-				temporaryDirectory.toString(), List.of(PERSON, PERSON, DATA_HOLDER),
-				List.of("existing.xmi", "nested/person.xmi", "nested/data.xmi")))
+		assertThatThrownBy(() -> assertXMIMatchesExpected(outputDir,
+				expectedDir, generatedFileNames, expectedFileNames))
 				.isInstanceOf(AssertionError.class)
 				.hasMessageContaining("Expected output files did not exist")
 				.hasMessageContaining(firstMissing.toAbsolutePath().toString())
@@ -89,10 +94,13 @@ class EMFTestUtilsTest {
 	void mismatchInLaterFileFailsWithFileNames() throws IOException {
 		Files.copy(EXPECTED_OUTPUTS.resolve(PERSON), temporaryDirectory.resolve("person.xmi"));
 		Files.copy(EXPECTED_OUTPUTS.resolve(PERSON), temporaryDirectory.resolve("wrong-data.xmi"));
+		var outputDir = temporaryDirectory.toString();
+		var expectedDir = EXPECTED_OUTPUTS.toString();
+		var generatedFileNames = List.of("person.xmi", "wrong-data.xmi");
+		var expectedFileNames = List.of(PERSON, DATA_HOLDER);
 
-		assertThatThrownBy(() -> assertXMIMatchesExpected(temporaryDirectory.toString(),
-				EXPECTED_OUTPUTS.toString(), List.of("person.xmi", "wrong-data.xmi"),
-				List.of(PERSON, DATA_HOLDER)))
+		assertThatThrownBy(() -> assertXMIMatchesExpected(outputDir,
+				expectedDir, generatedFileNames, expectedFileNames))
 				.isInstanceOf(AssertionError.class)
 				.hasMessageContaining("wrong-data.xmi")
 				.hasMessageContaining(DATA_HOLDER);
@@ -100,8 +108,10 @@ class EMFTestUtilsTest {
 
 	@Test
 	void missingGeneratedFileFailsWithoutCreatingExpectedFile() {
-		assertThatThrownBy(() -> assertXMIMatchesExpected(temporaryDirectory.toString(),
-				temporaryDirectory.toString(), "missing.xmi", "expected.xmi"))
+		var directory = temporaryDirectory.toString();
+
+		assertThatThrownBy(() -> assertXMIMatchesExpected(directory,
+				directory, "missing.xmi", "expected.xmi"))
 				.isInstanceOf(AssertionError.class)
 				.hasMessageContaining("missing.xmi");
 
@@ -110,8 +120,13 @@ class EMFTestUtilsTest {
 
 	@Test
 	void differentNumbersOfFileNamesFailBeforeCreatingExpectedFiles() {
-		assertThatThrownBy(() -> assertXMIMatchesExpected(EXPECTED_OUTPUTS.toString(),
-				temporaryDirectory.toString(), List.of(PERSON, DATA_HOLDER), List.of("only.xmi")))
+		var outputDir = EXPECTED_OUTPUTS.toString();
+		var expectedDir = temporaryDirectory.toString();
+		var generatedFileNames = List.of(PERSON, DATA_HOLDER);
+		var expectedFileNames = List.of("only.xmi");
+
+		assertThatThrownBy(() -> assertXMIMatchesExpected(outputDir,
+				expectedDir, generatedFileNames, expectedFileNames))
 				.isInstanceOf(AssertionError.class)
 				.hasMessageContaining("Expected XMI file names");
 
@@ -120,8 +135,12 @@ class EMFTestUtilsTest {
 
 	@Test
 	void emptyFileListsFail() {
-		assertThatThrownBy(() -> assertXMIMatchesExpected(EXPECTED_OUTPUTS.toString(),
-				temporaryDirectory.toString(), List.of(), List.of()))
+		var outputDir = EXPECTED_OUTPUTS.toString();
+		var expectedDir = temporaryDirectory.toString();
+		var emptyFileNames = List.<String>of();
+
+		assertThatThrownBy(() -> assertXMIMatchesExpected(outputDir,
+				expectedDir, emptyFileNames, emptyFileNames))
 				.isInstanceOf(AssertionError.class)
 				.hasMessageContaining("Generated XMI file names");
 	}
