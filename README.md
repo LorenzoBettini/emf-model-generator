@@ -564,6 +564,48 @@ For containment references, a returned object is used only when it is
 not already contained by another object; otherwise, default instance creation is used so the object is
 not moved from its current container. Returned objects are recursively populated by the populator.
 
+#### Using an Input Generator (Datafaker)
+
+Attribute functions can delegate to an external input generator such as Datafaker, as in
+`EMFModelGeneratorDiversityTest`. Add Datafaker to your application's dependencies (the library
+uses it only in tests, so it is not a transitive runtime dependency):
+
+```xml
+<dependency>
+    <groupId>net.datafaker</groupId>
+    <artifactId>datafaker</artifactId>
+    <version>2.7.0</version>
+</dependency>
+```
+
+For a metamodel containing a `Person` EClass with a string attribute named `name`:
+
+```java
+import java.util.Locale;
+import java.util.Random;
+import net.datafaker.Faker;
+import org.eclipse.emf.ecore.EAttribute;
+import org.eclipse.emf.ecore.EClass;
+import io.github.lorenzobettini.emfmodelgenerator.EMFModelGenerator;
+
+var generator = new EMFModelGenerator();
+var ePackage = generator.loadEcoreModel("model.ecore");
+var personClass = (EClass) ePackage.getEClassifier("Person");
+var nameAttribute = (EAttribute) personClass.getEStructuralFeature("name");
+var faker = new Faker(Locale.ENGLISH, new Random(42));
+
+generator.getInstancePopulator().functionForAttribute(nameAttribute,
+    owner -> faker.name().fullName());
+generator.setNumberOfInstances(3);
+generator.setOutputDirectory("output/");
+generator.generateFrom(personClass);
+generator.save();
+generator.unloadEcoreModels();
+```
+
+The fixed seed makes the generated name sequence repeatable for the same Datafaker version
+and call order. Other features retain their default generation behavior.
+
 ### Example 14: Configure Feature Map Max Count
 
 Control the number of entries generated for feature maps:
