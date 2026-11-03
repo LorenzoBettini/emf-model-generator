@@ -94,7 +94,12 @@ class EMFModelGeneratorDiversityTest {
 		}
 		// Write every measurement before asserting, retaining failed validation diagnostics.
 		BibtexDiversityReport.write(runs);
-		assertThat(EPackage.Registry.INSTANCE).containsExactlyInAnyOrderEntriesOf(registryBefore);
+		assertReproducibilityAndDiversity(registryBefore, runs);
+	}
+
+	private void assertReproducibilityAndDiversity(HashMap<String, Object> registryBefore, ArrayList<Run> runs) {
+		assertThat(EPackage.Registry.INSTANCE) // NOSONAR: the arguments are in the right order
+			.containsExactlyInAnyOrderEntriesOf(registryBefore);
 		assertThat(runs).allSatisfy(run -> {
 			assertThat(run.measurement().valid()).as("%s", run.measurement()).isTrue();
 			assertThat(run.reproduced()).as("Replay: %s", run).isTrue();
