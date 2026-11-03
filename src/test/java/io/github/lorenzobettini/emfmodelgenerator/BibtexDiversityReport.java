@@ -79,14 +79,14 @@ final class BibtexDiversityReport {
 							coverage(sample, Measurement::fieldTypes),
 							counts.getMin(), counts.getMax(), valid, sample.size() - valid,
 							reproduced, sample.size()));
-			details.append("%s per-model coverage: Entry %s/12; Field %s/29.\n\n"
+			details.append("%s per-model coverage: Entry %s/12; Field %s/29.\n\n" // NOSONAR: I want \n
 					.formatted(strategy, range(sample, m -> m.entryTypes().size()),
 							range(sample, m -> m.fieldTypes().size())));
 		}
 		var c = measurements(runs, Strategy.C);
 		details.append("C at fixed structural positions: %d distinct first-Entry types and "
 				.formatted(c.stream().map(Measurement::firstEntryType).distinct().count()))
-				.append("%d distinct first-Field types across the sample.\n"
+				.append("%d distinct first-Field types across the sample.\n" // NOSONAR: I want \n
 						.formatted(c.stream().map(Measurement::firstFieldType).distinct().count()));
 		summary.append('\n').append(details).append("""
 
@@ -152,7 +152,7 @@ final class BibtexDiversityReport {
 				Datafaker release: https://www.datafaker.net/releases/2.7.0/
 				Seeded API: https://www.datafaker.net/documentation/usage/#repeatable-random-results
 				""");
-		summary.append("\nRuntime: Java %s (%s); EMF artifact %s; model generator 2.0.0-SNAPSHOT.\n"
+		summary.append("\nRuntime: Java %s (%s); EMF artifact %s; model generator 2.0.0-SNAPSHOT.\n"  // NOSONAR: I want \n
 				.formatted(System.getProperty("java.version"), System.getProperty("java.vendor"),
 						Path.of(URI.create(EPackage.class.getProtectionDomain().getCodeSource()
 								.getLocation().toExternalForm())).getFileName()));
