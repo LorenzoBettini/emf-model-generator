@@ -26,7 +26,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Run forked benchmark series and validate CSV/console output
